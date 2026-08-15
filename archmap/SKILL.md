@@ -387,12 +387,11 @@ python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用�
 - 全量模式只扫描业务目录，自动过滤 test、node_modules、dist、build 等目录。
 - 增量模式复用存量基线资产，不重复解析未变更模块，显著降低 Token 消耗。
 - 输出均为 JSON/YAML/Markdown/Mermaid 纯文本，不生成图片。
-
 <!-- AUTO-RETRO-INJECT:START -->
 
 ## 📚 复盘经验自动注入区（retro-skills-registry 直写 · 生成即复利）
 
-<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-16T00:02:18.799296 -->
+<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-16T00:03:28.298508 -->
 
 - 🟠 **retro-archmap-003-触发信号检测扫描采样类产物没检测到与不存在在读者脑中会画等号**：检测类产物头部必须声明覆盖面：覆盖了什么特征、什么形态的实例天然检测不到、读者应去哪里核实真实面（部署配置/运行时盘点）
 - 🟡 **retro-archmap-001-触发信号多份机器生成产物并存且互相引用口径的场景单份看都正常-交叉看口**：产物群配一份自检段：①交叉口径对账（A 报告的统计数=B/C 报告的对应计数）②比例合理性告警（维度间数量比超阈值即提示
