@@ -140,7 +140,8 @@ for name,meta in d.items():
   install)
     if [ ${#ITEMS[@]} -eq 0 ]; then echo "用法：install <技能...|--all> [--target DIR] [--copy] [--with-deps]" >&2; exit 1; fi
     if [ "${ITEMS[0]:-}" = "--all" ]; then
-      mapfile -t ITEMS < <(skill_names)
+      ITEMS=()
+      while IFS= read -r n; do ITEMS+=("$n"); done < <(skill_names)
     fi
     echo "[dsh-skill] 安装目标根：$TARGET（DSH 发现链：项目/.dsh/skills → ~/.dsh/skills → ~/.agents/skills）"
     for it in "${ITEMS[@]}"; do install_one "$it"; done
