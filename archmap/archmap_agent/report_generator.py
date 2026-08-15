@@ -107,9 +107,9 @@ class ReportGenerator:
             if key in action_map:
                 return f"{action_map[key]} {r}"
             if any(c.isalpha() for c in key):
-                resource = key.replace("-", " ")
-                return f"处理 {resource} 相关业务"
-        return f"处理 {r} 请求"
+                # B04-E09：推断不出真实语义时不输出模板废话，降级为待标注
+                return "-（语义待标注）"
+        return "-（语义待标注）"
 
     INVALID_STORAGE_NAMES = {
         "immutable", "writable", "on", "any", "default", "throw", "true", "false", "return",
@@ -315,6 +315,11 @@ class ReportGenerator:
                 lines.append(f"   - `{a}` ↔ `{b}`")
             if len(cycle_pairs) > 10:
                 lines.append(f"   - ... 共 {len(cycle_pairs)} 对，详见 08_依赖矩阵.md")
+            # A04-E13：风险区必须可行动——严重度分级 + 处置建议
+            involved = {x for pair in cycle_pairs for x in pair}
+            severity = "高" if len(cycle_pairs) >= 3 or len(involved) >= 3 else "中"
+            lines.append(f"   - 严重度：{severity}（{len(cycle_pairs)} 对、涉及 {len(involved)} 个模块成网）")
+            lines.append("   - 处置建议：提取双向引用中的共享契约（接口/模型/常量）为独立模块，或对其中一方做依赖倒置（事件/回调/注册表）；优先拆解被依赖最多的模块（见 05 清单「被哪些模块依赖」列）。")
         else:
             lines.append("1. 未发现模块间循环依赖。")
 
@@ -337,6 +342,27 @@ class ReportGenerator:
             lines.append(f"4. 粒度异常模块：{len(violation_modules)} 个，详见 09_粒度校验报告.md")
         else:
             lines.append("4. 未发现粒度异常模块。")
+
+        # B04-E09：疑似副本/镜像模块检测——API 集合高度重合的模块对会让共享 API 统计掺入噪声
+        api_sets: dict[str, set] = {}
+        for mid, m in modules.items():
+            if not self._is_business_module_id(mid):
+                continue
+            routes = {self._clean_route(a.get("route", "")) for a in m.get("apis", []) if self._is_valid_api_route(a.get("route", ""))}
+            if len(routes) >= 5:
+                api_sets[mid] = routes
+        dup_hints = []
+        ids = sorted(api_sets)
+        for i in range(len(ids)):
+            for j in range(i + 1, len(ids)):
+                a_set, b_set = api_sets[ids[i]], api_sets[ids[j]]
+                inter = len(a_set & b_set)
+                if inter >= 5 and inter / min(len(a_set), len(b_set)) >= 0.8:
+                    dup_hints.append((ids[i], ids[j], inter))
+        if dup_hints:
+            lines.append("5. 疑似副本/镜像模块（API 集合重合度 ≥80%，共享 API 统计含噪声，建议确认是否部署副本/代理转发）：")
+            for a, b, inter in dup_hints[:5]:
+                lines.append(f"   - `{a}` ≈ `{b}`：{inter} 个重合 API")
 
         lines.append("")
         lines.append("## 查阅指引")
@@ -361,14 +387,14 @@ class ReportGenerator:
     def _render_03_data_flow(self, mermaid: dict) -> str:
         return self._mermaid_file(
             "数据链路图",
-            "下图展示模块与共享存储/消息队列之间的读写流向，实线表示存在读写关联。",
+            "下图展示模块与共享存储/消息队列之间的读写流向，实线表示存在读写关联。\n\n> 覆盖声明（A04-E09）：仅统计源码静态特征可识别的存储资产；SQLite 文件库、LanceDB 实例、Redis、MinIO、文件系统快照等运行时创建的存储可能未被覆盖，实际存储面请以部署配置与运行时盘点为准。",
             mermaid.get("data_flow", "graph LR\n    Module[Module]"),
         )
 
     def _render_04_sequence(self, mermaid: dict) -> str:
         return self._mermaid_file(
             "核心业务流程时序图",
-            "下图基于模块依赖关系生成示意性核心调用链路，覆盖主要请求-处理-持久化流程。",
+            "下图基于模块依赖关系生成**示意性**核心调用链路（B06-E15：非真实调用追踪，不含分支/异常/并发路径）。真实业务时序请结合 06_API资产清单.md 的入口路由及其调用方代码确认。",
             mermaid.get("sequence", "sequenceDiagram\n    actor User\n    User->>Module: 请求"),
         )
 
@@ -529,6 +555,28 @@ class ReportGenerator:
         if not all_violations:
             lines.append("本次测绘未发现粒度违规或解析异常。")
             lines.append("")
+
+        # B06-E13：产物交叉一致性自检——报告群自身的口径对齐与欠覆盖告警
+        lines.append("## 产物交叉一致性自检")
+        storage_records = self._collect_storage_records({"modules": aggregated.get("modules", {})})
+        shared_cnt = sum(1 for r in storage_records.values() if r["shared"] or len(r["modules"]) > 1)
+        exclusive_cnt = len(storage_records) - shared_cnt
+        unique_routes = set()
+        for m in modules.values():
+            for a in m.get("apis", []):
+                r = self._clean_route(a.get("route", ""))
+                if self._is_valid_api_route(r):
+                    unique_routes.add(r)
+        lines.append(f"- 唯一 API 路由数（06 口径）：{len(unique_routes)}")
+        lines.append(f"- 存储资产数（07 口径）：{len(storage_records)}（共享 {shared_cnt} / 独占 {exclusive_cnt}）")
+        if len(unique_routes) >= 50 and len(storage_records) <= max(1, len(unique_routes) // 50):
+            lines.append(f"- ⚠️ 欠覆盖告警：API/存储比例 {len(unique_routes)}:{len(storage_records)} 严重失衡，存储静态识别大概率欠覆盖（参见 03 图头覆盖声明），01 的「共享存储」计数请勿当作系统真实存储面。")
+        else:
+            lines.append("- API/存储比例处于常规区间。")
+        lines.append("- 口径说明：01 摘要、03 数据链路图、07 存储清单共用同一清洗聚合管线，三者存储计数一致；不一致即引擎缺陷，请上报。")
+        lines.append("")
+
+        if not all_violations:
             return "\n".join(lines)
 
         lines.append("| 模块ID | 违规类型 | 违规详情描述 |")
@@ -562,6 +610,12 @@ class ReportGenerator:
             "09_粒度校验报告.md": lambda: self._render_09_granularity(aggregated, violations),
         }
         files = {}
+        # B06-E01：02~09 统一注入基线元信息头（01 自带时间戳不重复注入）
+        meta_header = f"> 基线元信息：生成时间 {self._now()} ｜ 测绘模式 {config.get('mode', '全量基线构建')} ｜ 引擎 archmap_agent\n"
         for tpl in config.get("report_templates", []):
-            files[tpl] = dispatch.get(tpl, lambda: f"# {tpl}\n\n（未定义渲染器）")()
+            content = dispatch.get(tpl, lambda: f"# {tpl}\n\n（未定义渲染器）")()
+            if tpl != "01_执行摘要.md":
+                head, _, rest = content.partition("\n")
+                content = head + "\n\n" + meta_header + rest
+            files[tpl] = content
         return files

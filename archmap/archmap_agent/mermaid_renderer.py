@@ -52,6 +52,9 @@ class MermaidRenderer:
         name = Path(module_path).name or mid
         return f"{name} | {module_path}"
 
+    # 架构分层命名（按 _module_layer 推断）
+    LAYER_NAMES = {0: "数据/基础设施层", 1: "服务/核心层", 2: "前端/接入层", 3: "部署/支撑层"}
+
     def architecture_diagram(
         self,
         modules: list[dict] | dict[str, dict],
@@ -64,16 +67,32 @@ class MermaidRenderer:
         removed_modules = removed_modules or set()
 
         filtered = self._filter_modules(modules)
-        # 架构图只保留存在依赖或被依赖的业务模块，避免大量孤立叶子目录污染视图
         active = {
             mid: m for mid, m in filtered.items()
             if m.get("dependencies") or m.get("dependents")
         }
+        # 无依赖模块不再静默丢弃，显式列入孤立区（A04-E01：防覆盖缺口被误读为不存在）
+        isolated = {mid: m for mid, m in filtered.items() if mid not in active}
+
         lines = ["graph TD"]
-        for mid, m in active.items():
-            safe = self._safe_id(mid)
-            label = self._node_label(mid, m.get("module_path", mid))
-            lines.append(f'    {safe}["{label}"]')
+        # 按架构层级分 subgraph 渲染，避免扁平毛线团
+        by_layer: dict[int, list[str]] = {}
+        for mid in active:
+            by_layer.setdefault(self._module_layer(mid), []).append(mid)
+        for layer in sorted(by_layer):
+            lines.append(f'    subgraph LAYER{layer}["{self.LAYER_NAMES[layer]}"]')
+            for mid in sorted(by_layer[layer]):
+                safe = self._safe_id(mid)
+                label = self._node_label(mid, active[mid].get("module_path", mid))
+                lines.append(f'        {safe}["{label}"]')
+            lines.append("    end")
+        if isolated:
+            lines.append('    subgraph ISOLATED["孤立模块（无依赖边，显式列出）"]')
+            for mid in sorted(isolated):
+                safe = self._safe_id(mid)
+                label = self._node_label(mid, isolated[mid].get("module_path", mid))
+                lines.append(f'        {safe}["{label}"]')
+            lines.append("    end")
 
         edges = set()
         for mid, m in active.items():
