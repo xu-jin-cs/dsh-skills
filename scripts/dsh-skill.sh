@@ -96,7 +96,8 @@ install_one() {
 }
 
 uninstall_one() {
-  local name="$1" dst="${TARGET}/${name}"
+  local name="$1"
+  local dst="${TARGET}/${name}"
   if [ -L "${dst}" ]; then
     rm "${dst}"; echo "[dsh-skill] ✓ 已移除链接：${dst}"
   elif [ -d "${dst}" ]; then
