@@ -85,7 +85,7 @@ No restart needed — DSH's skill watcher hot-reloads new entries.
 
 ## 方法论 / Methodology
 
-本仓库技能的治理哲学与 27 个实战案例复盘：[《给 LLM 的口头承诺装上机械门禁》](./docs/mechanical-gates-for-llm.md)（Mechanical Gates for LLM's Verbal Promises）——强制填充门元方法、L1/L2/L3 三档门禁、骨架冻结纪律、举一反三泛化闸。
+本仓库技能的治理哲学与 27 个实战案例复盘：[《给 LLM 的口头承诺装上机械门禁》](./docs/mechanical-gates-for-llm.md)（[English Version](./docs/mechanical-gates-for-llm.en.md)）——强制填充门元方法、L1/L2/L3 三档门禁、骨架冻结纪律、举一反三泛化闸。
 
 ## License
 
@@ -151,7 +151,7 @@ No restart needed — DSH's skill watcher hot-reloads new entries.
 
 ## Methodology
 
-The governance philosophy behind these skills, plus a 27-case battle retrospective: [Mechanical Gates for LLM's Verbal Promises](./docs/mechanical-gates-for-llm.md) — the Mandatory-Completion Gate meta-method, L1/L2/L3 gate levels, skeleton-freeze discipline, and the "1 proven case + N named siblings" generalization gate.
+The governance philosophy behind these skills, plus a 27-case battle retrospective: [Mechanical Gates for LLM's Verbal Promises](./docs/mechanical-gates-for-llm.en.md) ([中文版](./docs/mechanical-gates-for-llm.md)) — the Mandatory-Completion Gate meta-method, L1/L2/L3 gate levels, skeleton-freeze discipline, and the "1 proven case + N named siblings" generalization gate.
 
 ## License
 
