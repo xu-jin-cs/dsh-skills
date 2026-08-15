@@ -20,8 +20,20 @@ if [ ! -f "${CLI}" ]; then
   exit 1
 fi
 
-# 无参数 → 交互式选择
-if [ $# -eq 0 ]; then
+# 分离位置参数（技能名）与选项参数
+POS=(); OPTS=(); skip=0
+for ((i = 1; i <= $#; i++)); do
+  a="${!i}"
+  if [ ${skip} = 1 ]; then OPTS+=("${a}"); skip=0; continue; fi
+  case "${a}" in
+    --target) OPTS+=("${a}"); skip=1 ;;
+    --copy|--with-deps|--yes|-y) OPTS+=("${a}") ;;
+    *) POS+=("${a}") ;;
+  esac
+done
+
+# 无位置参数 → 交互式选择
+if [ ${#POS[@]} -eq 0 ]; then
   echo "dsh-skills 可用技能："
   NAMES=()
   i=1
@@ -49,8 +61,8 @@ for n,m in d.items():
     fi
   done
   [ ${#SEL[@]} -eq 0 ] && { echo "[install] 未选择，退出"; exit 0; }
-  exec "${CLI}" install ${SEL[@]+"${SEL[@]}"} --with-deps
+  exec "${CLI}" install ${SEL[@]+"${SEL[@]}"} --with-deps ${OPTS[@]+"${OPTS[@]}"}
 fi
 
-# 有参数 → 直接透传给 CLI（install 语义）
-exec "${CLI}" install "$@"
+# 有技能名 → 直接透传给 CLI（install 语义）
+exec "${CLI}" install ${POS[@]+"${POS[@]}"} ${OPTS[@]+"${OPTS[@]}"}

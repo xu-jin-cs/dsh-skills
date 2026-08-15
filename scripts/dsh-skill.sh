@@ -88,7 +88,7 @@ install_one() {
   if [ -f "${src}/requirements.txt" ]; then
     if [ ${WITH_DEPS} = 1 ]; then
       echo "[dsh-skill]   安装依赖：pip3 install -r ${name}/requirements.txt"
-      pip3 install -r "${src}/requirements.txt" || echo "[dsh-skill]   ⚠ 依赖安装失败，可稍后手动执行" >&2
+      pip3 install --quiet -r "${src}/requirements.txt" || echo "[dsh-skill]   ⚠ 依赖安装失败，可稍后手动执行" >&2
     else
       echo "[dsh-skill]   提示：该技能含 requirements.txt，可加 --with-deps 自动安装（缺失依赖时 archmap 自动回退本地向量化，仍可用）"
     fi

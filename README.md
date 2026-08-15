@@ -30,6 +30,23 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 
 首次运行会自动把发布仓浅克隆到 `~/.dsh/dsh-skills`（可用 `DSH_SKILLS_HOME` 改位置），之后所有命令在本地仓执行。
 
+**已 clone 仓库 / Already cloned**
+
+仓库根目录自带安装入口，无需记忆任何命令：
+
+```bash
+git clone https://github.com/xu-jin-cs/dsh-skills.git
+cd dsh-skills
+
+./install.sh                      # 交互式选择（列清单，输序号即可）
+./install.sh archmap              # 安装指定 agent（引擎类技能）
+./install.sh parallel-dispatch    # 安装指定规则（规则类技能）
+./install.sh archmap parallel-dispatch   # 一次装多个
+./install.sh --all                # 全部安装
+```
+
+支持 `--copy`（拷贝模式）、`--target DIR`（换发现根，如项目级 `.dsh/skills`）。本质是 `scripts/dsh-skill.sh` 的友好外壳：
+
 `scripts/dsh-skill.sh` 子命令：
 
 | 命令 | 作用 |
