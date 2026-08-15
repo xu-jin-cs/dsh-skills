@@ -11,11 +11,6 @@
       "type": "engine",
       "summary": "架构测绘 Agent（full/lite 自动分流 / 影响面分析 / diff 测试选择 / 变更台账）",
       "deps": ["requirements.txt"]
-    },
-    "gate-switch": {
-      "type": "engine",
-      "summary": "通用概率执行门禁骨架（实证族 L2 引擎）。spec 驱动的机械核验：治'该做的没做/缺斤短两/伪造声称'，7 检查原语 + 21 个实例 spec + L3 框架闸模板",
-      "deps": []
     }
   }
 }

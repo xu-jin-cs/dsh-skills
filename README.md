@@ -12,7 +12,6 @@ Reusable, lightweight skills for the DeepSeek Harness ecosystem. Plain files, ze
 |------|------|
 | [`parallel-dispatch`](./parallel-dispatch/SKILL.md) | 并行调度与子分身机制总规则。≥2 个无依赖子任务默认主动并行 spawn 子分身；规模轴（免评估轻分身 / S 档 / M·L 档引擎级）× 数量轴（2~5 subagent 扇出 / ≥10 workflow 编排）双维决策；含场景自动匹配表、最小探针、母体合并校验时点分层、禁止清单。 |
 | [`archmap`](./archmap/SKILL.md) | 架构测绘 Agent（含 Python 引擎，自包含分发）。零参自动分流 full/lite；需求文本→精准影响面（文件/函数/路由级）；`diff` 零 LLM 行级影响面 + 导入闭包 + 测试选择 + 变更台账；`sync` 增量同步基线并刷新 01~09 报告；ETL 规则注册表项目级可覆盖。以确定性计算替代全库通读，显著节约 tokens。 |
-| [`gate-switch`](./gate-switch/SKILL.md) | 通用概率执行门禁骨架（实证族 L2 引擎，零依赖）。治 LLM 三类顽疾：该做的没做 / 缺斤短两 / 伪造声称——把"声称 X 已满足"写成 spec JSON，引擎逐项机械核验，A 放行 / B 阻断列违例，判定权从模型移交脚本。7 检查原语（file_exists/json_field/glob_count/grep_count/mtime_after/script_exit 等），自带 8 个通用门禁实例（验收 verdict、测试证据、部署准入、模式分流等）+ L3 框架闸模板。新场景 = 写新 spec，引擎零改动。与 parallel-dispatch 的 dispatch_switch（路由族）互补。 |
 
 ## 安装 / Install
 
