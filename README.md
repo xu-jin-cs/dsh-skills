@@ -83,7 +83,76 @@ No restart needed — DSH's skill watcher hot-reloads new entries.
 2. **通用**：不含任何引擎私有逻辑，不绑定特定后端，他人的 engine 零冲突；
 3. **自动触发**：触发词与场景写在 `description` 中，由 DSH 注入会话目录做场景匹配，命中即主动加载，无需显式指令。
 
+## 方法论 / Methodology
+
+本仓库技能的治理哲学与 27 个实战案例复盘：[《给 LLM 的口头承诺装上机械门禁》](./docs/mechanical-gates-for-llm.md)（Mechanical Gates for LLM's Verbal Promises）——强制填充门元方法、L1/L2/L3 三档门禁、骨架冻结纪律、举一反三泛化闸。
+
 ## License
 
 MIT
 # 自动发布由 launchd WatchPaths 驱动，变更后约 60~90s 自动 commit+push
+
+---
+
+# dsh-skills (English)
+
+Reusable, lightweight skills for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) ecosystem. Plain files, zero dependencies — drop them into a skill discovery root and they work.
+
+## Skills
+
+| Skill | Description |
+|-------|-------------|
+| [`parallel-dispatch`](./parallel-dispatch/SKILL.md) | Master rules for parallel dispatch & sub-agent clones. ≥2 independent subtasks trigger parallel fan-out by default; two-axis decision matrix (scale: light clone / task-breakdown / engine-level × count: subagent / grouped / workflow); includes scene auto-matching, minimal probe, merge checkpoints, and a mechanical SPDT-style `dispatch_switch` (A/B verdict, no handwritten decisions, full audit log). |
+| [`archmap`](./archmap/SKILL.md) | Architecture cartography agent (self-contained Python engine). Zero-arg full/lite auto-routing; requirement text → precise impact analysis (file/function/route level); `diff` mode: zero-LLM line-level impact + import-closure + test selection + change ledger; `sync` incremental baseline refresh. Deterministic computation instead of full-repo reading — massive token savings. |
+| [`gate-switch`](./gate-switch/SKILL.md) | Universal probabilistic-execution gate (evidence-family L2 engine, zero deps). Cures three LLM chronic failures: skipped steps / half-done checklists / fabricated "done" claims. Write what must be true as a spec JSON; the engine mechanically verifies each check — A passes, B blocks with violations as the reason. Judgment moves from the model to a script. 7 frozen check primitives (file_exists / json_field / glob_count / grep_count / mtime_after / script_exit …), 8 ready-made generic gates (acceptance verdict, test evidence, deploy admission, mode routing, …) + an L3 framework-gate template. New scenario = new spec, zero engine changes. Complements `dispatch_switch` (routing family). |
+
+## Install
+
+**One-liner (recommended, no clone needed)**
+
+```bash
+# List all skills
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- list
+
+# Install a specific skill (symlinked into ~/.dsh/skills, hot-reloaded by DSH's watcher)
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install gate-switch
+
+# Install everything + auto-install dependencies
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
+```
+
+First run shallow-clones the repo to `~/.dsh/dsh-skills` (override with `DSH_SKILLS_HOME`); all later commands run locally.
+
+**Already cloned**
+
+```bash
+git clone https://github.com/xu-jin-cs/dsh-skills.git
+cd dsh-skills
+./install.sh                # interactive picker
+./install.sh archmap        # install a specific skill
+./install.sh --all          # everything
+```
+
+CLI subcommands (`scripts/dsh-skill.sh`): `list` / `install` (`--copy`, `--target DIR`, `--with-deps`) / `uninstall` / `update` / `doctor`.
+
+DSH discovers skills in order (first hit wins):
+
+```
+<project>/.dsh/skills → <project>/.agents/skills → ~/.dsh/skills → ~/.agents/skills → bundled
+```
+
+No restart needed — DSH's skill watcher hot-reloads new entries.
+
+## Principles
+
+1. **Lightweight** — rule-type skills are a single `SKILL.md` + YAML frontmatter, no code, no deps; engine-type skills (archmap, gate-switch) are self-contained with explicit `requirements.txt`.
+2. **Universal** — no private engine logic, no backend lock-in; zero conflicts with your own engine.
+3. **Auto-trigger** — triggers live in each skill's `description`; DSH injects them into the session catalog for scene matching.
+
+## Methodology
+
+The governance philosophy behind these skills, plus a 27-case battle retrospective: [Mechanical Gates for LLM's Verbal Promises](./docs/mechanical-gates-for-llm.md) — the Mandatory-Completion Gate meta-method, L1/L2/L3 gate levels, skeleton-freeze discipline, and the "1 proven case + N named siblings" generalization gate.
+
+## License
+
+MIT
