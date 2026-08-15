@@ -51,3 +51,4 @@ No restart needed — DSH's skill watcher hot-reloads new entries.
 ## License
 
 MIT
+# 自动发布由 launchd WatchPaths 驱动，变更后约 60~90s 自动 commit+push
