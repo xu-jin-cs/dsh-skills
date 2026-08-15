@@ -181,14 +181,41 @@ def _render_history_doc(broot: Path) -> str:
     return str(p)
 
 
+def _change_fingerprint(result: dict) -> str:
+    """变更指纹：changed_files（按路径排序，含 changed_ranges/symbols）+ deleted_files
+    的规范化 JSON → sha1 前 12 位。同一变更区间重复跑 diff 指纹相同。"""
+    files = sorted(({"path": c["path"], "change_type": c["change_type"],
+                     "changed_ranges": c["changed_ranges"],
+                     "symbols": sorted(c.get("symbols", []))} for c in result["changed_files"]),
+                   key=lambda c: c["path"])
+    payload = {"changed_files": files, "deleted_files": sorted(result["deleted_files"])}
+    return hashlib.sha1(json.dumps(payload, ensure_ascii=False, sort_keys=True)
+                        .encode("utf-8")).hexdigest()[:12]
+
+
 def _record_history(broot: Path, result: dict, note: str | None) -> str | None:
     if not result["changed_files"] and not result["deleted_files"]:
         return None
-    rec = {"recorded_at": result["computed_at"], "note": note or "",
+    hp = broot / HISTORY_NAME
+    fp = _change_fingerprint(result)
+    # 幂等：追加前与台账末条指纹比对，同指纹跳过写入与文档重渲染（存在即跳过，
+    # 对齐 agent-harness 幂等治理模式）；指纹字段缺失的旧记录视为不同指纹，向后兼容
+    if hp.exists():
+        lines = [l for l in hp.read_text(encoding="utf-8").splitlines() if l.strip()]
+        if lines:
+            try:
+                last_rec = json.loads(lines[-1])
+            except json.JSONDecodeError:
+                last_rec = {}
+            if last_rec.get("fingerprint") == fp:
+                msg = f"幂等跳过：同指纹变更已记录（#{len(lines)}，指纹 {fp}）"
+                print(msg)
+                result["history_idempotent_skip"] = msg
+                return None
+    rec = {"recorded_at": result["computed_at"], "note": note or "", "fingerprint": fp,
            "changed_files": result["changed_files"], "deleted_files": result["deleted_files"],
            "affected_closure": result["affected_closure"], "test_selection": result["test_selection"],
            "stats": result["stats"]}
-    hp = broot / HISTORY_NAME
     with hp.open("a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     _render_history_doc(broot)
