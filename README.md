@@ -15,27 +15,44 @@ Reusable, lightweight skills for the DeepSeek Harness ecosystem. Plain files, ze
 
 ## 安装 / Install
 
+**一键安装（推荐，无需先 clone）/ One-liner**
+
+```bash
+# 列出全部技能
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- list
+
+# 安装指定技能（默认符号链接进 ~/.dsh/skills，DSH watcher 热加载即生效）
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install archmap
+
+# 安装全部技能 + 自动装依赖
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
+```
+
+首次运行会自动把发布仓浅克隆到 `~/.dsh/dsh-skills`（可用 `DSH_SKILLS_HOME` 改位置），之后所有命令在本地仓执行。
+
+`scripts/dsh-skill.sh` 子命令：
+
+| 命令 | 作用 |
+|------|------|
+| `list` | 列出发布仓全部技能 |
+| `install <技能...\|--all>` | 安装（符号链接进发现根）；`--copy` 拷贝模式；`--target DIR` 切换目标根（如项目级 `.dsh/skills`）；`--with-deps` 自动装 requirements |
+| `uninstall <技能...>` | 卸载 |
+| `update` | git pull 同步上游（符号链接模式即时生效） |
+| `doctor` | 体检：发现根、断链、SKILL.md 完整性、依赖环境 |
+
 DSH 按以下顺序发现技能（命中任意一级即生效）：
 
 ```
 项目/.dsh/skills → 项目/.agents/skills → ~/.dsh/skills → ~/.agents/skills → bundled
 ```
 
-**方式一：用户级（推荐，全局生效）**
+**手动安装（不用 CLI）**
 
 ```bash
-git clone <this-repo> ~/dsh-skills
+git clone https://github.com/xu-jin-cs/dsh-skills.git ~/dsh-skills
 ln -s ~/dsh-skills/parallel-dispatch ~/.dsh/skills/parallel-dispatch
 ln -s ~/dsh-skills/archmap ~/.dsh/skills/archmap   # 含 Python 引擎的技能
-```
-
-> `archmap` 额外需要一次依赖安装：`pip3 install -r ~/dsh-skills/archmap/requirements.txt`（`sentence-transformers` 为可选项，缺失时自动回退本地哈希向量化，功能可用）。详见 [`archmap/README.md`](./archmap/README.md)。
-
-**方式二：项目级（仅当前项目）**
-
-```bash
-mkdir -p .dsh/skills
-cp -r /path/to/dsh-skills/parallel-dispatch .dsh/skills/
+pip3 install -r ~/dsh-skills/archmap/requirements.txt  # 可选，缺失时自动回退本地哈希向量化
 ```
 
 无需重启：DSH 的技能 watcher 会热加载新技能。之后命中"并行 / 分身 / 批量 / 多任务"等场景即自动触发，也可显式 `/parallel-dispatch` 调用。
