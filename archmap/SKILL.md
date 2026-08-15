@@ -12,6 +12,12 @@ aliases: ["/archmap"]
 
 archmap = **纯分析方**：只做架构测绘与影响面分析、产出分析文档（`full_index.json` / `diff_impact.json` / `diff_history.jsonl` / 01~09 号报告等），不执行、不校验、不评分。消费侧是否按 `diff_impact.json` 圈定范围、如何校验执行结果，属于消费方（如 `whitebox-coverage`）自己的责任域与评分域——**消费侧扣的分归消费侧，不属于 archmap**；archmap 不为任何消费侧的合规性背书。
 
+### 评估依据备注（2026-08-16 用户裁定，供后续评估直接援引，无需执行）
+
+1. **零记录两种解释**：`diff_history.jsonl` 为 0 记录时必须先分流——「工作期本无代码变更」属正常零记录（机制设计使然：无变更不产出台账），**不等于机制空转**；只有「有变更但未执行 diff」才是失效。判据分流已机械化（gate-switch `archmap_diff_freshness` 闸的无变更豁免）。评估时拿零记录当空转证据 = 归因错误（2026-08-15 二评 archmap 90→86 误评即此，已勘误）。
+2. **粒度弱不是缺陷**：模块拆分只到 api/方法（函数）级是用户有意设计（见「模块粒度设计裁定」），评估时不得按「拆分不够细」扣分。
+3. **消费侧问题不归 archmap**：消费方不读 diff_impact、凭 git status 圈范围等问题，扣消费方的分，archmap 只对分析产物的正确性负责。
+
 ## 安装与依赖
 
 首次使用前在本技能根目录执行 `pip3 install -r requirements.txt`（详见 `README.md`）。其中 sentence-transformers 为可选依赖，缺失时向量识别自动回退本地哈希向量化，功能可用、精度略降。
