@@ -386,7 +386,7 @@ python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用�
 
 内化铁律：
 
-1. **不归因不收尾**：存在 accepted 建议而 `internalizations.jsonl` 无过闸记录，任务不得标记完成。回链落盘判定禁止手写，必须扳 `python3 ~/.dsh/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/slot_attribution.json --set project=<> --set expert_id=<>` 照抄输出（落实质量留软层）
+1. **不归因不收尾**：存在 accepted 建议而 `internalizations.jsonl` 无过闸记录，任务不得标记完成。回链落盘判定禁止手写，必须扳 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/slot_attribution.json --set project=<> --set expert_id=<>` 照抄输出（落实质量留软层）
 2. **下次先查自己**：同模式任务启动 SLOT-1 之前，先按 `problem_family` 检索 `internalizations.jsonl`，命中则直接自用——同一类问题不重复问专家
 3. **分道执行**：命中的领域技能融入当前分析（作为检查维度，点到即止）；命中的专项技能**升格为执行主线**——按卡内步骤/参数/坑位逐项深入核查，每项留执行痕迹，浅尝辄止视同未触发
 4. **向下催生（选择性，不强迫）**：领域技能首次在新场景族执行后，评估是否有"不写下来下次会忘"的场景级细节——有才产出配套专项技能（`parent_skill` 挂到方案名下），没有则留一行"无需细则"评估备注即可；单次任务最多催生 1 个，禁止凑数
