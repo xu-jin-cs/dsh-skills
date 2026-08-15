@@ -192,7 +192,7 @@ archmap = **纯分析方**：只做架构测绘与影响面分析、产出分析
 - **定期对齐（配置契约漂移）**：改配置/改代码消费点后跑 `/archmap <项目路径> sync`，⑧报告自动刷新每字段状态（字段存在 ≠ 生效：unused/stale 需按处置建议接线或清理）；已有基线漂移示例：RRF 权重未生效（`rag_engine._rrf_fuse` weights 写死 1.0）、`max_ctx_tokens` 配置未接线、`reconcile.enabled/batch_size` 死配置、`embedding.yaml batch_size` 未消费
 - 源码定位行号**运行时按函数名/特征串 grep 解析**，改代码后 `/archmap <项目路径> sync` 即刷新全部行号与产出
 - **P0/P1/P2 解析深度分级（2026-08-12 二期）**：risk_level 高→P0 深度解析（行号+配置+契约）、中→P1 标准解析（行号）、低→P2 轻量解析（仅文件存在性校验，行号跳解析且不计入 unresolved 口径）；详情文档头部/索引总目录/mapping JSON/search_index JSON 均携带 priority 标识，summary 含 priority_counts 与 parse_depth 统计；单条规则可在 `etl_rule_registry.py` 显式写 `priority` 字段覆盖推导
-- **回填约定（修改 ETL 规则/步骤/配置后必须执行）**：`/archmap <项目路径> sync` 自动回填三方面——① 行号（grep 实时解析）；② 参数基线（`etl.yaml`/`embedding.yaml`/`chunking.yaml` 运行时读取，③⑤⑦ 中对应规则参数自动刷新为配置文件当前值）；③ 语义级变更（规则改名/行为变更/风险等级调整）在 `etl_rule_registry.py` 追加 `history` 记录后重跑 sync 重生成。不执行 sync 则文档与代码/配置漂移
+- **回填约定（修改 ETL 规则/步骤/配置后必须执行）**：`/archmap <项目路径> sync` 自动回填三方面——① 行号（grep 实时解析）；② 参数基线（`etl.yaml`/`embedding.yaml`/`chunking.yaml` 运行时读取，③⑤⑦ 中对应规则参数自动刷新为配置文件当前值）；③ 语义级变更（规则改名/行为变更/风险等级调整）在 `etl_rule_registry.py` 追加 `history` 记录后重跑 sync 重生成。不执行 sync 则文档与代码/配置漂移。**回填完成判定禁止手写（2026-08-16 裁定，gate-switch 机械门禁）：声称"sync 已回填"前必须扳 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/archmap_sync_freshness.json --set project=<项目路径> --set etl_config=<被改 ETL 配置路径>` 照抄结论——判 A（`archmap/etl_rules/ETL配置契约对齐报告.md` 新于被改配置）才允许声称；判 B = 先跑 sync 后重扳。**
 - 检索入口：读 `etl_rules/etl_rule_search_index.json`（机器）或索引总目录关键词表（人工）
 - 详情文档含测试校验标准章节，改完规则按对应用例回归
 - 自定义 ETL 规则注册表覆盖机制见 README.md「项目级配置」一节
