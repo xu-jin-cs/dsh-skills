@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "repo": "https://github.com/xu-jin-cs/dsh-skills",
+  "skills": {
+    "parallel-dispatch": {
+      "type": "rule",
+      "summary": "并行调度与子分身机制总规则（PARALLEL-GATE 门禁 / 双维决策矩阵 / 三槽契约）",
+      "deps": []
+    },
+    "archmap": {
+      "type": "engine",
+      "summary": "架构测绘 Agent（full/lite 自动分流 / 影响面分析 / diff 测试选择 / 变更台账）",
+      "deps": ["requirements.txt"]
+    }
+  }
+}
