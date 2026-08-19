@@ -401,12 +401,11 @@ python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用�
 - 全量模式只扫描业务目录，自动过滤 test、node_modules、dist、build 等目录。
 - 增量模式复用存量基线资产，不重复解析未变更模块，显著降低 Token 消耗。
 - 输出均为 JSON/YAML/Markdown/Mermaid 纯文本，不生成图片。
-
 <!-- AUTO-RETRO-INJECT:START -->
 
 ## 📚 复盘经验自动注入区（retro-skills-registry 直写 · 生成即复利）
 
-<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-20T03:01:14.969146 -->
+<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-20T03:08:06.174010 -->
 
 ### 🧭 领域技能（4 条 · 检查维度，融入当前任务点到即止）
 
