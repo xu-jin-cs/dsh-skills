@@ -405,18 +405,18 @@ python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用�
 
 ## 📚 复盘经验自动注入区（retro-skills-registry 直写 · 生成即复利）
 
-<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-16T18:58:13.645045 -->
+<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-19T21:58:08.312698 -->
 
 ### 🧭 领域技能（4 条 · 检查维度，融入当前任务点到即止）
 
-- 🟠 **retro-archmap-003-触发信号检测扫描采样类产物没检测到与不存在在读者脑中会画等号**：检测类产物头部必须声明覆盖面：覆盖了什么特征、什么形态的实例天然检测不到、读者应去哪里核实真实面（部署配置/运行时盘点）
-- 🟡 **retro-archmap-001-触发信号多份机器生成产物并存且互相引用口径的场景单份看都正常-交叉看口**：产物群配一份自检段：①交叉口径对账（A 报告的统计数=B/C 报告的对应计数）②比例合理性告警（维度间数量比超阈值即提示
-- 🟡 **retro-archmap-002-触发信号元素数量超过一眼容量的结构化展示依赖图清单拓扑-且存在被规则过**：①按稳定维度分层/分组渲染（架构层、业务域），每层一个视觉容器 ②被过滤的元素不许静默消失，集中列入'显式缺席区'并注明
-- 🟡 **retro-archmap-004-触发信号一组会被反复再生的机器产物任何一份都可能被单独打开-读者无法判**：每份产物（不只是入口）统一注入基线元信息头：生成时间+生成模式+生成器标识。注入点放在生成器统一出口，而非逐个模板手加。
+- 🟠 **retro-archmap-003-触发信号检测扫描采样类产物没检测到与不存在在读者脑中会画等号**：Auto-generated from retro [archmap×agent-harness 2026-08-15
+- 🟡 **retro-archmap-001-触发信号多份机器生成产物并存且互相引用口径的场景单份看都正常-交叉看口**：Auto-generated from retro [archmap×agent-harness 2026-08-15
+- 🟡 **retro-archmap-002-触发信号元素数量超过一眼容量的结构化展示依赖图清单拓扑-且存在被规则过**：Auto-generated from retro [archmap×agent-harness 2026-08-15
+- 🟡 **retro-archmap-004-触发信号一组会被反复再生的机器产物任何一份都可能被单独打开-读者无法判**：Auto-generated from retro [archmap×agent-harness 2026-08-15
 
 ### 🎯 专项技能（1 条 · 场景触发时升格为执行主线，按卡内步骤逐项深入）
 
-- 🟡 **retro-archmap-005-触发信号archmap-测绘含部署副本镜像代理转发目录的项目时-共享-**：步骤：①逐模块收集合法 API 路由集合（≥5 个才参与判定，防小样本误判）②两两求交集，重合度=交集/min(两集合)
+- 🟡 **retro-archmap-005-触发信号archmap-测绘含部署副本镜像代理转发目录的项目时-共享-**：Auto-generated from retro [archmap×agent-harness 2026-08-15
 
 <!-- 共 5 条（领域 4 / 专项 1）；全文见 ~/.agents/retro-skills-registry/skills/<skill_id>/SKILL.md -->
 
