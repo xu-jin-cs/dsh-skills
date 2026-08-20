@@ -405,7 +405,7 @@ python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用�
 
 ## 📚 复盘经验自动注入区（retro-skills-registry 直写 · 生成即复利）
 
-<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-20T10:29:05.376819 -->
+<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-20T11:41:07.799238 -->
 
 ### 🧭 领域技能（4 条 · 检查维度，融入当前任务点到即止）
 
