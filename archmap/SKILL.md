@@ -405,14 +405,14 @@ python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用�
 
 ## 📚 复盘经验自动注入区（retro-skills-registry 直写 · 生成即复利）
 
-<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-20T03:08:06.174010 -->
+<!-- 由 dispatcher_generate.py 全量维护，勿手改；最近注入: 2026-08-20T10:29:05.376819 -->
 
 ### 🧭 领域技能（4 条 · 检查维度，融入当前任务点到即止）
 
 - 🟠 **retro-archmap-003-触发信号检测扫描采样类产物没检测到与不存在在读者脑中会画等号**｜触发词: 哪里核实真实｜Auto-generated from retro [archmap×agent-harness 2026-08-15
-- 🟡 **retro-archmap-001-触发信号多份机器生成产物并存且互相引用口径的场景单份看都正常-交叉看口**｜触发词: —｜Auto-generated from retro [archmap×agent-harness 2026-08-15
-- 🟡 **retro-archmap-002-触发信号元素数量超过一眼容量的结构化展示依赖图清单拓扑-且存在被规则过**｜触发词: —｜Auto-generated from retro [archmap×agent-harness 2026-08-15
-- 🟡 **retro-archmap-004-触发信号一组会被反复再生的机器产物任何一份都可能被单独打开-读者无法判**｜触发词: —｜Auto-generated from retro [archmap×agent-harness 2026-08-15
+- 🟡 **retro-archmap-001-触发信号多份机器生成产物并存且互相引用口径的场景单份看都正常-交叉看口**｜触发词: 产物共用管线 / 比例合理性告警 / 交叉口径对账｜Auto-generated from retro [archmap×agent-harness 2026-08-15
+- 🟡 **retro-archmap-002-触发信号元素数量超过一眼容量的结构化展示依赖图清单拓扑-且存在被规则过**｜触发词: 过滤孤立节点 / 超过一眼容量 / 清单分页分组 / 不许静默消失｜Auto-generated from retro [archmap×agent-harness 2026-08-15
+- 🟡 **retro-archmap-004-触发信号一组会被反复再生的机器产物任何一份都可能被单独打开-读者无法判**｜触发词: 放在生成器统一 / 统一注入基线｜Auto-generated from retro [archmap×agent-harness 2026-08-15
 
 ### 🎯 专项技能（1 条 · 场景触发时升格为执行主线，按卡内步骤逐项深入）
 
