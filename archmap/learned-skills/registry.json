@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "updated": "2026-08-21T18:20:45.798568",
+  "desc": "archmap 复盘经验技能表（retro-skills-registry 直写 · SPM 同款）：无触发词——派任务时全量载入表内全部技能；新经验入表即被下次任务自动调用。",
+  "load_contract": "archmap 第零步：读取本 registry.json + 逐条读入 entries 全部条目，作为当次任务强制约束",
+  "entries": [
+    {
+      "id": "retro-archmap-001-触发信号多份机器生成产物并存且互相引用口径的场景单份看都正常-交叉看口",
+      "name": "Auto-generated from retro [archmap×agent",
+      "file": "learned-skills/entries/retro-archmap-001-触发信号多份机器生成产物并存且互相引用口径的场景单份看都正常-交叉看口.md",
+      "source": "archmap×agent-harness 2026-08-15 专家内化晋升 retro",
+      "severity": "medium",
+      "constraints": 0
+    },
+    {
+      "id": "retro-archmap-002-触发信号元素数量超过一眼容量的结构化展示依赖图清单拓扑-且存在被规则过",
+      "name": "Auto-generated from retro [archmap×agent",
+      "file": "learned-skills/entries/retro-archmap-002-触发信号元素数量超过一眼容量的结构化展示依赖图清单拓扑-且存在被规则过.md",
+      "source": "archmap×agent-harness 2026-08-15 专家内化晋升 retro",
+      "severity": "medium",
+      "constraints": 0
+    },
+    {
+      "id": "retro-archmap-003-触发信号检测扫描采样类产物没检测到与不存在在读者脑中会画等号",
+      "name": "Auto-generated from retro [archmap×agent",
+      "file": "learned-skills/entries/retro-archmap-003-触发信号检测扫描采样类产物没检测到与不存在在读者脑中会画等号.md",
+      "source": "archmap×agent-harness 2026-08-15 专家内化晋升 retro",
+      "severity": "high",
+      "constraints": 0
+    },
+    {
+      "id": "retro-archmap-004-触发信号一组会被反复再生的机器产物任何一份都可能被单独打开-读者无法判",
+      "name": "Auto-generated from retro [archmap×agent",
+      "file": "learned-skills/entries/retro-archmap-004-触发信号一组会被反复再生的机器产物任何一份都可能被单独打开-读者无法判.md",
+      "source": "archmap×agent-harness 2026-08-15 专家内化晋升 retro",
+      "severity": "medium",
+      "constraints": 0
+    },
+    {
+      "id": "retro-archmap-005-触发信号archmap-测绘含部署副本镜像代理转发目录的项目时-共享-",
+      "name": "Auto-generated from retro [archmap×agent",
+      "file": "learned-skills/entries/retro-archmap-005-触发信号archmap-测绘含部署副本镜像代理转发目录的项目时-共享-.md",
+      "source": "archmap×agent-harness 2026-08-15 专家内化晋升 retro",
+      "severity": "medium",
+      "constraints": 0
+    }
+  ]
+}
