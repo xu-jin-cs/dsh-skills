@@ -1,7 +1,8 @@
-# 扳手 Skill Cordis 插件 一键安装教程
+# xujin —— DSH Cordis 私有 Skill / 规则 / 闸 / 引擎插件 一键安装教程
 
+> 仓库：https://github.com/xu-jin-cs/dsh-skills （插件目录 `plugins/xujin`）
 > DSH Cordis 私有 Skill / 规则插件（内置种子二道混淆加密分发 · 开源小白友好版）
-> 插件定位：**非独立 Agent、非完整工作流**，仅向 DeepSeek Harness 引擎提供可被调用的校验规则与原子 Skill 能力。
+> 插件定位：**非独立 Agent、非完整工作流**，仅向 DeepSeek Harness 引擎提供可被调用的校验规则、闸开关、原子 Skill 与引擎机制内核（签发/状态同步）能力。
 
 ## 前置准备
 
@@ -12,27 +13,28 @@
 **macOS / Linux**——复制下面三行命令，粘贴到终端运行即可：
 
 ```bash
-curl -O https://你的公开CDN地址/xujin-1.0.0.tgz
-curl -O https://你的公开CDN地址/install.sh
+curl -LO https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.1.0.tgz
+curl -LO https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh
 bash install.sh
 ```
 
 **Windows PowerShell**：
 
 ```powershell
-Invoke-WebRequest -Uri "https://你的公开CDN地址/xujin-1.0.0.tgz" -OutFile "xujin-1.0.0.tgz"
-dsh plugin --profile web add .\xujin-1.0.0.tgz
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.1.0.tgz" -OutFile "xujin-1.1.0.tgz"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh" -OutFile "install.sh"
+bash install.sh   # 推荐 Git Bash / WSL 执行
 ```
 
-> Windows 用户推荐使用 Git Bash / WSL 执行 `bash install.sh` 完成全自动安装（含 patch 注册）。
+> 安装脚本默认装入 `web` profile；装其他 profile：`bash install.sh default`。
 
 ## 安装完成校验
 
 ```bash
-dsh plugin --profile web list
+dsh plugin --profile web list    # 列表中出现 xujin 即安装成功
 ```
 
-列表中出现 `@xu-jin-cs/dsh-cordis-xujin` 即安装成功。重启 DSH 或等待热重载后，在会话中输入 `/xujin-demo` 或「扳手自检」，看到自检回执即证明解密注册链路正常。
+重启 DSH 或等待热重载后，插件自动完成内存解密并注册全部规则/技能。校验方式：会话技能目录中出现 `rule-00-root-safety` ~ `rule-13-workflow-router` 等 19 份规则技能；终端执行 `~/.dsh/bin/xujin-engine sign --artifact '{"test":1}'` 能输出签名即引擎可用。
 
 ## 插件卸载
 
