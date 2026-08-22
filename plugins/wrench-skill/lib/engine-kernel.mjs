@@ -1677,3 +1677,268 @@ async function _etInner(payload, options) {
             hits = [...(validateResult.failures || [])];
           } else if (hook === "gate_guard" && gateResult !== null) {
             hits = [{ message: gateResult.reason || "" }];
+          }
+          _emitHookAudit(hook, traceId, code, hits, errorMsg, hookElapsed[hook], auditFile);
+        }
+      }
+
+      if (code !== "success") break;
+    }
+  }
+
+  // ── P1-1 状态脏写修复：非 success 出参不得携带目标态 ──
+  if (code !== "success") {
+    newTaskState = null;
+  }
+
+  // ── 失败策略（阻断 ≠ 直接死掉） ──
+  const failureInfo = code !== "success"
+    ? _applyFailurePolicy(payload.failure_policy || null, errorMsg, executedRetry)
+    : null;
+
+  // ── 投递装配 ──
+  const deliveryOut = payload.delivery
+    ? _applyDelivery(payload.delivery, signedArtifact !== null ? signedArtifact : artifact, code)
+    : null;
+
+  // ── failure_policy 实执行：fallback_target 改写投递目标（兜底分流） ──
+  if (
+    (code === "block" || code === "reject") &&
+    deliveryOut !== null &&
+    (payload.failure_policy || {}).fallback_target
+  ) {
+    deliveryOut.next_handler = payload.failure_policy.fallback_target;
+  }
+
+  const out = {
+    code,
+    trace_id: traceId,
+    parent_trace_id: payload.parent_trace_id ?? null,
+    new_task_state: newTaskState,
+    signed_artifact: signedArtifact,
+    gate_result: gateResult,
+    validate_result: validateResult !== null
+      ? { pass: validateResult.pass, results: validateResult.results, failures: validateResult.failures }
+      : null,
+    resource: resourceOut,
+    issue_meta: issueMeta,
+    delivery: deliveryOut,
+    failure_info: failureInfo,
+    audit_meta: payload.audit_meta ?? null,
+  };
+  if (payload.debug) {
+    out._debug = {
+      hook_elapsed_ms: hookElapsed,
+      payload_snapshot: _maskSnapshot(payload),
+    };
+  }
+  return validateOutput(out);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// harness-step-sync.sh 移植 — stepSync 本地版（无 HTTP，直调内核）
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * stepSync — harness-step-sync.sh 语义的本地版。
+ *
+ * 原脚本时序（HTTP 版）：健康检查 → 查项目实例 → 读 current_state →
+ * 拉 transitions 编译 allowed_pairs → POST /api/engine/et 判定 →
+ * code==success 才 POST transition 落库 → 步骤日志 best-effort。
+ *
+ * 本地版时序（同语义，无 HTTP）：
+ *   1. 按 project 查本地实例注册表（stateDir/_projects.json），
+ *      未注册时按 options.initialState 登记（缺省 initialState=newState
+ *      视为首次登记直接落态，对齐本地无建项流程的现实，见报告偏差节）；
+ *   2. 读实例 current_state（本地 StateStore）；
+ *   3. 调用方注入 transitions（{from: [to,...]}，规则 yaml 由宿主预解析）；
+ *   4. 组装 ET Payload（与原脚本逐字段一致：artifact 含项目/阶段/说明/角色，
+ *      state_intercept 强校验 allowed_pairs，content_issue 申请 sha256 签发），
+ *      直调本模块 et()；
+ *   5. code==success → StateStore 乐观锁 transition 落账 + 审计；
+ *      非 success → 原样透出 failure_info，不落账，ok=false；
+ *   6. 步骤日志追加 steps.jsonl（best-effort，失败仅告警）。
+ *
+ * @param {string} project   项目名称（必填）
+ * @param {string} newState  目标状态（必填）
+ * @param {object} options
+ *   stepTitle   步骤标题（默认取 newState）
+ *   operator    执行角色（默认 "PM"）
+ *   transitions 状态机 {from: [to,...]}（必填；引擎规则由调用方预解析注入）
+ *   instanceId  显式实例 ID（缺省查注册表/自动登记 inst-<project>）
+ *   initialState 首次登记初始状态（缺省 = newState）
+ *   stateDir / auditFile / stepsFile  落盘位置覆盖（默认 ~/.dsh/wrench-engine/）
+ * @returns {Promise<{ok:boolean, ...}>} 成功 {ok:true, instanceId, from, to, version, signature, output}；
+ *   失败 {ok:false, reason, code?, output?}
+ */
+export async function stepSync(project, newState, options = {}) {
+  const {
+    stepTitle = newState,
+    operator = "PM",
+    transitions,
+    instanceId: optInstanceId,
+    initialState,
+    stateDir = DEFAULT_STATE_DIR,
+    auditFile = DEFAULT_AUDIT_FILE,
+    stepsFile = DEFAULT_STEPS_FILE,
+  } = options;
+
+  if (typeof project !== "string" || !project) {
+    throw new StateStoreError(`project 非法: ${JSON.stringify(project)}`);
+  }
+  if (typeof newState !== "string" || !newState) {
+    throw new StateStoreError(`new_state 非法: ${JSON.stringify(newState)}`);
+  }
+  _ensureDir(stateDir);
+
+  // ── Step 1: 查找/登记项目实例 ──
+  const registryFile = path.join(stateDir, "_projects.json");
+  let registry = {};
+  try {
+    registry = JSON.parse(fs.readFileSync(registryFile, "utf-8"));
+  } catch { /* 无注册表按空处理 */ }
+
+  const store = new JsonFileStateStore(stateDir);
+  let instanceId = optInstanceId || registry[project] || null;
+
+  if (!instanceId) {
+    // 本地版无独立建项流程：首次同步即登记（语义偏差见报告）
+    instanceId = `inst-${project}`;
+    const init = initialState || newState;
+    store.ensureInstance(instanceId, init);
+    registry[project] = instanceId;
+    try {
+      fs.writeFileSync(registryFile, JSON.stringify(registry, null, 2), "utf-8");
+    } catch (exc) {
+      _warn(`实例注册表写入失败（不影响主流程）: ${exc.message || exc}`);
+    }
+    if (init === newState) {
+      // 初始态即目标态：登记即完成，无需走跃迁判定
+      const stepLog = {
+        event_name: "PMProcessStep",
+        step_title: stepTitle,
+        step_content: `项目 [${project}] 进入状态 ${newState}`,
+        instance_id: instanceId,
+        agent_role: operator,
+        registration: true,
+        created_at: new Date().toISOString(),
+      };
+      _appendStepLog(stepsFile, stepLog);
+      emitAudit(AuditEventType.STATE_INTERCEPT, `step-sync-${instanceId}-register`, {
+        instanceId,
+        decision: "pass",
+        ruleHits: [`<register>->${newState}`],
+        reason: "harness-step-sync 首次登记",
+        extra: { operator, registration: true },
+        auditFile,
+      });
+      const cur = store.getState(instanceId);
+      return {
+        ok: true, registered: true, instanceId,
+        from: init, to: newState, version: cur.version, signature: null,
+      };
+    }
+  }
+
+  // ── Step 2: 读取实例当前状态 ──
+  const cur = store.getState(instanceId); // 不存在抛 StateStoreError（对齐脚本「无法读取即失败」）
+  const currentState = cur.state;
+
+  // ── Step 3: transitions → allowed_pairs（调用方注入，缺省即失败） ──
+  if (!transitions || typeof transitions !== "object" || Array.isArray(transitions) ||
+      Object.keys(transitions).length === 0) {
+    return { ok: false, reason: "无法获取状态机 transitions（须由调用方注入 options.transitions）" };
+  }
+  const pairs = [];
+  for (const [from, tos] of Object.entries(transitions)) {
+    for (const to of tos || []) pairs.push({ from, to });
+  }
+
+  // ── Step 4: 组装 ET Payload 并直调内核判定（与原脚本逐字段一致） ──
+  const traceId = `step-sync-${instanceId}-${Math.floor(Date.now() / 1000)}`;
+  const payload = {
+    trace_id: traceId,
+    artifact: {
+      project,
+      step: newState,
+      title: stepTitle,
+      operator,
+      state: newState,
+    },
+    state_intercept: {
+      current_state: currentState,
+      target_state: newState,
+      allowed_pairs: pairs,
+    },
+    content_issue: { sign: true, sign_algo: "sha256" },
+    audit_meta: {
+      principal: operator,
+      audit_tags: ["harness-step-sync"],
+    },
+  };
+  const out = await et(payload, { auditFile });
+
+  // ── Step 5: 仅 code==success 落账；非 success 原样透出 failure_info ──
+  if (out.code !== "success") {
+    return {
+      ok: false,
+      code: out.code,
+      instanceId,
+      reason: `引擎门禁未通过: code=${out.code}，状态不落账`,
+      failure_info: out.failure_info,
+      output: out,
+    };
+  }
+
+  const signature = (out.issue_meta && out.issue_meta.signature) || null;
+  const settled = store.transition(
+    instanceId, currentState, newState, operator, cur.version,
+    {
+      source: "harness-step-sync",
+      comment: `${stepTitle} (via harness-step-sync)`,
+      signature,
+      trace_id: traceId,
+    },
+    traceId
+  );
+  emitAudit(AuditEventType.STATE_INTERCEPT, traceId, {
+    instanceId,
+    decision: "pass",
+    ruleHits: [`${currentState}->${newState}`],
+    reason: "harness-step-sync 落账",
+    extra: { operator, signature, step_title: stepTitle },
+    auditFile,
+  });
+
+  // ── Step 6: 步骤日志（best-effort，失败仅告警不阻断） ──
+  _appendStepLog(stepsFile, {
+    event_name: "PMProcessStep",
+    step_title: stepTitle,
+    step_content: `项目 [${project}] 进入状态 ${newState}`,
+    instance_id: instanceId,
+    agent_role: operator,
+    task_id: `step-${instanceId}-${Math.floor(Date.now() / 1000)}`,
+    trace_id: traceId,
+    created_at: new Date().toISOString(),
+  });
+
+  return {
+    ok: true,
+    registered: false,
+    instanceId,
+    from: currentState,
+    to: newState,
+    version: settled.version,
+    signature,
+    output: out,
+  };
+}
+
+function _appendStepLog(stepsFile, entry) {
+  try {
+    _ensureDir(path.dirname(stepsFile));
+    fs.appendFileSync(stepsFile, JSON.stringify(entry) + "\n", "utf-8");
+  } catch (exc) {
+    _warn(`步骤日志记录失败（状态已落账，仅告警）: ${exc.message || exc}`);
+  }
+}

@@ -45,12 +45,15 @@ async function main() {
   const skills = [];
   for (const entry of manifest.skills) {
     const content = entry.content ?? await readFile(resolve(dirname(manifestPath), entry.file), 'utf8');
+    // 脱敏：剔除本机绝对路径等元数据，防分发泄露开发者目录结构
+    const metadata = entry.metadata ? { ...entry.metadata } : undefined;
+    if (metadata) delete metadata.sourcePath;
     skills.push({
       name: entry.name,
       description: entry.description,
       whenToUse: entry.whenToUse,
       content,
-      metadata: entry.metadata,
+      metadata,
     });
     console.log(`  ✓ 收录技能 ${entry.name}（${content.length} 字符）`);
   }
