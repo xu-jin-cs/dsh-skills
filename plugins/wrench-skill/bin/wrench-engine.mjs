@@ -3,12 +3,12 @@
  * wrench-engine —— 引擎机制内核 CLI（签发/验签/状态同步/et 执行，插件内执行，无数据库）。
  *
  * 用法：
- *   wrench-engine sign --trace-id <id> --artifact <json|@文件> [--state-meta <json>]
- *   wrench-engine verify --trace-id <id> --artifact <json|@文件> --signature <sig> [--state-meta <json>]
- *   wrench-engine step-sync <项目> <阶段> <说明> <角色>
+ *   wrench-engine sign --artifact <json|@文件> [--trace-id <id>] [--state-meta <json>] [--algo sha256|hmac-sha256]
+ *   wrench-engine verify --artifact <json|@文件> --signature <sig> --trace-id <id> [--state-meta <json>] [--algo ...]
+ *   wrench-engine step-sync <项目> <阶段> [说明] [角色]
  *   wrench-engine et <payload.json|@文件>
  *
- * hmac-sha256 密钥只从环境变量 AGENT_ENGINE_SECRET 读取（与原 python 内核一致）。
+ * hmac-sha256 密钥只从环境变量 AGENT_ENGINE_SECRET 读取（与原 python 内核一致，无内置回落）。
  */
 
 import { readFile } from 'node:fs/promises';
@@ -31,25 +31,27 @@ async function main() {
     case 'sign': {
       const traceId = flag(rest, '--trace-id') ?? `cli-${Date.now()}`;
       const artifact = await readJsonArg(flag(rest, '--artifact') ?? rest[0]);
-      const stateMeta = flag(rest, '--state-meta') ? await readJsonArg(flag(rest, '--state-meta')) : {};
-      out = { trace_id: traceId, signature: computeSignature(traceId, artifact, stateMeta) };
+      const stateMeta = flag(rest, '--state-meta') ? await readJsonArg(flag(rest, '--state-meta')) : null;
+      const algo = flag(rest, '--algo') ?? 'sha256';
+      out = { trace_id: traceId, algo, signature: computeSignature(artifact, traceId, stateMeta, algo) };
       break;
     }
     case 'verify': {
       const traceId = flag(rest, '--trace-id');
       const artifact = await readJsonArg(flag(rest, '--artifact') ?? rest[0]);
-      const signature = flag(rest, '--signature');
-      const stateMeta = flag(rest, '--state-meta') ? await readJsonArg(flag(rest, '--state-meta')) : {};
-      out = { valid: verifySignature(traceId, artifact, stateMeta, signature) };
+      const stateMeta = flag(rest, '--state-meta') ? await readJsonArg(flag(rest, '--state-meta')) : null;
+      const algo = flag(rest, '--algo') ?? 'sha256';
+      const issueMeta = { signature: flag(rest, '--signature'), algo };
+      out = { valid: verifySignature(artifact, issueMeta, traceId, stateMeta) };
       break;
     }
     case 'step-sync': {
       const [project, stage, desc, role] = rest;
       if (!project || !stage) {
-        console.error('用法：wrench-engine step-sync <项目> <阶段> <说明> <角色>');
+        console.error('用法：wrench-engine step-sync <项目> <阶段> [说明] [角色]');
         process.exit(3);
       }
-      out = await stepSync(project, stage, desc ?? '', role ?? '');
+      out = await stepSync(project, stage, { stepTitle: desc ?? stage, operator: role ?? 'cli' });
       break;
     }
     case 'et': {
