@@ -213,17 +213,28 @@ export function globSync(pattern) {
 // 检查原语（与 python run_check 逐项对齐）
 // ---------------------------------------------------------------------------
 
+/** 必填字段校验：缺失即抛 TypeError（对齐 python c["path"] KeyError → VIOLATION）。 */
+function req(c, ...fields) {
+  for (const f of fields) {
+    if (c[f] === undefined || c[f] === null) {
+      throw new TypeError(`检查项字段缺失: '${f}'`);
+    }
+  }
+}
+
 /** 执行单条检查，返回 {ok, detail}。未知类型抛 SpecError；字段缺失抛 TypeError。 */
 export function runCheck(c) {
   const t = c.type;
   const label = c.label ?? t;
 
   if (t === 'file_exists') {
+    req(c, 'path');
     const ok = fs.existsSync(c.path);
     return { ok, detail: `${label}: ${c.path} ${ok ? '存在' : '不存在'}` };
   }
 
   if (t === 'file_min_size') {
+    req(c, 'path', 'bytes');
     if (!fs.existsSync(c.path) || !fs.statSync(c.path).isFile()) {
       return { ok: false, detail: `${label}: ${c.path} 不存在` };
     }
@@ -232,6 +243,7 @@ export function runCheck(c) {
   }
 
   if (t === 'json_field') {
+    req(c, 'path', 'field', 'op');
     if (!fs.existsSync(c.path) || !fs.statSync(c.path).isFile()) {
       return { ok: false, detail: `${label}: ${c.path} 不存在` };
     }
@@ -247,11 +259,13 @@ export function runCheck(c) {
   }
 
   if (t === 'glob_count') {
+    req(c, 'pattern', 'op', 'value');
     const n = globSync(c.pattern).length;
     return { ok: cmp(c.op, n, c.value), detail: `${label}: 计数=${n} op=${c.op} expect=${c.value}` };
   }
 
   if (t === 'grep_count') {
+    req(c, 'pattern', 'path', 'op', 'value');
     const re = new RegExp(c.pattern);
     let n = 0;
     for (const p of globSync(c.path)) {
@@ -267,6 +281,7 @@ export function runCheck(c) {
   }
 
   if (t === 'mtime_after') {
+    req(c, 'path', 'ref_path');
     if (!fs.existsSync(c.path)) {
       return { ok: false, detail: `${label}: ${c.path} 不存在` };
     }
@@ -278,6 +293,7 @@ export function runCheck(c) {
   }
 
   if (t === 'script_exit') {
+    req(c, 'cmd');
     // 对齐 python subprocess.run(cmd, shell=True, capture_output=True, timeout=300)
     const r = spawnSync(c.cmd, {
       shell: true,
