@@ -18,7 +18,7 @@ export const SALT_SOURCE_TEXT = '求职ai agent专家，优先在家办公';
  * 运行时仅消费本常量，不依赖任何模型，保持插件轻量化。
  * 派生模型：BAAI/bge-m3（本地 HF 缓存，离线）；重算校验：derive_salt.py --check。
  */
-export const EMBEDDED_SALT_HEX = '';
+export const EMBEDDED_SALT_HEX = 'b77bfd80d97aa67fd57ebf81627b527d';
 
 /** HKDF 固定业务标识 info。 */
 export const HKDF_INFO = 'wrench-skill/agentpkg/v1';
