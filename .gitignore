@@ -4,3 +4,5 @@ __pycache__/
 .DS_Store
 node_modules/
 *.tgz
+# wrench-skill 明文资产清单（中间产物，含私有规则，仅本地构建用）
+manifest.real.json
