@@ -48,7 +48,14 @@ async function main() {
       break;
     }
     case 'step-sync': {
-      const [project, stage, desc, role] = rest.filter((a) => !a.startsWith('--'));
+      // 先剥离 --flag value 对，剩余为位置参数
+      const FLAG_WITH_VALUE = new Set(['--transitions', '--initial-state']);
+      const positional = [];
+      for (let i = 0; i < rest.length; i++) {
+        if (FLAG_WITH_VALUE.has(rest[i])) { i++; continue; }
+        positional.push(rest[i]);
+      }
+      const [project, stage, desc, role] = positional;
       if (!project || !stage) {
         console.error('用法：wrench-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]');
         process.exit(3);
