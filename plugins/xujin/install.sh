@@ -23,10 +23,17 @@ echo "==> 目标 profile：${PROFILE}"
 
 # 第 1 步：安装插件包
 if [ -z "${PKG_REF}" ]; then
-  echo "==> 未指定插件包，正在从当前目录打包…"
-  TGZ=$(cd "${PLUGIN_DIR}" && npm pack --silent 2>/dev/null | tail -1)
-  PKG_REF="${PLUGIN_DIR}/${TGZ}"
-  echo "    已打包：${PKG_REF}"
+  # 优先使用当前目录已下载的 tgz（curl 下载场景），没有再考虑本地打包
+  TGZ_LOCAL=$(ls -t xujin-*.tgz 2>/dev/null | head -1 || true)
+  if [ -n "${TGZ_LOCAL}" ]; then
+    PKG_REF="$(pwd)/${TGZ_LOCAL}"
+    echo "==> 使用已下载插件包：${PKG_REF}"
+  else
+    echo "==> 未指定插件包，正在从当前目录打包…"
+    TGZ=$(cd "${PLUGIN_DIR}" && npm pack --silent 2>/dev/null | tail -1)
+    PKG_REF="${PLUGIN_DIR}/${TGZ}"
+    echo "    已打包：${PKG_REF}"
+  fi
 fi
 echo "==> 安装插件到 profile ${PROFILE}…"
 # 先移除旧版（文件源 tgz 按路径引用，旧包文件被重打包后路径失效会导致 pnpm 解析失败）
