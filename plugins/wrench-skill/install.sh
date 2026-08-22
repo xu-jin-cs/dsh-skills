@@ -29,6 +29,8 @@ if [ -z "${PKG_REF}" ]; then
   echo "    已打包：${PKG_REF}"
 fi
 echo "==> 安装插件到 profile ${PROFILE}…"
+# 先移除旧版（文件源 tgz 按路径引用，旧包文件被重打包后路径失效会导致 pnpm 解析失败）
+dsh plugin --profile "${PROFILE}" rm "${PKG_NAME}" 2>/dev/null || true
 dsh plugin --profile "${PROFILE}" add "${PKG_REF}"
 
 # 第 2 步：幂等写入 cordis.patch.yml 装载条目
