@@ -246,6 +246,9 @@ function _validateSchema(schema, value, pathSeg, errors) {
     if (schema.minimum !== undefined && value < schema.minimum) {
       errors.push(`${here}: ${value} 小于 minimum ${schema.minimum}`);
     }
+    if (schema.maximum !== undefined && value > schema.maximum) {
+      errors.push(`${here}: ${value} 大于 maximum ${schema.maximum}`);
+    }
   }
   if (Array.isArray(value)) {
     if (schema.minItems !== undefined && value.length < schema.minItems) {
@@ -429,7 +432,7 @@ export const PAYLOAD_SCHEMA = {
       type: "object",
       properties: {
         experiment_id: { type: "string" },
-        sample_rate: { type: "number", minimum: 0 },
+        sample_rate: { type: "number", minimum: 0, maximum: 1 },
         traffic_tag: { type: "string" },
       },
       additionalProperties: false,
@@ -882,21 +885,6 @@ const HOOK_ORDER = ["artifact_validate", "state_intercept", "gate_guard", "conte
 const _sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const _now = () => performance.now();
 
-/**
- * 抢占式超时执行（Promise.race 兜底版）。
- * fn 在微任务中执行，裁决侧最多等待 timeoutMs：
- * - 按时完成 → 返回 true（fn 内异常原样回抛，走内核 error 通道）；
- * - 超时 → 返回 false，裁决 code=timeout。
- * 已知简化（报告有述）：JS 单线程事件循环无法抢占同步死循环钩子，
- * 此处保持 code=timeout 的裁决语义与「超时产出不被消费」语义。
- */
-async function _execWithTimeout(fn, timeoutMs) {
-  return await Promise.race([
-    (async () => { fn(); return true; })(),
-    _sleep(Math.max(timeoutMs, 0)).then(() => false),
-  ]);
-}
-
 // ── 服务端权威计量（进程内；单线程无需锁） ──
 
 let _IN_FLIGHT = 0;                    // 内核自测并发：当前 et() 在飞请求数
@@ -1314,8 +1302,8 @@ function _runStateIntercept(spec, artifact) {
   const target = spec.target_state;
   const pairs = spec.allowed_pairs;
   if (pairs !== undefined && pairs !== null) {
-    const pairSet = new Set(pairs.map((p) => `${p.from}→${p.to}`));
-    if (!pairSet.has(`${current}→${target}`)) {
+    const pairSet = new Set(pairs.map((p) => JSON.stringify([p.from, p.to])));
+    if (!pairSet.has(JSON.stringify([current, target]))) {
       return [false, null, artifact,
         `跃迁对 [${current} → ${target}] 不在 allowed_pairs 合法集合内`];
     }
