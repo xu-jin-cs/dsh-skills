@@ -41,17 +41,17 @@ function rewrite(text, { annotate = false } = {}) {
   let out = text;
   // R1
   out = out.replace(
-    /(?:python3\s+)?~\/\.agents\/skills\/gate-switch\/scripts\/gate_switch\.py --spec ~\/\.agents\/skills\/gate-switch\/specs\/([A-Za-z0-9_-]+)\.json/g,
+    /(?:python3\s+)?~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/scripts\/gate_switch\.py --spec ~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/specs\/([A-Za-z0-9_-]+)\.json/g,
     (_m, name) => { stats.rewriteHits.gateSpecKnown++; return `~/.dsh/bin/wrench-gate ${name}`; }
   );
   // R2: gate_switch.py --spec <其他路径> → wrench-gate --spec-file <路径>
   out = out.replace(
-    /(?:python3\s+)?~\/\.agents\/skills\/gate-switch\/scripts\/gate_switch\.py --spec ([^\s"'`)，]+)/g,
+    /(?:python3\s+)?~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/scripts\/gate_switch\.py --spec ([^\s"'`)，]+)/g,
     (_m, p) => { stats.rewriteHits.gateSpecOther++; return `~/.dsh/bin/wrench-gate --spec-file ${p}`; }
   );
   // R3: gate-switch 其他脚本 → wrench-gate --script <脚本名>（markdown 中追加注释标注）
   out = out.replace(
-    /(?:python3\s+)?~\/\.agents\/skills\/gate-switch\/scripts\/([A-Za-z0-9_.-]+\.py)/g,
+    /(?:python3\s+)?~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/scripts\/([A-Za-z0-9_.-]+\.py)/g,
     (_m, script) => {
       stats.rewriteHits.gateOtherScript++;
       const note = annotate ? `  # wrench-skill: 原 gate-switch/${script} 已内置插件` : '';
@@ -210,7 +210,7 @@ check('⑤ 抽样 3 条 skill 的 description 非空',
 
 // ---------- 残留路径引用扫描（供报告） ----------
 const residuals = new Map();
-for (const m of allContent.matchAll(/~\/\.agents\/skills\/[^\s"'`)，。\\]+/g)) bump(residuals, m[0]);
+for (const m of allContent.matchAll(/~\/(?:\.agents|\.dsh)\/skills\/[^\s"'`)，。\\]+/g)) bump(residuals, m[0]);
 for (const m of allContent.matchAll(/python3\s+~\/[^\s"'`)，。\\]+/g)) bump(residuals, m[0]);
 
 const failed = checks.filter(c => !c.ok);
