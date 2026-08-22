@@ -12,7 +12,7 @@
 **macOS / Linux**——复制下面三行命令，粘贴到终端运行即可：
 
 ```bash
-curl -O https://你的公开CDN地址/wrench-skill-1.0.0.tgz
+curl -O https://你的公开CDN地址/xujin-1.0.0.tgz
 curl -O https://你的公开CDN地址/install.sh
 bash install.sh
 ```
@@ -20,8 +20,8 @@ bash install.sh
 **Windows PowerShell**：
 
 ```powershell
-Invoke-WebRequest -Uri "https://你的公开CDN地址/wrench-skill-1.0.0.tgz" -OutFile "wrench-skill-1.0.0.tgz"
-dsh plugin --profile web add .\wrench-skill-1.0.0.tgz
+Invoke-WebRequest -Uri "https://你的公开CDN地址/xujin-1.0.0.tgz" -OutFile "xujin-1.0.0.tgz"
+dsh plugin --profile web add .\xujin-1.0.0.tgz
 ```
 
 > Windows 用户推荐使用 Git Bash / WSL 执行 `bash install.sh` 完成全自动安装（含 patch 注册）。
@@ -32,7 +32,7 @@ dsh plugin --profile web add .\wrench-skill-1.0.0.tgz
 dsh plugin --profile web list
 ```
 
-列表中出现 `@xu-jin-cs/dsh-cordis-wrench-skill` 即安装成功。重启 DSH 或等待热重载后，在会话中输入 `/wrench-demo` 或「扳手自检」，看到自检回执即证明解密注册链路正常。
+列表中出现 `@xu-jin-cs/dsh-cordis-xujin` 即安装成功。重启 DSH 或等待热重载后，在会话中输入 `/xujin-demo` 或「扳手自检」，看到自检回执即证明解密注册链路正常。
 
 ## 插件卸载
 
@@ -50,33 +50,33 @@ bash uninstall.sh default  # 指定 profile
 **扳闸（校验规则开关，四态退出码 0=A放行 / 2=B阻断 / 3=CLARIFY / 4=VIOLATION）：**
 
 ```bash
-~/.dsh/bin/wrench-gate <spec名> [--set 键=值 ...]
-# 示例：~/.dsh/bin/wrench-gate engine_health
+~/.dsh/bin/xujin-gate <spec名> [--set 键=值 ...]
+# 示例：~/.dsh/bin/xujin-gate engine_health
 ```
 
 **引擎内核（内容签发 / 验签 / 状态同步 / et 六段时序执行）：**
 
 ```bash
 # 节点产出交付物后签发（防篡改防伪造）
-~/.dsh/bin/wrench-engine sign --trace-id proj-x-03dev --artifact '{"type":"code","ref":"src/app.js"}'
+~/.dsh/bin/xujin-engine sign --trace-id proj-x-03dev --artifact '{"type":"code","ref":"src/app.js"}'
 
 # 下游节点验收前验签
-~/.dsh/bin/wrench-engine verify --trace-id proj-x-03dev --artifact '{...}' --signature <签名>
+~/.dsh/bin/xujin-engine verify --trace-id proj-x-03dev --artifact '{...}' --signature <签名>
 
 # 节点状态同步（等价原 harness-step-sync.sh 语义，本地直写无需服务）
-~/.dsh/bin/wrench-engine step-sync myproj 03dev "开发完成，待测试" backend-engineer
+~/.dsh/bin/xujin-engine step-sync myproj 03dev "开发完成，待测试" backend-engineer
 
 # 完整 et() 流水线（resource_control→交付物校验→状态拦截→闸→签发→投递装配）
-~/.dsh/bin/wrench-engine et payload.json
+~/.dsh/bin/xujin-engine et payload.json
 # → {"code":"success|reject|block|timeout|error", ...}
 ```
 
-**接线方式**：在你自己的工作流技能节点定义中写「本节点完成后执行 `~/.dsh/bin/wrench-engine step-sync …`」即可；插件注册的规则技能已内置这些调用写法，Agent 加载规则后自然会用。
+**接线方式**：在你自己的工作流技能节点定义中写「本节点完成后执行 `~/.dsh/bin/xujin-engine step-sync …`」即可；插件注册的规则技能已内置这些调用写法，Agent 加载规则后自然会用。
 
 **两个前提（重要）**：
 
 1. hmac-sha256 签发需要密钥：与原引擎设计一致，密钥**只从环境变量 `AGENT_ENGINE_SECRET` 读取**，无内置回落。未设置时 `sign` 会中文报错提示。sha256 纯哈希模式无需密钥但只有完整性校验能力（任何人可重算，不防伪）。需要防伪签发的场景，请向开发者线下获取密钥（对应 BASE_KEY 离线交付）。
-2. 引擎运行时数据落盘位置：`~/.dsh/wrench-engine/state/`（实例状态 JSON）与 `~/.dsh/wrench-engine/audit.jsonl`（审计事件流）。这是运行时数据，不含规则明文。
+2. 引擎运行时数据落盘位置：`~/.dsh/xujin-engine/state/`（实例状态 JSON）与 `~/.dsh/xujin-engine/audit.jsonl`（审计事件流）。这是运行时数据，不含规则明文。
 
 ## 常见问题（中文友好排查）
 

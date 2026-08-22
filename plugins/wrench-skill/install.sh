@@ -1,10 +1,10 @@
 #!/bin/bash
-# wrench-skill 一键安装脚本（macOS / Linux，小白零密钥零配置）
+# xujin 一键安装脚本（macOS / Linux，小白零密钥零配置）
 #
 # 用法：
 #   bash install.sh                  # 默认装入 web profile
 #   bash install.sh default          # 装入指定 profile
-#   bash install.sh web /path/to/wrench-skill-1.0.0.tgz   # 安装已下载的插件包
+#   bash install.sh web /path/to/xujin-1.0.0.tgz   # 安装已下载的插件包
 #
 # 做的事（全自动）：
 #   1. 把插件装进指定 DSH profile（底层走 dsh plugin add → pnpm）；
@@ -14,7 +14,7 @@ set -euo pipefail
 
 PROFILE="${1:-${DSH_PROFILE:-web}}"
 PKG_REF="${2:-}"
-PKG_NAME="@xu-jin-cs/dsh-cordis-wrench-skill"
+PKG_NAME="@xu-jin-cs/dsh-cordis-xujin"
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE_DIR="${DSH_HOME:-$HOME/.dsh}/profiles/${PROFILE}"
 PATCH_FILE="${PROFILE_DIR}/cordis.patch.yml"
@@ -39,9 +39,9 @@ PATCH_FILE="${PATCH_FILE}" PKG_NAME="${PKG_NAME}" node --input-type=module -e '
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 const file = process.env.PATCH_FILE;
 const pkg = process.env.PKG_NAME;
-const entry = `- insert:\n    - id: wrench-skill\n      name: ${JSON.stringify(pkg)}\n`;
+const entry = `- insert:\n    - id: xujin\n      name: ${JSON.stringify(pkg)}\n`;
 let text = existsSync(file) ? readFileSync(file, "utf8") : "";
-if (text.includes("id: wrench-skill")) {
+if (text.includes("id: xujin")) {
   console.log("    条目已存在，跳过（幂等）");
 } else {
   // 判定"空数组文档"：剥离注释行与空行后只剩 []（不能简单 trim 比较，注释行会导致误判）
@@ -70,20 +70,20 @@ if (text.includes("id: wrench-skill")) {
 echo "==> 安装 CLI shim → ${HOME}/.dsh/bin/"
 SHIM_DIR="${HOME}/.dsh/bin"
 mkdir -p "${SHIM_DIR}"
-for tool in wrench-gate wrench-engine; do
+for tool in xujin-gate xujin-engine; do
   cat > "${SHIM_DIR}/${tool}" <<EOF
 #!/bin/bash
-# wrench-skill 插件 CLI shim（由 install.sh 生成，profile=${PROFILE}）
-PKG="\${WRENCH_PKG:-${HOME}/.dsh/profiles/${PROFILE}/node_modules/@xu-jin-cs/dsh-cordis-wrench-skill}"
+# xujin 插件 CLI shim（由 install.sh 生成，profile=${PROFILE}）
+PKG="\${WRENCH_PKG:-${HOME}/.dsh/profiles/${PROFILE}/node_modules/@xu-jin-cs/dsh-cordis-xujin}"
 exec node "\${PKG}/bin/${tool}.mjs" "\$@"
 EOF
   chmod +x "${SHIM_DIR}/${tool}"
 done
-echo "    已安装：wrench-gate / wrench-engine"
+echo "    已安装：xujin-gate / xujin-engine"
 
 # 第 3 步：校验
 echo "==> 已安装插件列表："
 dsh plugin --profile "${PROFILE}" list 2>/dev/null | grep -i "wrench" || true
 echo ""
 echo "✅ 安装完成。重启 DSH（或等待热重载）后，插件将自动解密并在内存中注册技能。"
-echo "   校验方式：在 DSH 会话中输入 /wrench-demo 或「扳手自检」。"
+echo "   校验方式：在 DSH 会话中输入 /xujin-demo 或「扳手自检」。"

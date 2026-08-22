@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * build_manifest.mjs — wrench-skill 真实资产清单生成器
+ * build_manifest.mjs — xujin 真实资产清单生成器
  *
  * 收集用户私有资产并改写为可分发 bundle 清单（明文中间产物，加密由 encrypt.mjs 完成）：
  *   1. 规则 19 份   ~/.agents/rules/*.md                → skills[]（rule-<kebab>）
@@ -9,7 +9,7 @@
  *   4. 引擎规则      ~/agent-harness/backend/rules/*.yaml → engineRules{}（原文字符串）
  *
  * 全部文本内容执行调用路径重写（python3 本地路径 → ~/.dsh/bin/wrench-*）。
- * 输出：plugins/wrench-skill/manifest.real.json
+ * 输出：plugins/xujin/manifest.real.json
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,7 +20,7 @@ const RULES_DIR = path.join(HOME, '.agents/rules');
 const SKILLS_DIR = path.join(HOME, '.agents/skills');
 const SPECS_DIR = path.join(SKILLS_DIR, 'gate-switch/specs');
 const ENGINE_RULES_DIR = path.join(HOME, 'agent-harness/backend/rules');
-const PLUGIN_DIR = path.join(HOME, 'dsh-skills/plugins/wrench-skill');
+const PLUGIN_DIR = path.join(HOME, 'dsh-skills/plugins/xujin');
 const OUT_FILE = path.join(PLUGIN_DIR, 'manifest.real.json');
 
 const ATOMIC_SKILLS = [
@@ -42,34 +42,34 @@ function rewrite(text, { annotate = false } = {}) {
   // R1
   out = out.replace(
     /(?:python3\s+)?~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/scripts\/gate_switch\.py --spec ~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/specs\/([A-Za-z0-9_-]+)\.json/g,
-    (_m, name) => { stats.rewriteHits.gateSpecKnown++; return `~/.dsh/bin/wrench-gate ${name}`; }
+    (_m, name) => { stats.rewriteHits.gateSpecKnown++; return `~/.dsh/bin/xujin-gate ${name}`; }
   );
-  // R2: gate_switch.py --spec <其他路径> → wrench-gate --spec-file <路径>
+  // R2: gate_switch.py --spec <其他路径> → xujin-gate --spec-file <路径>
   out = out.replace(
     /(?:python3\s+)?~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/scripts\/gate_switch\.py --spec ([^\s"'`)，]+)/g,
-    (_m, p) => { stats.rewriteHits.gateSpecOther++; return `~/.dsh/bin/wrench-gate --spec-file ${p}`; }
+    (_m, p) => { stats.rewriteHits.gateSpecOther++; return `~/.dsh/bin/xujin-gate --spec-file ${p}`; }
   );
-  // R3: gate-switch 其他脚本 → wrench-gate --script <脚本名>（markdown 中追加注释标注）
+  // R3: gate-switch 其他脚本 → xujin-gate --script <脚本名>（markdown 中追加注释标注）
   out = out.replace(
     /(?:python3\s+)?~\/(?:\.agents|\.dsh)\/skills\/gate-switch\/scripts\/([A-Za-z0-9_.-]+\.py)/g,
     (_m, script) => {
       stats.rewriteHits.gateOtherScript++;
-      const note = annotate ? `  # wrench-skill: 原 gate-switch/${script} 已内置插件` : '';
-      return `~/.dsh/bin/wrench-gate --script ${script}${note}`;
+      const note = annotate ? `  # xujin: 原 gate-switch/${script} 已内置插件` : '';
+      return `~/.dsh/bin/xujin-gate --script ${script}${note}`;
     }
   );
-  // R4: harness-step-sync.sh → wrench-engine step-sync（保留参数）
+  // R4: harness-step-sync.sh → xujin-engine step-sync（保留参数）
   out = out.replace(
     /bash ~\/agent-harness\/scripts\/harness-step-sync\.sh/g,
-    () => { stats.rewriteHits.stepSync++; return '~/.dsh/bin/wrench-engine step-sync'; }
+    () => { stats.rewriteHits.stepSync++; return '~/.dsh/bin/xujin-engine step-sync'; }
   );
-  // R5: 其余技能 scripts/xxx.py → wrench-skill-run <技能名>/xxx.py
+  // R5: 其余技能 scripts/xxx.py → xujin-run <技能名>/xxx.py
   out = out.replace(
     /(?:python3\s+)?~\/\.agents\/skills\/([A-Za-z0-9_-]+)\/scripts\/([A-Za-z0-9_.\/-]+\.py)/g,
     (_m, skill, script) => {
       stats.rewriteHits.skillRun++;
       bump(stats.skillRunRefs, `${skill}/${script}`);
-      return `~/.dsh/bin/wrench-skill-run ${skill}/${script}`;
+      return `~/.dsh/bin/xujin-run ${skill}/${script}`;
     }
   );
   return out;
@@ -182,21 +182,53 @@ for (const f of specFiles) {
 }
 console.log(`[3/4] 闸 spec 收集：${specFiles.length} 份（剔除 FastAPI/.sh 依赖 ${SPEC_EXCLUDE.size} 份：${[...SPEC_EXCLUDE].map(f => f.replace('.json', '')).join('/')}）`);
 
-// ---------- 4. 引擎规则 yaml（原文字符串，不改写） ----------
+// ---------- 4. 引擎规则 yaml（2026-08-22 用户裁定：从退役备份回迁，原文字符串不改写） ----------
+const ENGINE_RULES_FALLBACK = path.join(HOME, 'agent-harness/_backups/20260817_legacy_engine_retirement/rules');
+const rulesDir = fs.existsSync(ENGINE_RULES_DIR) &&
+  fs.readdirSync(ENGINE_RULES_DIR).some(f => f.endsWith('.yaml')) ? ENGINE_RULES_DIR : ENGINE_RULES_FALLBACK;
 const engineRules = {};
 let yamlCount = 0;
-if (fs.existsSync(ENGINE_RULES_DIR)) {
-  for (const f of fs.readdirSync(ENGINE_RULES_DIR).filter(f => f.endsWith('.yaml')).sort()) {
-    const full = path.join(ENGINE_RULES_DIR, f);
+if (fs.existsSync(rulesDir)) {
+  for (const f of fs.readdirSync(rulesDir).filter(f => f.endsWith('.yaml')).sort()) {
+    const full = path.join(rulesDir, f);
     if (!fs.statSync(full).isFile()) continue;
     engineRules[f] = fs.readFileSync(full, 'utf8');
     yamlCount++;
   }
 }
-console.log(`[4/4] 引擎规则收集：${yamlCount} 份（${ENGINE_RULES_DIR}/*.yaml）`);
+console.log(`[4/4] 引擎规则收集：${yamlCount} 份（${rulesDir}/*.yaml）`);
+
+// ---------- 5. 引擎默认规则抽取（构建期预解析，插件侧零 yaml 依赖） ----------
+// 从 orchestrator_rules.yaml 的 ORCH-TRANS transitions 块抽取状态跃迁表，
+// 作为 step-sync 的默认跃迁表（调用方 --transitions 可覆盖）。
+function extractTransitions(yamlText) {
+  const lines = yamlText.split(/\r?\n/);
+  const transitions = {};
+  let inBlock = false;
+  for (const line of lines) {
+    if (/^\s+transitions:\s*$/.test(line)) { inBlock = true; continue; }
+    if (inBlock) {
+      const m = line.match(/^\s{8,}([A-Z_]+):\s*\[([^\]]*)\]\s*$/);
+      if (m) {
+        transitions[m[1]] = m[2].split(',').map(s => s.trim()).filter(Boolean);
+      } else if (line.trim() && !line.trim().startsWith('#')) break; // 出块
+    }
+  }
+  return Object.keys(transitions).length ? transitions : null;
+}
+const engineDefaults = {};
+if (engineRules['orchestrator_rules.yaml']) {
+  const t = extractTransitions(engineRules['orchestrator_rules.yaml']);
+  if (t) {
+    engineDefaults.transitions = t;
+    console.log(`[5/5] 默认跃迁表抽取：${Object.keys(t).length} 个状态（来自 orchestrator_rules.yaml ORCH-TRANS）`);
+  } else {
+    console.log('[5/5] 警告：未能从 orchestrator_rules.yaml 抽取跃迁表');
+  }
+}
 
 // ---------- 汇总输出 ----------
-const manifest = { skills, specs, engineRules };
+const manifest = { skills, specs, engineRules, engineDefaults };
 fs.writeFileSync(OUT_FILE, JSON.stringify(manifest, null, 2));
 const totalHits = Object.values(stats.rewriteHits).reduce((a, b) => a + b, 0);
 console.log(`路径重写命中：${totalHits} 处`, JSON.stringify(stats.rewriteHits));
@@ -213,7 +245,11 @@ const parsed = JSON.parse(fs.readFileSync(OUT_FILE, 'utf8'));
 check('① manifest.real.json 可解析', !!parsed && typeof parsed === 'object');
 check('② skills 数量 = 19+7 = 26', parsed.skills.length === 26, `实际 ${parsed.skills.length}`);
 const specN = Object.keys(parsed.specs).length;
-check('③ specs ≥ 80', specN >= 80, `实际 ${specN}`);
+check('③ specs ≥ 70（剔除 FastAPI/.sh 依赖 10 份后）', specN >= 70, `实际 ${specN}`);
+check('③b 引擎规则 ≥ 5 份（回迁）', Object.keys(parsed.engineRules ?? {}).length >= 5,
+  `实际 ${Object.keys(parsed.engineRules ?? {}).length}`);
+check('③c 默认跃迁表已抽取且含 PENDING', (parsed.engineDefaults?.transitions?.PENDING?.length ?? 0) > 0,
+  `状态数 ${Object.keys(parsed.engineDefaults?.transitions ?? {}).length}`);
 const allContent = parsed.skills.map(s => s.content).join('\n')
   + '\n' + JSON.stringify(parsed.specs) + '\n' + JSON.stringify(parsed.engineRules);
 check('④ 不再出现 python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py',

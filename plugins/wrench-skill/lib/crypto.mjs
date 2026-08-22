@@ -18,7 +18,7 @@ import { EMBEDDED_SEED, EMBEDDED_SALT_HEX, HKDF_INFO, KEY_BYTES, PAYLOAD_VERSION
  */
 export function deriveKey() {
   if (!/^[0-9a-f]{32}$/.test(EMBEDDED_SALT_HEX)) {
-    throw new DecryptError('[wrench-skill] 插件未注入派生 Salt：请先由开发者执行 scripts/derive_salt.py 并重新加密资产。');
+    throw new DecryptError('[xujin] 插件未注入派生 Salt：请先由开发者执行 scripts/derive_salt.py 并重新加密资产。');
   }
   const salt = Buffer.from(EMBEDDED_SALT_HEX, 'hex');
   const key = Buffer.from(hkdfSync('sha256', Buffer.from(EMBEDDED_SEED, 'utf8'), salt, Buffer.from(HKDF_INFO, 'utf8'), KEY_BYTES));
@@ -58,11 +58,11 @@ export class DecryptError extends Error {}
  */
 export function decryptBundle(key, payload) {
   if (!payload || typeof payload !== 'object') {
-    throw new DecryptError('[wrench-skill] 解密失败：资产包格式为空或损坏。请重新下载完整插件包。');
+    throw new DecryptError('[xujin] 解密失败：资产包格式为空或损坏。请重新下载完整插件包。');
   }
   if (payload.v !== PAYLOAD_VERSION || payload.alg !== PAYLOAD_ALG) {
     throw new DecryptError(
-      `[wrench-skill] 解密失败：资产包版本不匹配（包内 v=${payload.v} alg=${payload.alg}，插件期望 v=${PAYLOAD_VERSION}）。\n` +
+      `[xujin] 解密失败：资产包版本不匹配（包内 v=${payload.v} alg=${payload.alg}，插件期望 v=${PAYLOAD_VERSION}）。\n` +
       `可能原因：插件与资产包不是同一批次发布。请核对 DSH 版本与插件包完整性，或联系开发者获取匹配版本。`
     );
   }
@@ -77,7 +77,7 @@ export function decryptBundle(key, payload) {
   } catch (e) {
     if (e instanceof DecryptError) throw e;
     throw new DecryptError(
-      '[wrench-skill] 解密失败：密文校验未通过（AuthTag 不匹配）。\n' +
+      '[xujin] 解密失败：密文校验未通过（AuthTag 不匹配）。\n' +
       '可能原因：①插件包在传输中损坏，请重新下载；②Embedding 模型版本漂移，请核对插件依赖版本；③插件包被篡改。'
     );
   }

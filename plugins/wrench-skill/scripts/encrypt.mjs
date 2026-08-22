@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * wrench-skill 开发者侧加密打包工具（不随插件分发给小白用户的必需物，但开源可见）。
+ * xujin 开发者侧加密打包工具（不随插件分发给小白用户的必需物，但开源可见）。
  *
  * 用法：
  *   node scripts/encrypt.mjs --manifest manifest.example.json --out assets/rules.enc.json

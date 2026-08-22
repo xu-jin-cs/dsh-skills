@@ -1,12 +1,12 @@
 /**
- * wrench-skill 冻结常量（开发者统一保管，加密/解密两侧共用同一份）。
+ * xujin 冻结常量（开发者统一保管，加密/解密两侧共用同一份）。
  *
  * ⚠️ 版本冻结铁律：本文件任何字段变更都会改变派生密钥，
  *    变更后必须用 encrypt.mjs 全量重新加密所有规则资产，否则解密必失败。
  */
 
 /** 内置加密种子：仅用于 HKDF 密钥派生，打包/发布全程使用同一种子。 */
-export const EMBEDDED_SEED = 'wrench-skill::builtin-seed::7f3a9c1e-bd52-48f6-91d0-2e6c5a84f0b7';
+export const EMBEDDED_SEED = 'xujin::builtin-seed::7f3a9c1e-bd52-48f6-91d0-2e6c5a84f0b7';
 
 /** 固定盐源文本：Embedding 编码输入，固化于插件内部，禁止改动。 */
 export const SALT_SOURCE_TEXT = '求职ai agent专家，优先在家办公';
@@ -21,7 +21,7 @@ export const SALT_SOURCE_TEXT = '求职ai agent专家，优先在家办公';
 export const EMBEDDED_SALT_HEX = 'b77bfd80d97aa67fd57ebf81627b527d';
 
 /** HKDF 固定业务标识 info。 */
-export const HKDF_INFO = 'wrench-skill/agentpkg/v1';
+export const HKDF_INFO = 'xujin/agentpkg/v1';
 
 /** AES-256-GCM 工作密钥长度（字节）。 */
 export const KEY_BYTES = 32;

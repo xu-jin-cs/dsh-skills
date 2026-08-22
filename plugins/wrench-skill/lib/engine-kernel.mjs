@@ -19,9 +19,9 @@
  * 出参 code 五态（与 Python 版一致）：
  *   success / reject / block / timeout / error
  *
- * 状态持久化目录：~/.dsh/wrench-engine/state/（JSON 文件，可用 options.stateDir 覆盖）
- * 审计事件：      ~/.dsh/wrench-engine/audit.jsonl（options.auditFile 覆盖）
- * 步骤日志：      ~/.dsh/wrench-engine/steps.jsonl（options.stepsFile 覆盖）
+ * 状态持久化目录：~/.dsh/xujin-engine/state/（JSON 文件，可用 options.stateDir 覆盖）
+ * 审计事件：      ~/.dsh/xujin-engine/audit.jsonl（options.auditFile 覆盖）
+ * 步骤日志：      ~/.dsh/xujin-engine/steps.jsonl（options.stepsFile 覆盖）
  * 目录不存在时自动创建；审计/日志写失败只告警，不炸主流程。
  */
 
@@ -34,7 +34,7 @@ import path from "node:path";
 // 默认落盘位置
 // ═══════════════════════════════════════════════════════════════
 
-export const ENGINE_HOME = path.join(os.homedir(), ".dsh", "wrench-engine");
+export const ENGINE_HOME = path.join(os.homedir(), ".dsh", "xujin-engine");
 export const DEFAULT_STATE_DIR = path.join(ENGINE_HOME, "state");
 export const DEFAULT_AUDIT_FILE = path.join(ENGINE_HOME, "audit.jsonl");
 export const DEFAULT_STEPS_FILE = path.join(ENGINE_HOME, "steps.jsonl");
@@ -1489,7 +1489,7 @@ function _applyDelivery(spec, artifact, code) {
  * 契约不通过时抛 ContractViolationError / OutputContractError。
  *
  * options（移植版新增，全部可选）：
- *   auditFile  审计 jsonl 路径（默认 ~/.dsh/wrench-engine/audit.jsonl）
+ *   auditFile  审计 jsonl 路径（默认 ~/.dsh/xujin-engine/audit.jsonl）
  *   audit      false 时跳过钩子审计落盘（默认 true）
  */
 export async function et(payload, options = {}) {
@@ -1738,7 +1738,7 @@ async function _etInner(payload, options) {
  *   transitions 状态机 {from: [to,...]}（必填；引擎规则由调用方预解析注入）
  *   instanceId  显式实例 ID（缺省查注册表/自动登记 inst-<project>）
  *   initialState 首次登记初始状态（缺省 = newState）
- *   stateDir / auditFile / stepsFile  落盘位置覆盖（默认 ~/.dsh/wrench-engine/）
+ *   stateDir / auditFile / stepsFile  落盘位置覆盖（默认 ~/.dsh/xujin-engine/）
  * @returns {Promise<{ok:boolean, ...}>} 成功 {ok:true, instanceId, from, to, version, signature, output}；
  *   失败 {ok:false, reason, code?, output?}
  */

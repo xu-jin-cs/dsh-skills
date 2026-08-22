@@ -1,10 +1,10 @@
 {
   "skills": [
     {
-      "name": "wrench-demo",
+      "name": "xujin-demo",
       "description": "扳手插件演示技能：验证加密分发链路可用的最小样例规则。",
-      "whenToUse": "验证 wrench-skill 插件安装是否成功时使用；输入 /wrench-demo 或「扳手自检」触发。",
-      "file": "./payload/wrench-demo/SKILL.md"
+      "whenToUse": "验证 xujin 插件安装是否成功时使用；输入 /xujin-demo 或「扳手自检」触发。",
+      "file": "./payload/xujin-demo/SKILL.md"
     }
   ]
 }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# wrench-skill 一键卸载脚本（macOS / Linux）
+# xujin 一键卸载脚本（macOS / Linux）
 #
 # 用法：
 #   bash uninstall.sh            # 默认从 web profile 卸载
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 PROFILE="${1:-${DSH_PROFILE:-web}}"
-PKG_NAME="@xu-jin-cs/dsh-cordis-wrench-skill"
+PKG_NAME="@xu-jin-cs/dsh-cordis-xujin"
 PROFILE_DIR="${DSH_HOME:-$HOME/.dsh}/profiles/${PROFILE}"
 PATCH_FILE="${PROFILE_DIR}/cordis.patch.yml"
 
@@ -34,10 +34,10 @@ let removed = false;
 for (let i = 0; i < lines.length; i++) {
   // 匹配由 install.sh 写入的独立 insert 块：
   //   - insert:
-  //       - id: wrench-skill
+  //       - id: xujin
   //         name: "..."
   if (/^- insert:\s*$/.test(lines[i])
-      && /^\s+- id: wrench-skill\s*$/.test(lines[i + 1] ?? "")) {
+      && /^\s+- id: xujin\s*$/.test(lines[i + 1] ?? "")) {
     let j = i + 2; // 跳过 name 行及该条目后续缩进行
     while (j < lines.length && /^\s+\S/.test(lines[j])) j++;
     i = j - 1;
@@ -47,12 +47,12 @@ for (let i = 0; i < lines.length; i++) {
   out.push(lines[i]);
 }
 writeFileSync(file, out.join("\n"));
-console.log(removed ? "    已移除 wrench-skill 装载条目" : "    未找到装载条目（幂等跳过）");
+console.log(removed ? "    已移除 xujin 装载条目" : "    未找到装载条目（幂等跳过）");
 '
 fi
 
 # 第 2.5 步：移除 CLI shim
-rm -f "${HOME}/.dsh/bin/wrench-gate" "${HOME}/.dsh/bin/wrench-engine" 2>/dev/null && echo "==> 已移除 CLI shim（~/.dsh/bin/wrench-gate / wrench-engine）"
+rm -f "${HOME}/.dsh/bin/xujin-gate" "${HOME}/.dsh/bin/xujin-engine" 2>/dev/null && echo "==> 已移除 CLI shim（~/.dsh/bin/xujin-gate / xujin-engine）"
 
 echo ""
 echo "✅ 卸载完成。DSH 重载后将自动注销技能并清空内存中的密钥与明文缓存，无任何残留。"

@@ -25,7 +25,7 @@ export class AssetStore {
     try {
       const bundle = decryptBundle(key, payload);
       if (!bundle || !Array.isArray(bundle.skills)) {
-        throw new DecryptError('[wrench-skill] 资产包结构异常：缺少 skills 数组。请重新下载完整插件包。');
+        throw new DecryptError('[xujin] 资产包结构异常：缺少 skills 数组。请重新下载完整插件包。');
       }
       return new AssetStore(bundle);
     } finally {

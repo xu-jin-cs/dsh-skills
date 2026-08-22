@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * wrench-engine —— 引擎机制内核 CLI（签发/验签/状态同步/et 执行，插件内执行，无数据库）。
+ * xujin-engine —— 引擎机制内核 CLI（签发/验签/状态同步/et 执行，插件内执行，无数据库）。
  *
  * 用法：
- *   wrench-engine sign --artifact <json|@文件> [--trace-id <id>] [--state-meta <json>] [--algo sha256|hmac-sha256]
- *   wrench-engine verify --artifact <json|@文件> --signature <sig> --trace-id <id> [--state-meta <json>] [--algo ...]
- *   wrench-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]
- *   wrench-engine et <payload.json|@文件>
+ *   xujin-engine sign --artifact <json|@文件> [--trace-id <id>] [--state-meta <json>] [--algo sha256|hmac-sha256]
+ *   xujin-engine verify --artifact <json|@文件> --signature <sig> --trace-id <id> [--state-meta <json>] [--algo ...]
+ *   xujin-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]
+ *   xujin-engine et <payload.json|@文件>
  *
  * hmac-sha256 密钥只从环境变量 AGENT_ENGINE_SECRET 读取（与原 python 内核一致，无内置回落）。
  * 内核不写死业务规则：step-sync 的合法跃迁表须由 --transitions 注入（如 '{"INIT":["DEV"],"DEV":["DONE"]}'），
@@ -57,7 +57,7 @@ async function main() {
       }
       const [project, stage, desc, role] = positional;
       if (!project || !stage) {
-        console.error('用法：wrench-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]');
+        console.error('用法：xujin-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]');
         process.exit(3);
       }
       const transitions = flag(rest, '--transitions') ? await readJsonArg(flag(rest, '--transitions')) : undefined;
@@ -71,13 +71,13 @@ async function main() {
       break;
     }
     default:
-      console.error('用法：wrench-engine <sign|verify|step-sync|et> …（见文件头注释）');
+      console.error('用法：xujin-engine <sign|verify|step-sync|et> …（见文件头注释）');
       process.exit(3);
   }
   console.log(JSON.stringify(out, null, 2));
 }
 
 main().catch((err) => {
-  console.error(`[wrench-engine] 执行失败：${err?.message ?? err}`);
+  console.error(`[xujin-engine] 执行失败：${err?.message ?? err}`);
   process.exit(1);
 });
