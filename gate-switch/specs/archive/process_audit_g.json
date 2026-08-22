@@ -1,0 +1,7 @@
+{
+  "gate": "process_audit_g",
+  "desc": "process-audit 维度G（经验复用率）机械门禁：registry_fcheck.py gcheck 全量计算复用率，rate<30% 输出告警+未复用/僵尸清单原文并 exit 1 → 掷点 B，告警写入风险项（P1），禁止抽查充数",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/process-audit/scripts/registry_fcheck.py gcheck", "expect": 0, "label": "维度G经验复用率全量校验"}
+  ]
+}

@@ -1,0 +1,404 @@
+{
+ "SOFT-MULTITASK": {
+  "pos_n": 23,
+  "neg_n": 97,
+  "adjudication_rate": 0.913,
+  "false_positive_rate_neg": 0.0412,
+  "pos_detail": [
+   {
+    "text": "完成 retro 技能匹配通道的两个改造（全部在 /Users/xujin 下，勿动 /Users/xujin/agent-harness/backend 的 ",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 4 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 4 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 4 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 4 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "【任务书】①目标：批量开关化战役 C 域（内容生产域 3 闸）。②背景：分类产物 /tmp/all_classification.json；spec 格式参考 ",
+    "L0": false,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 4 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "【任务书】①目标：批量开关化战役 B 域（引擎探针闸 + SLOT 回链闸，一闸多治两个）。②背景：分类产物 /tmp/all_classification.j",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你用 Python PIL（已确认可用，Pillow 12.2.0）程序化生成 4 张像素风游戏精灵 PNG，输出到目录 /Users/xujin/Deskto",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "你在 /Users/xujin/agent-harness 仓库为 AgentEngine（ET 契约引擎）新建状态持久化与审计层（P2-5 + P2-6）。工",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "交付物：~/Desktop/短板修复任务书-20260819.md\n头部 5 条开工纪律：评估必过查询闸、分身数字母体必复算、短板区只写存活项、危险命令事前闸、",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "命中率46%/适用场景清零/向量接线 ✅，但3字硬约束未落实 → 已打回整改，需要快点，能不能创建子分身一起处理。",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "你是短板修复分身，负责 agentengine（自研ET内核，~/agent-harness/backend/engine/）组件的 3 条短板修复。先读 /U",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "你在 /Users/xujin/Projects/dsh-desktop 工程（Electron 桌面壳，git main HEAD 5817f3b）实现「壁纸",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "【任务书】①目标：批量开关化战役 D 域（测试/注册表/验收域 7 闸）。②背景：分类产物 /tmp/all_classification.json；spec ",
+    "L0": false,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是一位资深 Agent 体系评估专家。请评估以下 3 个 Agent 技能：archmap, ui-designer, ui_ux_pro_max。\n\n技能文",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 4 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 3 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是一位资深 Agent 体系评估专家。请评估以下 5 个 Agent 技能：pm, magic, xujin-workflow, fengmian, sv-s",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "首先第一个问题：今天为了不让渲染提示词触发ppt工作流特地改造了规则，你把工作流和闸混为一谈，导致改造失败。第二问题：你说理解了你的\"闸不等于工作流\"指向的是注",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "多任务：1将大模型错误，提交kimi 问卷，2是不是因为闸没有修好，导致你在第二个问题修复时，没有触发该有的闸，才被你糊弄过去了。",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "你是「39 Agent 引擎替换专项」U6 子分身：测试四门禁迁移实施 + signer/test_gates 退役。工作目录 /Users/xujin/age",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "你是 Agent 技能评估员。评估以下 4 个技能（目录：/Users/xujin/.agents/skills/<技能名>/，注意部分目录是软链接，直接按路径",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   }
+  ]
+ },
+ "SOFT-PROBLEM-RAISED": {
+  "pos_n": 34,
+  "neg_n": 86,
+  "adjudication_rate": 0.4118,
+  "false_positive_rate_neg": 0.0465,
+  "pos_detail": [
+   {
+    "text": "命中率46%/适用场景清零/向量接线 ✅，但3字硬约束未落实 → 已打回整改，需要快点，能不能创建子分身一起处理。",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "打回了，就按照我的思路按照使用者将技能生成文件内容切分，按照同一使用者/触发者进行分片，然后分片执行",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "不对，你总结的不对，就好比你把闸堵死了，然后说生成多个闸试一下，完全没必要。还设置后闸是更傻。多任务：1最后你应该发现问题是及时修复问题：plan_select",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "你是调查分析分身：retro 技能生成维度改造的前置取证。背景（用户原话）：\"技能生成有一大半是合并到 pm，经过过滤后排除了 200 多个；以前根据这个维度生",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "归因取证任务（继承本会话上下文，可直接引用会话中已发生的步骤）：完整列出本次月之暗面评估中导致评估出错的全部步骤、文件、行为、思考方式。\n\n已知出错事实（5处口",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "没用，按照这个思路改：# dsh‑harness 完整可运行修复+定位方案\n问题现象：`malformed encrypted reasoning conten",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "是否按照最后一步如果日志确认是生成输出错误，替换你生成 signature 的编码逻辑，使用这个标准 base64url 函数，执行过",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "你改出问题，回滚不彻底导致的\n本轮运行失败400 {\"error\":{\"type\":\"invalid_request_error\",\"message\":\"mes",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "又出问题了\n本轮运行失败400 {\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.4.c",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "命中率46%/适用场景清零/向量接线 ✅，但3字硬约束未落实 → 已打回整改，需要快点，能不能创建子分身一起处理。",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "打回了，就按照我的思路按照使用者将技能生成文件内容切分，按照同一使用者/触发者进行分片，然后分片执行",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "说了一百遍中文对话，为什么报错？",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "执行操作：# 现象分析\n控制台疯狂打印一大串超长`DETECT BAD SIGNATURE`，每次请求都输出，**新建会话也输出**。\n👉说明：**不是历史脏会",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "技能生成器，只输出3个词的触发词，为什么技能生成表里显示的却都不是3个词？#1442\n🛠 技能生成\nretro-backend-engineer-004-多代演",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "1.dispatcher_generate生成器改造：要求读取历史会话记录作为语料，根据技能生成逻辑，匹配生成3个词的触发词，一个技能可以有一个或者多个触发词，",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "改造 dispatcher_generate：读历史会话语料生成3词触发词，非3词全打回，已经生成的这些触发词和对应的技能描述，直接添加到使用者技能上。在此之前",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "不对，关于这项测试你起码花了45分钟，先按照/Users/xujin/Desktop/kimi_code_问卷反馈脚本.py找出问题和对应时间，再评估是否时大模",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "这么多指标，结合定位推出那个位置etl哪个位置出问题还是很容易的，在看看是向量，索引还是数据库出问题。在看看是对应的哪个规则出了问题（数据交叉推理验证）。如果分",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "步骤用填吗，我更喜欢用框架去抹平和过滤，打回。",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "出问题了，# 先直接回答你2个核心问题，再给适配当前报错（ETL排队任务过多、前端卡死）的完整落地细则\n> 当前新现象重点：**峰值4.0 files/s直接打",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "先改造机制，后改造消费：# ✅ 对齐你的核心决策：**全部先落MinIO，不做入口拒载、不搞前置水位拦截、不前端抛排队提示；MQ持久化缓冲、后台慢慢消化**\n>",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "这个是根本问题，我提出问题，你去查问题，先列步骤给我，不是一声不吭一直做，这都是钱",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "不对，你总结的不对，就好比你把闸堵死了，然后说生成多个闸试一下，完全没必要。还设置后闸是更傻。多任务：1最后你应该发现问题是及时修复问题：plan_select",
+    "L0": true,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "不对，我没有说过这样的话，我说的是当初设置附身闸考虑问题的维度，你只是取了附身闸怎么触发。取错方向，导致设计出问题",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "dispatcher_generate这个触发器，只允许生成3个词的触发词，不能在 走AND 组通道。强制生成3个词。不是3个词一律打回",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "我在当前输入框放进图片，但是回车显示当前模型不支持图片。我既然有了识图功能，你就应该允许我通过放入输入框的方式进行上传，至于怎么识别，你只要监测图片，就用内置的",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "被你蠢哭了，怎么功能栏里，还有出现断电和任务列表？",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "代理服务器出现问题，或者地址有误。我是不是被加了代理导致无法上网",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "桌面端大概有5个像素左右的高度，被黑灰色占据，这是一个显示bug，要修复",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "Agent评估里，怎么少了expert-router?",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "你在触发多任务执行时，如果有一个任务完成是不是会消掉任务什么状态，这导致任务清单/列表 不展示。",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "dsh-harness不能上传非图片的文件，现在需要去除这项限制。图片就按原先逻辑展示，非图片格式的文件或者文件夹就只取对应的路径，核心场景：我把文档和目录拉不",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "你这个短板b是不是循环任务，一直卡死浪费我的token",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   },
+   {
+    "text": "不对，我在引导你：  刚才为什么设置钩子，是什么问题，这个问题能不能一次性根治，能不能从源头根治，源头根治设闸能不能避免，要设多少闸，如果设钩子要设几个钩子。",
+    "L0": false,
+    "L1": false,
+    "hit": false
+   }
+  ]
+ },
+ "SOFT-PLAN-SELECT": {
+  "pos_n": 6,
+  "neg_n": 116,
+  "adjudication_rate": 1.0,
+  "false_positive_rate_neg": 0.0345,
+  "pos_detail": [
+   {
+    "text": "kimi k3你有896 个专家，会挑选出Top-16 个专家，现在我需要你整理出这896个专家的数据放到一个agent中，负责训练我的各种工作流，每次会判断用",
+    "L0": false,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "我要做到这一点：冲L5路径：消费端台回提限＋ 舰发面全报手化。先给方案",
+    "L0": false,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "我想在ai agent上有所造诣，先评估下我当前agent的能力和价值，在根据它们反推我的架构和设计能力。画图来表示，然后根据这些已有的agent能力，规则，设",
+    "L0": false,
+    "L1": true,
+    "hit": true
+   },
+   {
+    "text": "我想按照 /ppt-direct 轻量化的思路，改造/pm",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "关于发布仓，应该多设计一条功能，这个dsh-skills本身就是给deepseek harness用的，应该支持其他用户用命令下载，用命令集成到本地dsh：ha",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   },
+   {
+    "text": "我要求是你重写etl引擎，以便入库，新增，删除数据能复用。不知道你现在在干嘛",
+    "L0": true,
+    "L1": false,
+    "hit": true
+   }
+  ]
+ }
+}

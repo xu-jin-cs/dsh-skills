@@ -1,0 +1,7 @@
+{
+  "gate": "ppt_design_trace",
+  "desc": "ppt-direct 设计溯源一致性机考闸（2026-08-17 扳手改造，retro-pm-084 对策：复刻成品四不像真凶在 02 生成环节）。script_exit 包装 design_trace_check.py：① 产物 pptx 全部 run 色值与 design_spec 声明色 + extracted_scheme 色板做差集（差集非空=自创 HEX 违例，纯白/纯黑中性色默认豁免，--allow-colors 参数化）；② 最大字号 ≥88pt Hero 校验；③ 涨跌徽章固定色号存在性（design_spec 声明才判定）。扳动时机：02_generator.py 跑出 output.pptx 后、03 逐页目检前；判 B 即打回 02 重修后重新扳动。用法：复刻分支 --set pptx=<output.pptx> --set design_spec=<01_design_spec.md> --set scheme=<00_extracted_scheme.json>；直出分支 --set scheme=（留空，脚本按空值跳过色板并入）。退出码 0=A 放行 / 2=B 阻断（违例清单）。",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/ppt-direct/scripts/design_trace_check.py --pptx \"{pptx}\" --design-spec \"{design_spec}\" --extracted-scheme \"{scheme}\"", "expect": 0, "label": "ppt-direct 设计溯源一致性机考（色板binding差集/Hero≥88pt/徽章色号）"}
+  ]
+}

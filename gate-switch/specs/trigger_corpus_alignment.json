@@ -1,0 +1,7 @@
+{
+  "gate": "trigger_corpus_alignment",
+  "desc": "GENERATE 出口闸（2026-08-17 REFORM-GATE 判 A，用户裁定'每次对接非概率对接'）：当日新入库 retro 条目的 trigger_phrases 全部成分必须 df≥1（用户历史语料真说过），语料表为空即 INFRA 违例（禁止静默降级）。判 A=全部对接；判 B=violations 即死词成分清单，复盘记违规并重生该条目触发词。挂接点：复盘着陆闸族（GENERATE 后必扳）+ 人工随时可扳。",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/gate_trigger_corpus_alignment.py", "expect": 0, "label": "A1 语料表非空 + A2 新条目触发词全成分 df≥1"}
+  ]
+}

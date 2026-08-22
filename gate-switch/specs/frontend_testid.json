@@ -1,0 +1,7 @@
+{
+  "gate": "frontend_testid",
+  "desc": "frontend data-testid 锚点注入完整性实证：proto 可交互组件 id 与源码 data-testid 集合差为空才允许声称'锚点全注入'（声称全注入实际漏组件事故对策，2026-08-15 裁定）",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/frontend-development/scripts/testid_diff.py --src {src} --proto {proto}", "expect": 0, "label": "data-testid 锚点集合差机考"}
+  ]
+}

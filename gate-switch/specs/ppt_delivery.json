@@ -1,0 +1,7 @@
+{
+  "gate": "ppt_delivery",
+  "desc": "ppt-direct 节点3 交付实证闸（2026-08-17 C域开关化，SKILL.md L276-277）：机械核验成品已复制到 /Users/xujin/Desktop/{name}.pptx——仅文字提及路径不构成有效交付。open -R 亮显动作为 Finder 交互、无落盘产物可机械核验，留软层自觉执行（用户明确要求不打开时除外）。扳动时机：cp 完成后、输出交付回执前。用法：--set name=<主题命名（不含 .pptx 后缀）>",
+  "checks": [
+    {"type": "file_exists", "path": "/Users/xujin/Desktop/{name}.pptx", "label": "成品已复制到 Desktop"}
+  ]
+}

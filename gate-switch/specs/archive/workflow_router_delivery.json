@@ -1,0 +1,12 @@
+{
+  "gate": "workflow_router_delivery",
+  "desc": "路由强管控规范交付核验（2026-08-20 落地一次性 spec）：注册表存在且JSON合法、40/40技能全覆盖、enable_implicit_match全false、规则文档存在、AGENTS.md已挂载引用。",
+  "checks": [
+    {"type": "file_exists", "path": "/Users/xujin/.agents/skills/workflow-registry.json", "label": "全局注册表文件存在"},
+    {"type": "file_min_size", "path": "/Users/xujin/.agents/skills/workflow-registry.json", "bytes": 5000, "label": "注册表内容非空壳"},
+    {"type": "script_exit", "cmd": "python3 -c \"import json,glob,os; reg=json.load(open(os.path.expanduser('~/.agents/skills/workflow-registry.json'))); ids={w['workflow_id'] for w in reg['workflows']}; skills={os.path.basename(os.path.dirname(f)) for f in glob.glob(os.path.expanduser('~/.agents/skills/*/SKILL.md'))}; assert ids==skills and all(w['enable_implicit_match'] is False for w in reg['workflows'])\"", "label": "注册表JSON合法+40技能全覆盖+implicit_match全false"},
+    {"type": "file_exists", "path": "/Users/xujin/.agents/rules/13_workflow_router.md", "label": "路由管控规则文档存在"},
+    {"type": "grep_count", "pattern": "13_workflow_router", "path": "/Users/xujin/.dsh/AGENTS.md", "op": "min", "value": 1, "label": "AGENTS.md 已挂载 13 号规则引用"},
+    {"type": "grep_count", "pattern": "workflow-registry.json", "path": "/Users/xujin/.dsh/AGENTS.md", "op": "min", "value": 1, "label": "AGENTS.md 调度优先级规范含注册表路径"}
+  ]
+}

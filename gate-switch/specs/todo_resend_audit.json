@@ -1,0 +1,7 @@
+{
+  "gate": "todo_resend_audit",
+  "desc": "L2 todo_write 重发义务事后审计闸（2026-08 REFORM-GATE 判立即改落地）：DSH todos 投影 turn 级清零是外部既定语义，goal 续轮与子分身通知（idle 收 followup）每开新 turn 即清清单；新回合是否重发 todo_write 原靠模型自觉。本闸扫本会话事件日志逐 turn 核验：turn 开始时有悬置未完成清单（上一快照 pending+in_progress>0）而本 turn 未重发 → T1 违例（aborted/interrupted 机械豁免）。判 A=全部义务回合已重发；判 B=violations 即缺发回合清单，复盘记违规。挂接点：复盘着陆检查（与 first_push_audit.json 同级）+ 人工随时可扳。",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/gate_todo_resend_audit.py", "expect": 0, "label": "T1 重发义务逐 turn 核验：悬置未完成清单的回合必须有 todo/write"}
+  ]
+}

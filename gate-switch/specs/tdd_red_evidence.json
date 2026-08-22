@@ -1,0 +1,7 @@
+{
+  "gate": "tdd_red_evidence",
+  "desc": "TDD RED 证据门：每条技术用例必须有 .tdd_red/<case_id>.log（含失败特征）+.exit（非0），缺一判 B——声称跑过红必须出示物证",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/test-driven-development/scripts/red_evidence_check.py --dir \"{dir}\" --cases \"{cases}\"", "expect": 0, "label": "RED 证据齐全且真实"}
+  ]
+}

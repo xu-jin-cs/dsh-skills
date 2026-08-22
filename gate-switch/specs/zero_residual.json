@@ -1,0 +1,8 @@
+{
+  "gate": "zero_residual",
+  "desc": "零残留参数化模板闸（2026-08-16 开关化，一模三绑）：机械核验 {pattern} 在 {path}（支持 glob）内命中数==0。三处本源禁令共用：① 01_workflows.md 规则14 改名零残留——pattern=旧函数/类/文件名，path=项目源码目录；② 01_workflows.md 规则28 回滚零残留——pattern=修改前记录的特征字符串，path=所有相关文件；③ 04_dev_standard.md 钩子脚本禁止静默执行——pattern=\">/dev/null\"，path=.claude/settings.json+钩子脚本。注意 pattern 按正则解释，含特殊字符须转义。A=0 残留放行；B=命中数即残留实证，violations 列出继续清理。",
+  "checks": [
+    {"type": "grep_count", "pattern": "{pattern}", "path": "{path}", "op": "eq", "value": 0,
+     "label": "零残留扫描（{pattern} 在 {path} 内命中数必须为 0）"}
+  ]
+}

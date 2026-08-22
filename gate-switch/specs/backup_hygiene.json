@@ -1,0 +1,8 @@
+{
+  "gate": "backup_hygiene",
+  "desc": "备份与目录卫生闸（2026-08-20 REFORM-GATE 判A落地，Shard C 清算配套）：机械核验治理域（~/.agents ~/.dsh ~/agent-harness ~/dsh-skills）源目录无散落备份副本（*.bak/*.backup/*.old/*~/*.bak.*），剔除豁免区 */archive/* 与 */migration_backup/* 后计数必须为 0。A=卫生达标；B=仍有散落备份，violations 列出残留计数，须按 rules/04_dev_standard.md 备份与目录卫生条款处置后重扳。复盘期后查挂点。",
+  "checks": [
+    {"type": "script_exit", "cmd": "bash -c \"find /Users/xujin/.agents /Users/xujin/.dsh /Users/xujin/agent-harness /Users/xujin/dsh-skills -type f \\( -name '*.bak' -o -name '*.backup' -o -name '*.old' -o -name '*~' -o -name '*.bak.*' \\) | grep -v -e '/archive/' -e '/migration_backup/' | wc -l | tr -d ' ' | grep -qx 0\"", "expect": 0, "label": "治理域散落备份计数=0（剔除 */archive/* 与 */migration_backup/*）"},
+    {"type": "file_exists", "path": "/Users/xujin/.agents/skills/gate-switch/scripts/backup_hygiene_sweep.py", "label": "自动清扫执行体存在（2026-08-20 用户提案落地：检查→执行闭环，会话开始零容忍自动归档）"}
+  ]
+}

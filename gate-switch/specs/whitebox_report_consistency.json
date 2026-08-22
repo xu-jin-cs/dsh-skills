@@ -1,0 +1,10 @@
+{
+  "gate": "whitebox_report_consistency",
+  "desc": "白盒报告核心数字↔JSON 证据一致性机械闸（2026-08-16 D 域批量开关化，whitebox-coverage/SKILL.md L108 数据来源条款）：解析 Markdown 报告的用例总数/通过率/缺陷数/行分支覆盖率，与 {project}/test-master-report.json 及 evidence/tdd/coverage.json 字段机械比对（百分比容差 0.5pt）。治「凭记忆填数」。报告交付前扳此闸，判 A 才许交付；判 B 按 violations 改报告或补证据后重扳。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/whitebox-coverage/scripts/whitebox_report_check.py --project \"{project}\"",
+     "expect": 0,
+     "label": "报告核心数字↔master/coverage JSON 一致性"}
+  ]
+}

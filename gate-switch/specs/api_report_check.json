@@ -1,0 +1,7 @@
+{
+  "gate": "api_report_check",
+  "desc": "api-test-engineer 汇报照抄核验：汇报文本的 exit code/gate_result/计数必须与 api-summary.json 权威值一致，矛盾即 B（防润色）",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/api-test-engineer/scripts/api_report_check.py --report-text \"{report_text}\" --summary \"{summary}\"", "expect": 0, "label": "汇报与权威摘要一致"}
+  ]
+}

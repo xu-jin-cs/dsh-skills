@@ -1,0 +1,7 @@
+{
+  "gate": "retro_match_score",
+  "desc": "retro-subagent 复盘报告 match_score 反编造机械门禁（2026-08-15 裁定）：重跑 deterministic-bm25 确定性打分与报告声称值比对，误差>0.01 即判编造阻断。脚本：retro-subagent/scripts/retro_match_score.py verify（退出码 0=判A一致 / 1=判B编造）",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/retro-subagent/scripts/retro_match_score.py verify --report {report} --query {query}", "expect": 0, "label": "match_score 确定性复核（反手写/反模拟）"}
+  ]
+}

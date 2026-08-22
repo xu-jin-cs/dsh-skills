@@ -1,0 +1,10 @@
+{
+  "gate": "post_gate_audit",
+  "desc": "POST_GATE_AUDIT 复核报告锚点化+勾稽化机械门禁（2026-08-16 REFORM-GATE 裁定，rules/05 后置审计机制；勾稽闸同日方案1 判A落地）：无证据锚点的结论视为未复核——每条 finding 必须带 evidence_refs ≥1（case_id + file:line + line_digest，行内容 sha1 前8位防行号漂移）；抽样过程与锚点真实性机械可判（抽样四元组齐全、抽样先于复核结论、比率不虚报）；findings[].claim 可选但出现即强校验——claim_type 四枚举（coverage_verdict 数值勾稽+锚点行数值可追溯 / severity_rating 定级自洽 / evidence_sufficiency 锚点数勾稽 / boundary_omission 遗漏不得判通过）；解读合理性本体留 sv 软层，禁止开关化。判 A 才允许复核报告出口；判 B 按 violations 修复后重扳。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/sv-supervisor/scripts/post_gate_audit_check.py --report \"{report}\" --case-root \"{case_root}\"",
+     "expect": 0,
+     "label": "POST_GATE_AUDIT 复核报告六闸校验(契约/锚点/抽样/比率/覆盖/勾稽)"}
+  ]
+}

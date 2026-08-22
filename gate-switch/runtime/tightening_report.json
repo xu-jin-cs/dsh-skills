@@ -1,0 +1,217 @@
+{
+ "mode": "dual_constraint_tighten",
+ "corpus_msgs": 2174,
+ "fp_hard_cap": 0.05,
+ "neg_hard_cap": 0.05,
+ "converge_gain_pt": 1.0,
+ "signals": {
+  "SOFT-MULTITASK": {
+   "pos_n": 23,
+   "neg_n": 97,
+   "before": {
+    "pos_rate": 0.6087,
+    "neg_rate": 0.0825,
+    "corpus_rate": 0.0386
+   },
+   "after": {
+    "pos_rate": 0.6087,
+    "neg_rate": 0.0412,
+    "corpus_rate": 0.0271
+   },
+   "dual_feasible": true,
+   "arrays": [
+    [
+     "多任务",
+     "并行"
+    ],
+    [
+     "多路",
+     "并行"
+    ],
+    [
+     "批量",
+     "扇出"
+    ],
+    [
+     "多个",
+     "分身",
+     "都要"
+    ],
+    [
+     "多个",
+     "子任务"
+    ],
+    [
+     "件事",
+     "都要"
+    ],
+    [
+     "件事",
+     "同时"
+    ],
+    [
+     "解决",
+     "都要"
+    ],
+    [
+     "分身",
+     "批量"
+    ],
+    [
+     "设计",
+     "并行"
+    ]
+   ],
+   "trace": [
+    {
+     "round": 1,
+     "move": "extend ['多个', '分身']+都要",
+     "pos": 0.6087,
+     "neg": 0.0412,
+     "corpus": 0.0271
+    },
+    {
+     "round": "feasible",
+     "pos": 0.6087,
+     "neg": 0.0412,
+     "corpus": 0.0271
+    }
+   ]
+  },
+  "SOFT-PROBLEM-RAISED": {
+   "pos_n": 34,
+   "neg_n": 86,
+   "before": {
+    "pos_rate": 0.5294,
+    "neg_rate": 0.2326,
+    "corpus_rate": 0.0235
+   },
+   "after": {
+    "pos_rate": 0.2647,
+    "neg_rate": 0.0465,
+    "corpus_rate": 0.0092
+   },
+   "dual_feasible": true,
+   "arrays": [
+    [
+     "出问题",
+     "怎么办"
+    ],
+    [
+     "报错",
+     "复现"
+    ],
+    [
+     "误判",
+     "打回"
+    ],
+    [
+     "问题",
+     "出问题",
+     "改造"
+    ],
+    [
+     "改造",
+     "打回"
+    ],
+    [
+     "处理",
+     "打回"
+    ],
+    [
+     "问题",
+     "报错",
+     "误判"
+    ]
+   ],
+   "trace": [
+    {
+     "round": 1,
+     "move": "extend ['问题', '报错']+误判",
+     "pos": 0.4706,
+     "neg": 0.1047,
+     "corpus": 0.0147
+    },
+    {
+     "round": 2,
+     "move": "extend ['问题', '出问题']+改造",
+     "pos": 0.2647,
+     "neg": 0.0465,
+     "corpus": 0.0092
+    },
+    {
+     "round": "feasible",
+     "pos": 0.2647,
+     "neg": 0.0465,
+     "corpus": 0.0092
+    }
+   ]
+  },
+  "SOFT-PLAN-SELECT": {
+   "pos_n": 6,
+   "neg_n": 116,
+   "before": {
+    "pos_rate": 0.6667,
+    "neg_rate": 0.0603,
+    "corpus_rate": 0.0074
+   },
+   "after": {
+    "pos_rate": 0.5,
+    "neg_rate": 0.0345,
+    "corpus_rate": 0.0055
+   },
+   "dual_feasible": true,
+   "arrays": [
+    [
+     "如何",
+     "选型"
+    ],
+    [
+     "要做",
+     "怎么做"
+    ],
+    [
+     "规划",
+     "思路"
+    ],
+    [
+     "设计",
+     "思路"
+    ],
+    [
+     "方案",
+     "要做"
+    ],
+    [
+     "改造",
+     "思路",
+     "选型"
+    ]
+   ],
+   "trace": [
+    {
+     "round": 1,
+     "move": "extend ['改造', '思路']+选型",
+     "pos": 0.5,
+     "neg": 0.0345,
+     "corpus": 0.0055
+    },
+    {
+     "round": "feasible",
+     "pos": 0.5,
+     "neg": 0.0345,
+     "corpus": 0.0055
+    }
+   ]
+  }
+ },
+ "df_freshness": {
+  "corpus_msgs_now": 2174,
+  "lexicon_baseline_msgs": [
+   2147,
+   2148
+  ],
+  "drift_pct": 1.21,
+  "dead_words": []
+ }
+}

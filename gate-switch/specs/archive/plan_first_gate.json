@@ -1,0 +1,9 @@
+{
+  "gate": "plan_first_gate",
+  "desc": "PLAN-FIRST-GATE 事前机械闸：模型在用户抛问题/需求后、首个执行类工具调用（bash/edit/write/subagent 族）前，必须把步骤清单落盘为 md 文件并扳本闸。A=清单落盘且含 ≥2 条步骤行与等用户确认声明，允许首个执行类工具调用；B=violations 即缺失项（清单未落盘/步骤行不足/缺等确认声明）。该不该扳的触发识别留软层，由 plan_first_audit.json 复盘期逐 turn 后查兜底。",
+  "checks": [
+    {"type": "file_exists", "path": "{plan}", "label": "步骤清单已落盘文件"},
+    {"type": "grep_count", "pattern": "^\\s*([0-9]+[.、)]|-\\s)", "path": "{plan}", "op": "min", "value": 2, "label": "≥2 条步骤行（防单行假清单）"},
+    {"type": "grep_count", "pattern": "等.*确认", "path": "{plan}", "op": "min", "value": 1, "label": "含等用户确认声明（防列完不等确认就动手）"}
+  ]
+}

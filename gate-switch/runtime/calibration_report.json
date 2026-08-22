@@ -1,0 +1,816 @@
+{
+ "corpus_msgs": 2174,
+ "fp_hard_cap": 0.05,
+ "converge_gain_pt": 1.0,
+ "admit_gain_pt": 5.0,
+ "signals": {
+  "SOFT-MULTITASK": {
+   "pos_n": 23,
+   "neg_n": 97,
+   "baseline": {
+    "pos_rate": 0.0435,
+    "corpus_rate": 0.0166,
+    "neg_rate": 0.0309
+   },
+   "accepted_arrays": [
+    {
+     "array": [
+      "解决",
+      "都要"
+     ],
+     "pos_gain": 8,
+     "pos_gain_pt": 34.78,
+     "fp_rate_corpus": 0.0046,
+     "fp_rate_neg": 0.0309
+    },
+    {
+     "array": [
+      "分身",
+      "批量"
+     ],
+     "pos_gain": 3,
+     "pos_gain_pt": 13.04,
+     "fp_rate_corpus": 0.0037,
+     "fp_rate_neg": 0.0412
+    },
+    {
+     "array": [
+      "设计",
+      "并行"
+     ],
+     "pos_gain": 2,
+     "pos_gain_pt": 8.7,
+     "fp_rate_corpus": 0.0064,
+     "fp_rate_neg": 0.0619
+    },
+    {
+     "array": [
+      "能不能",
+      "分身"
+     ],
+     "pos_gain": 1,
+     "pos_gain_pt": 4.35,
+     "fp_rate_corpus": 0.0009,
+     "fp_rate_neg": 0.0619
+    },
+    {
+     "array": [
+      "两个",
+      "多个"
+     ],
+     "pos_gain": 1,
+     "pos_gain_pt": 4.35,
+     "fp_rate_corpus": 0.0018,
+     "fp_rate_neg": 0.0722
+    },
+    {
+     "array": [
+      "修复",
+      "多任务"
+     ],
+     "pos_gain": 1,
+     "pos_gain_pt": 4.35,
+     "fp_rate_corpus": 0.0028,
+     "fp_rate_neg": 0.0722
+    },
+    {
+     "array": [
+      "异常",
+      "并行"
+     ],
+     "pos_gain": 1,
+     "pos_gain_pt": 4.35,
+     "fp_rate_corpus": 0.0041,
+     "fp_rate_neg": 0.0722
+    }
+   ],
+   "trace": [
+    {
+     "round": 1,
+     "accept": [
+      "解决",
+      "都要"
+     ],
+     "gain_pt": 34.78,
+     "fp": 0.0046
+    },
+    {
+     "round": 2,
+     "accept": [
+      "分身",
+      "批量"
+     ],
+     "gain_pt": 13.04,
+     "fp": 0.0037
+    },
+    {
+     "round": 3,
+     "accept": [
+      "设计",
+      "并行"
+     ],
+     "gain_pt": 8.7,
+     "fp": 0.0064
+    },
+    {
+     "round": 4,
+     "accept": [
+      "能不能",
+      "分身"
+     ],
+     "gain_pt": 4.35,
+     "fp": 0.0009
+    },
+    {
+     "round": 5,
+     "accept": [
+      "两个",
+      "多个"
+     ],
+     "gain_pt": 4.35,
+     "fp": 0.0018
+    },
+    {
+     "round": 6,
+     "accept": [
+      "修复",
+      "多任务"
+     ],
+     "gain_pt": 4.35,
+     "fp": 0.0028
+    },
+    {
+     "round": 7,
+     "accept": [
+      "异常",
+      "并行"
+     ],
+     "gain_pt": 4.35,
+     "fp": 0.0041
+    },
+    {
+     "round": "converged",
+     "reason": "frontier 增益 0.00pt < 1.0pt 收敛"
+    }
+   ],
+   "final": {
+    "pos_rate": 0.6087,
+    "corpus_rate": 0.0313,
+    "neg_rate": 0.0619,
+    "arrays": [
+     [
+      "多任务",
+      "并行"
+     ],
+     [
+      "多路",
+      "并行"
+     ],
+     [
+      "批量",
+      "扇出"
+     ],
+     [
+      "多个",
+      "分身"
+     ],
+     [
+      "多个",
+      "子任务"
+     ],
+     [
+      "件事",
+      "都要"
+     ],
+     [
+      "件事",
+      "同时"
+     ],
+     [
+      "解决",
+      "都要"
+     ],
+     [
+      "分身",
+      "批量"
+     ],
+     [
+      "设计",
+      "并行"
+     ]
+    ]
+   },
+   "dropped_arrays": [
+    [
+     "能不能",
+     "分身"
+    ],
+    [
+     "两个",
+     "多个"
+    ],
+    [
+     "修复",
+     "多任务"
+    ],
+    [
+     "异常",
+     "并行"
+    ]
+   ]
+  },
+  "SOFT-PROBLEM-RAISED": {
+   "pos_n": 34,
+   "neg_n": 86,
+   "baseline": {
+    "pos_rate": 0.0588,
+    "corpus_rate": 0.0023,
+    "neg_rate": 0.0116
+   },
+   "accepted_arrays": [
+    {
+     "array": [
+      "问题",
+      "出问题"
+     ],
+     "pos_gain": 9,
+     "pos_gain_pt": 26.47,
+     "fp_rate_corpus": 0.0092,
+     "fp_rate_neg": 0.093
+    },
+    {
+     "array": [
+      "改造",
+      "打回"
+     ],
+     "pos_gain": 3,
+     "pos_gain_pt": 8.82,
+     "fp_rate_corpus": 0.0023,
+     "fp_rate_neg": 0.1047
+    },
+    {
+     "array": [
+      "处理",
+      "打回"
+     ],
+     "pos_gain": 2,
+     "pos_gain_pt": 5.88,
+     "fp_rate_corpus": 0.0009,
+     "fp_rate_neg": 0.1047
+    },
+    {
+     "array": [
+      "问题",
+      "报错"
+     ],
+     "pos_gain": 2,
+     "pos_gain_pt": 5.88,
+     "fp_rate_corpus": 0.0087,
+     "fp_rate_neg": 0.2326
+    },
+    {
+     "array": [
+      "根治",
+      "复现"
+     ],
+     "pos_gain": 1,
+     "pos_gain_pt": 2.94,
+     "fp_rate_corpus": 0.0014,
+     "fp_rate_neg": 0.2442
+    }
+   ],
+   "trace": [
+    {
+     "round": 1,
+     "accept": [
+      "问题",
+      "出问题"
+     ],
+     "gain_pt": 26.47,
+     "fp": 0.0092
+    },
+    {
+     "round": 2,
+     "accept": [
+      "改造",
+      "打回"
+     ],
+     "gain_pt": 8.82,
+     "fp": 0.0023
+    },
+    {
+     "round": 3,
+     "accept": [
+      "处理",
+      "打回"
+     ],
+     "gain_pt": 5.88,
+     "fp": 0.0009
+    },
+    {
+     "round": 4,
+     "accept": [
+      "问题",
+      "报错"
+     ],
+     "gain_pt": 5.88,
+     "fp": 0.0087
+    },
+    {
+     "round": 5,
+     "accept": [
+      "根治",
+      "复现"
+     ],
+     "gain_pt": 2.94,
+     "fp": 0.0014
+    },
+    {
+     "round": "converged",
+     "reason": "frontier 增益 0.00pt < 1.0pt 收敛"
+    }
+   ],
+   "final": {
+    "pos_rate": 0.5294,
+    "corpus_rate": 0.0235,
+    "neg_rate": 0.2326,
+    "arrays": [
+     [
+      "出问题",
+      "怎么办"
+     ],
+     [
+      "报错",
+      "复现"
+     ],
+     [
+      "误判",
+      "打回"
+     ],
+     [
+      "问题",
+      "出问题"
+     ],
+     [
+      "改造",
+      "打回"
+     ],
+     [
+      "处理",
+      "打回"
+     ],
+     [
+      "问题",
+      "报错"
+     ]
+    ]
+   },
+   "dropped_arrays": [
+    [
+     "根治",
+     "复现"
+    ]
+   ]
+  },
+  "SOFT-PLAN-SELECT": {
+   "pos_n": 6,
+   "neg_n": 116,
+   "baseline": {
+    "pos_rate": 0.0,
+    "corpus_rate": 0.0005,
+    "neg_rate": 0.0086
+   },
+   "accepted_arrays": [
+    {
+     "array": [
+      "设计",
+      "思路"
+     ],
+     "pos_gain": 2,
+     "pos_gain_pt": 33.33,
+     "fp_rate_corpus": 0.0041,
+     "fp_rate_neg": 0.0345
+    },
+    {
+     "array": [
+      "方案",
+      "要做"
+     ],
+     "pos_gain": 1,
+     "pos_gain_pt": 16.67,
+     "fp_rate_corpus": 0.0009,
+     "fp_rate_neg": 0.0345
+    },
+    {
+     "array": [
+      "改造",
+      "思路"
+     ],
+     "pos_gain": 1,
+     "pos_gain_pt": 16.67,
+     "fp_rate_corpus": 0.0018,
+     "fp_rate_neg": 0.0603
+    }
+   ],
+   "trace": [
+    {
+     "round": 1,
+     "accept": [
+      "设计",
+      "思路"
+     ],
+     "gain_pt": 33.33,
+     "fp": 0.0041
+    },
+    {
+     "round": 2,
+     "accept": [
+      "方案",
+      "要做"
+     ],
+     "gain_pt": 16.67,
+     "fp": 0.0009
+    },
+    {
+     "round": 3,
+     "accept": [
+      "改造",
+      "思路"
+     ],
+     "gain_pt": 16.67,
+     "fp": 0.0018
+    },
+    {
+     "round": "converged",
+     "reason": "frontier 增益 0.00pt < 1.0pt 收敛"
+    }
+   ],
+   "final": {
+    "pos_rate": 0.6667,
+    "corpus_rate": 0.0074,
+    "neg_rate": 0.0603,
+    "arrays": [
+     [
+      "如何",
+      "选型"
+     ],
+     [
+      "要做",
+      "怎么做"
+     ],
+     [
+      "规划",
+      "思路"
+     ],
+     [
+      "设计",
+      "思路"
+     ],
+     [
+      "方案",
+      "要做"
+     ],
+     [
+      "改造",
+      "思路"
+     ]
+    ]
+   },
+   "dropped_arrays": []
+  }
+ },
+ "words": {
+  "任务": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "over_cap_review"
+  },
+  "问题": {
+   "verdict": "admit",
+   "signals_admitted": [
+    "SOFT-PROBLEM-RAISED",
+    "SOFT-PROBLEM-RAISED"
+   ],
+   "best": {
+    "array": [
+     "问题",
+     "出问题"
+    ],
+    "pos_gain": 9,
+    "pos_gain_pt": 26.47,
+    "fp_rate_corpus": 0.0092,
+    "fp_rate_neg": 0.093,
+    "signal": "SOFT-PROBLEM-RAISED"
+   },
+   "note": "over_cap_review"
+  },
+  "路径": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "over_cap_review"
+  },
+  "清单": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "over_cap_review"
+  },
+  "改造": {
+   "verdict": "admit",
+   "signals_admitted": [
+    "SOFT-PROBLEM-RAISED",
+    "SOFT-PLAN-SELECT"
+   ],
+   "best": {
+    "array": [
+     "改造",
+     "思路"
+    ],
+    "pos_gain": 1,
+    "pos_gain_pt": 16.67,
+    "fp_rate_corpus": 0.0018,
+    "fp_rate_neg": 0.0603,
+    "signal": "SOFT-PLAN-SELECT"
+   },
+   "note": "over_cap_review"
+  },
+  "设计": {
+   "verdict": "admit",
+   "signals_admitted": [
+    "SOFT-MULTITASK",
+    "SOFT-PLAN-SELECT"
+   ],
+   "best": {
+    "array": [
+     "设计",
+     "思路"
+    ],
+    "pos_gain": 2,
+    "pos_gain_pt": 33.33,
+    "fp_rate_corpus": 0.0041,
+    "fp_rate_neg": 0.0345,
+    "signal": "SOFT-PLAN-SELECT"
+   },
+   "note": "over_cap_review"
+  },
+  "解决": {
+   "verdict": "admit",
+   "signals_admitted": [
+    "SOFT-MULTITASK"
+   ],
+   "best": {
+    "array": [
+     "解决",
+     "都要"
+    ],
+    "pos_gain": 8,
+    "pos_gain_pt": 34.78,
+    "fp_rate_corpus": 0.0046,
+    "fp_rate_neg": 0.0309,
+    "signal": "SOFT-MULTITASK"
+   },
+   "note": "over_cap_review"
+  },
+  "方案": {
+   "verdict": "admit",
+   "signals_admitted": [
+    "SOFT-PLAN-SELECT"
+   ],
+   "best": {
+    "array": [
+     "方案",
+     "要做"
+    ],
+    "pos_gain": 1,
+    "pos_gain_pt": 16.67,
+    "fp_rate_corpus": 0.0009,
+    "fp_rate_neg": 0.0345,
+    "signal": "SOFT-PLAN-SELECT"
+   },
+   "note": "over_cap_review"
+  },
+  "修复": {
+   "verdict": "reject",
+   "signals_admitted": [
+    "SOFT-MULTITASK"
+   ],
+   "best": {
+    "array": [
+     "修复",
+     "多任务"
+    ],
+    "pos_gain": 1,
+    "pos_gain_pt": 4.35,
+    "fp_rate_corpus": 0.0028,
+    "fp_rate_neg": 0.0722,
+    "signal": "SOFT-MULTITASK"
+   },
+   "note": "over_cap_review"
+  },
+  "怎么": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "over_cap_review"
+  },
+  "处理": {
+   "verdict": "admit",
+   "signals_admitted": [
+    "SOFT-PROBLEM-RAISED"
+   ],
+   "best": {
+    "array": [
+     "处理",
+     "打回"
+    ],
+    "pos_gain": 2,
+    "pos_gain_pt": 5.88,
+    "fp_rate_corpus": 0.0009,
+    "fp_rate_neg": 0.1047,
+    "signal": "SOFT-PROBLEM-RAISED"
+   },
+   "note": "over_cap_review"
+  },
+  "失效": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "over_cap_review"
+  },
+  "需求": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "over_cap_review"
+  },
+  "根治": {
+   "verdict": "reject",
+   "signals_admitted": [
+    "SOFT-PROBLEM-RAISED"
+   ],
+   "best": {
+    "array": [
+     "根治",
+     "复现"
+    ],
+    "pos_gain": 1,
+    "pos_gain_pt": 2.94,
+    "fp_rate_corpus": 0.0014,
+    "fp_rate_neg": 0.2442,
+    "signal": "SOFT-PROBLEM-RAISED"
+   },
+   "note": "over_cap_review"
+  },
+  "异常": {
+   "verdict": "reject",
+   "signals_admitted": [
+    "SOFT-MULTITASK"
+   ],
+   "best": {
+    "array": [
+     "异常",
+     "并行"
+    ],
+    "pos_gain": 1,
+    "pos_gain_pt": 4.35,
+    "fp_rate_corpus": 0.0041,
+    "fp_rate_neg": 0.0722,
+    "signal": "SOFT-MULTITASK"
+   },
+   "note": "over_cap_review"
+  },
+  "能不能": {
+   "verdict": "reject",
+   "signals_admitted": [
+    "SOFT-MULTITASK"
+   ],
+   "best": {
+    "array": [
+     "能不能",
+     "分身"
+    ],
+    "pos_gain": 1,
+    "pos_gain_pt": 4.35,
+    "fp_rate_corpus": 0.0009,
+    "fp_rate_neg": 0.0619,
+    "signal": "SOFT-MULTITASK"
+   },
+   "note": "over_cap_review"
+  },
+  "bug": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "over_cap_review"
+  },
+  "并行": {
+   "verdict": "reject",
+   "signals_admitted": [],
+   "best": null,
+   "note": "exempt_user_directive",
+   "exempt_validation": {
+    "SOFT-MULTITASK": {
+     "canon": "并行",
+     "arrays": [
+      [
+       "多任务",
+       "并行"
+      ],
+      [
+       "多路",
+       "并行"
+      ]
+     ],
+     "pos_rate": 0.0435,
+     "corpus_rate": 0.0092,
+     "neg_rate": 0.0,
+     "w_only_pos": 1,
+     "w_only_neg": 0,
+     "w_only_corpus": 14,
+     "fp_within_cap": true
+    }
+   },
+   "exempt_verdict": "pass_data_validation"
+  },
+  "分身": {
+   "verdict": "admit",
+   "signals_admitted": [
+    "SOFT-MULTITASK"
+   ],
+   "best": {
+    "array": [
+     "分身",
+     "批量"
+    ],
+    "pos_gain": 3,
+    "pos_gain_pt": 13.04,
+    "fp_rate_corpus": 0.0037,
+    "fp_rate_neg": 0.0412,
+    "signal": "SOFT-MULTITASK"
+   },
+   "note": "exempt_user_directive",
+   "exempt_validation": {
+    "SOFT-MULTITASK": {
+     "canon": "分身",
+     "arrays": [
+      [
+       "多个",
+       "分身"
+      ]
+     ],
+     "pos_rate": 0.0,
+     "corpus_rate": 0.0069,
+     "neg_rate": 0.0309,
+     "w_only_pos": 0,
+     "w_only_neg": 3,
+     "w_only_corpus": 15,
+     "fp_within_cap": true
+    }
+   },
+   "exempt_verdict": "pass_data_validation"
+  },
+  "两个": {
+   "verdict": "reject",
+   "signals_admitted": [
+    "SOFT-MULTITASK"
+   ],
+   "best": {
+    "array": [
+     "两个",
+     "多个"
+    ],
+    "pos_gain": 1,
+    "pos_gain_pt": 4.35,
+    "fp_rate_corpus": 0.0018,
+    "fp_rate_neg": 0.0722,
+    "signal": "SOFT-MULTITASK"
+   },
+   "note": "exempt_user_directive",
+   "exempt_validation": {
+    "SOFT-MULTITASK": {
+     "canon": "多个",
+     "arrays": [
+      [
+       "多个",
+       "分身"
+      ],
+      [
+       "多个",
+       "子任务"
+      ]
+     ],
+     "pos_rate": 0.0,
+     "corpus_rate": 0.0069,
+     "neg_rate": 0.0309,
+     "w_only_pos": 0,
+     "w_only_neg": 0,
+     "w_only_corpus": 0,
+     "fp_within_cap": true
+    }
+   },
+   "exempt_verdict": "pass_data_validation"
+  }
+ }
+}

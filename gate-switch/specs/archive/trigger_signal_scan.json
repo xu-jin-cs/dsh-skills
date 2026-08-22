@@ -1,0 +1,36 @@
+{
+  "gate": "trigger_signal_scan",
+  "desc": "开关第一推动·信号扫描开关实证闸（2026-08-20 短板二改造）：核验扫描机制本体存在且自检通过——脚本/signals 数据文件存在、signals JSON 含 signals 与 soft_signals 两段、内建正反样例自检全中。判 A=扫描机制可用，任何用户输入先跑 trigger_signal_scan.py 照抄输出；判 B=机制损坏，回退软层触发清单并修机制。",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "/Users/xujin/.agents/skills/gate-switch/scripts/trigger_signal_scan.py",
+      "label": "扫描脚本存在"
+    },
+    {
+      "type": "file_exists",
+      "path": "/Users/xujin/.agents/skills/gate-switch/data/trigger_signals.json",
+      "label": "signals 结构化数据存在"
+    },
+    {
+      "type": "json_field",
+      "path": "/Users/xujin/.agents/skills/gate-switch/data/trigger_signals.json",
+      "field": "signals",
+      "label": "signals 段存在（机械信号表）",
+      "op": "not_empty"
+    },
+    {
+      "type": "json_field",
+      "path": "/Users/xujin/.agents/skills/gate-switch/data/trigger_signals.json",
+      "field": "soft_signals",
+      "label": "soft_signals 段存在（软层提醒段，keyword 不可判信号不伪装机械命中）",
+      "op": "not_empty"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 /Users/xujin/.agents/skills/gate-switch/scripts/trigger_signal_scan.py --selftest",
+      "expect": 0,
+      "label": "内建正反样例自检（复盘词/测试三词/危险命令/发布声称/无关输入）"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "gate": "skill_value_gate",
+  "desc": "块H+块K（REFORM-GATE 双判A 2026-08-22，块文件 ~/.agents/logs/reform_blocks/skill_value_gate_20260822.md + dedup_demand_count_20260822.md）：GENERATE 写入 registry 前的价值准入闸。终裁硬约束：①废止率口径只计数台账 ②合并≠排除/加载即100%使用/价值目标=加载面归属正确性 ③块K：语义重复=需求信号（DEDUP_COUNT 退码7：候选不入库但 demand_ledger 记一笔+条目 demand_count+1，达2即第三次被需要→specialize_hook 原位转化专项，转化后重置；带 parent_skill 的专项不参与晋升回顾防循环）。R2 检测器=包含度口径 200‰（标定：真同义对13/13+母体测例285‰命中，真无关对误并0/40≤5%）。本 spec 核验：A/B/DEDUP_COUNT 三态可复现、计数1→2→转化全链路（临时目录零生产触碰）、dispatcher 挂接、配置启用、台账机制在线。",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "/Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py",
+      "label": "闸脚本存在"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 -c \"import json,subprocess,sys; d=json.load(open('/Users/xujin/.agents/skills/gate-switch/specs/fixtures/skill_value_gate_pos.json')); r=subprocess.run([sys.executable,'/Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py','--content',d['content'],'--role',d['role'],'--project',d['project'],'--no-ledger'],capture_output=True); print(r.stdout.decode()[-200:]); sys.exit(r.returncode)\"",
+      "expect": 0,
+      "label": "正候选（四段式完备+severity high+流程门禁类）判 A 独立成技"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 -c \"import json,subprocess,sys; d=json.load(open('/Users/xujin/.agents/skills/gate-switch/specs/fixtures/skill_value_gate_neg.json')); r=subprocess.run([sys.executable,'/Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py','--content',d['content'],'--role',d['role'],'--project',d['project'],'--no-ledger'],capture_output=True); print(r.stdout.decode()[-200:]); sys.exit(r.returncode)\"",
+      "expect": 2,
+      "label": "反候选（severity low+未加工残片）判 B 拒绝"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 -c \"import json,subprocess,sys; d=json.load(open('/Users/xujin/.agents/skills/gate-switch/specs/fixtures/skill_value_gate_dup.json')); r=subprocess.run([sys.executable,'/Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py','--content',d['content'],'--role',d['role'],'--project',d['project'],'--no-ledger'],capture_output=True); print(r.stdout.decode()[-200:]); sys.exit(r.returncode)\"",
+      "expect": 7,
+      "label": "块K 母体测例（'依赖外部服务的质量闸门'紧贴换措辞改写，标定 285‰≥200‰）判 DEDUP_COUNT"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 /Users/xujin/.agents/skills/gate-switch/specs/fixtures/skill_value_gate_chain_test.py",
+      "expect": 0,
+      "label": "块K 全链路（增补2替代+增补3吸收）：计数1→2→specialize_replace 替代转化→specialized 条目再遇同义候选走吸收期（计数不变+内容追加+候选丢弃+ABSORB 台账），临时目录零生产触碰"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py",
+      "pattern": "absorb_into_specialty",
+      "op": "min",
+      "value": 2,
+      "label": "吸收期实现在闸本体（absorb_into_specialty 定义+调用≥2处，块K 口径补充3）"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/retro-skills-registry/scripts/dispatcher_generate.py",
+      "pattern": "ABSORB",
+      "op": "min",
+      "value": 2,
+      "label": "dispatcher 吸收期分流（ABSORB_TARGET 解析+分支≥2处）"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py",
+      "pattern": "specialize_replace",
+      "op": "min",
+      "value": 2,
+      "label": "替代式转化实现在闸本体（specialize_replace 定义+调用≥2处）"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py",
+      "pattern": "retro_etl",
+      "op": "min",
+      "value": 1,
+      "label": "引擎晋升事务代码路径（独立调用侧：删旧增新同一 batch 事务，CONTRACT.md 第三节）"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/retro-skills-registry/scripts/dispatcher_generate.py",
+      "pattern": "_PENDING_SPECIALIZE",
+      "op": "min",
+      "value": 3,
+      "label": "dispatcher 侧转化挂料（_PENDING_SPECIALIZE_WRITES/DELETES 声明+挂料+并入 batch ≥3处）"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/retro-skills-registry/scripts/trigger_match_audit.py",
+      "pattern": "parent_skill",
+      "op": "min",
+      "value": 1,
+      "label": "防循环豁免：晋升回顾跳过带 parent_skill 的专项（块K 修订增补①）"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 -m py_compile /Users/xujin/.agents/skills/gate-switch/scripts/skill_value_gate_check.py /Users/xujin/.agents/retro-skills-registry/scripts/trace_skill_load.py /Users/xujin/.agents/retro-skills-registry/scripts/dispatcher_generate.py /Users/xujin/.agents/retro-skills-registry/scripts/trigger_match_audit.py /Users/xujin/.agents/skills/gate-switch/specs/fixtures/skill_value_gate_chain_test.py",
+      "expect": 0,
+      "label": "落地文件 py_compile 全过（含块K 新增）"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/retro-skills-registry/scripts/dispatcher_generate.py",
+      "pattern": "DEDUP_COUNT",
+      "op": "min",
+      "value": 3,
+      "label": "dispatcher 块K 挂接：DEDUP_COUNT 退码7分支+defer-registry+计数转化（≥3处）"
+    },
+    {
+      "type": "grep_count",
+      "path": "/Users/xujin/.agents/retro-skills-registry/scripts/dispatcher_generate.py",
+      "pattern": "skill_value_gate",
+      "op": "min",
+      "value": 2,
+      "label": "dispatcher_generate 准入口已挂 skill_value_gate（导入+调用≥2处）"
+    },
+    {
+      "type": "json_field",
+      "path": "/Users/xujin/.agents/retro-skills-registry/dispatcher_generate_config.json",
+      "field": "value_gate.enabled",
+      "op": "equals",
+      "value": true,
+      "label": "dispatcher_generate_config value_gate.enabled=true"
+    },
+    {
+      "type": "file_exists",
+      "path": "/Users/xujin/.agents/retro-skills-registry/scripts/trace_skill_load.py",
+      "label": "消费侧加载留痕脚本存在（块H ⑶ 计数台账）"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "gate": "ppt_gate_b",
+  "desc": "ppt 主链 Gate B（渲染产物出口，2026-08-15 裁定自归档 xujin-workflow 引擎迁移 gate-switch）：主线08 渲染完成后、交付回执前扳动。机械核验 output.pptx 存在且可解包、qc_render 逐页预览图页数与 pptx 一致、与 01_requirement.page_count 三方锚定一致、质量报告阻断指标=0；渲染美观度不机考，留软层目检。用法：--set run=<run_dir>",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/ppt/scripts/ppt_gate_b_check.py --run-dir {run}", "expect": 0, "label": "ppt Gate B 渲染产物机考"}
+  ]
+}

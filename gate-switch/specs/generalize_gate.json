@@ -1,0 +1,13 @@
+{
+  "gate": "generalize_gate",
+  "desc": "GENERALIZE-GATE 填充完整性+模式库登记机械校验（2026-08-17 存量清算落地，仿 reform_gate.json 骨架，rules/11 第五节骨架化）：新机制/框架被采纳落地后，把填好的 [GENERALIZE-GATE] 块存为文件，扳 --set block=<块文件> --set pattern=<模式名>。A=①-⑥ 六字段标记齐全且 pattern_registry.jsonl 已有该模式登记条目；B=violations 即缺失项。填得对不对（实证真假/同类是否真实存在）留软层+复盘审计。",
+  "checks": [
+    {"type": "grep_count", "pattern": "本源抽象", "path": "{block}", "op": "min", "value": 1, "label": "①本源抽象"},
+    {"type": "grep_count", "pattern": "域内纵轴", "path": "{block}", "op": "min", "value": 1, "label": "②域内纵轴（同类点名）"},
+    {"type": "grep_count", "pattern": "跨域横轴", "path": "{block}", "op": "min", "value": 1, "label": "③④跨域横轴"},
+    {"type": "grep_count", "pattern": "骨架", "path": "{block}", "op": "min", "value": 1, "label": "⑤骨架/通用化判定"},
+    {"type": "grep_count", "pattern": "实证", "path": "{block}", "op": "min", "value": 1, "label": "⑥1实证+N同类闸"},
+    {"type": "grep_count", "pattern": "判定", "path": "{block}", "op": "min", "value": 1, "label": "⑥终局判定（立即泛化/登记待点名/退回重审）"},
+    {"type": "grep_count", "pattern": "{pattern}", "path": "/Users/xujin/.agents/logs/pattern_registry.jsonl", "op": "min", "value": 1, "label": "模式库 pattern_registry.jsonl 已登记该模式"}
+  ]
+}

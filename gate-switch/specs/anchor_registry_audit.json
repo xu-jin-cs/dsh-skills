@@ -1,0 +1,8 @@
+{
+  "gate": "anchor_registry_audit",
+  "desc": "锚点登记审计闸（2026-08-18 用户裁定采纳锚点注册表补位后落地，REFORM-GATE 判A；first_push_audit 同族'产物在/锚点缺'不对称检测）。数据源类产出（评估基准/方案/源码/历史记录）收尾必须登记锚点；声称某产物已登记、或复盘后查漏登记时扳：--set artifact=<产物路径>。A=产物真实存在且注册表有对应 source_path 锚点行；B=violations 即缺失项——产物不存在=审计对象造假；锚点行缺=漏登记，须用 dual_gates.py anchor 补登后重扳。",
+  "checks": [
+    {"type": "file_exists", "path": "{artifact}", "label": "审计对象产物真实存在（防拿不存在的路径过闸）"},
+    {"type": "grep_count", "pattern": "{artifact}", "path": "/Users/xujin/.agents/logs/session_anchors.jsonl", "op": "min", "value": 1, "label": "锚点注册表存在该产物 source_path 锚点行（缺=漏登记违例）"}
+  ]
+}

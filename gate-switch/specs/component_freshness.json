@@ -1,0 +1,22 @@
+{
+  "gate": "component_freshness",
+  "desc": "成分标定新鲜度闸（2026-08-22 块L 方向3，REFORM-GATE 判A，块文件 ~/.agents/logs/reform_blocks/trigger_rate_99_20260822.md）：recalibration_freshness 随召回指标废止时成分侧值守被误伤，本闸重挂——标定件缺失 / pipeline_hash 漂移（component_calibration.py+component_lexicon.json 联合 sha256 ≠ calibration_examples.json 记录戳）/ 语料漂移>5% → 判 B 强制重标；全过判 A。挂点：复盘着陆闸族。",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "/Users/xujin/.agents/skills/gate-switch/data/component_lexicon.json",
+      "label": "成分归一表存在"
+    },
+    {
+      "type": "file_exists",
+      "path": "/Users/xujin/.agents/skills/gate-switch/data/calibration_examples.json",
+      "label": "成分标定样本存在"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 /Users/xujin/.agents/skills/gate-switch/scripts/component_freshness_check.py",
+      "expect": 0,
+      "label": "pipeline_hash 一致且语料漂移 ≤5%"
+    }
+  ]
+}

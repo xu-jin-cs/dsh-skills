@@ -1,0 +1,10 @@
+{
+  "gate": "dpm_skill_entry",
+  "desc": "dpm 学习成果入技能表实证（2026-08-20 技能表化，克隆 spm_skill_entry 换路径）：交互文档复盘学习模式声称『已入技能表』前必扳——新条目文件已落盘 + registry.json 已登记该条目 id + 条目内含至少 1 条约束，三项全过判 A 才允许汇报。",
+  "checks": [
+    {"type": "file_exists", "path": "{entryfile}", "label": "条目文件已落盘"},
+    {"type": "file_min_size", "path": "{entryfile}", "bytes": 200, "label": "条目文件非空壳（≥200B）"},
+    {"type": "grep_count", "pattern": "{entryid}", "path": "/Users/xujin/.agents/skills/detail-product-manager/learned-skills/registry.json", "op": "min", "value": 1, "label": "registry.json 已登记该条目 id"},
+    {"type": "grep_count", "pattern": "^- ", "path": "{entryfile}", "op": "min", "value": 1, "label": "条目内含至少 1 条约束"}
+  ]
+}

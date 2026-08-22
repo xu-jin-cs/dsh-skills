@@ -1,0 +1,12 @@
+{
+  "gate": "doc_freshness",
+  "desc": "项目文档废止标识符 tripwire（2026-08-20 三短板根源治理 M3，REFORM-GATE v2 判A）：项目入口文档（CLAUDE.md/AGENTS.md）禁止出现已废止体系标识符（旧技能根 .claude 字面、LangGraph、写死用户路径）。本闸为兜底扫描非治疗方案；根治在产出点：真源指针原则——真源在他处的事实只许指针不许拷贝（rules/04_dev_standard.md）。标识符词表随体系演进退场只增不删地维护（本 spec checks 追加即可）。用法：gate_switch.py --spec doc_freshness.json --set src=<项目根>",
+  "checks": [
+    {"type": "grep_count", "pattern": "\\.claude", "path": "{src}/CLAUDE.md", "op": "max", "value": 0, "label": "CLAUDE.md 零旧技能根 .claude 字面（历史表述须用「旧版技能根」等无字面写法）"},
+    {"type": "grep_count", "pattern": "LangGraph|langgraph", "path": "{src}/CLAUDE.md", "op": "max", "value": 0, "label": "CLAUDE.md 零 LangGraph 废止架构字面"},
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/CLAUDE.md", "op": "max", "value": 0, "label": "CLAUDE.md 零写死用户路径"},
+    {"type": "grep_count", "pattern": "\\.claude", "path": "{src}/AGENTS.md", "op": "max", "value": 0, "label": "AGENTS.md 零旧技能根 .claude 字面"},
+    {"type": "grep_count", "pattern": "LangGraph|langgraph", "path": "{src}/AGENTS.md", "op": "max", "value": 0, "label": "AGENTS.md 零 LangGraph 废止架构字面"},
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/AGENTS.md", "op": "max", "value": 0, "label": "AGENTS.md 零写死用户路径"}
+  ]
+}

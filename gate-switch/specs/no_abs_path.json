@@ -1,0 +1,12 @@
+{
+  "gate": "no_abs_path",
+  "desc": "绝对路径硬编码零容忍 tripwire（2026-08-20 三短板根源治理 M2，REFORM-GATE v2 判A）：活体代码禁止字面量 /Users/* 路径——写死即换机即死（实证：agent-harness 85 处存量、19 文件一次清算）。本闸为兜底拦截非治疗方案；根治在产出点：路径引用三口径 + 共享助手（rules/04_dev_standard.md「路径引用三口径与文档真源指针原则」）。归档/备份/dist 等历史快照不在扫描面（path glob 只覆盖活体目录）。用法：gate_switch.py --spec no_abs_path.json --set src=<项目根>",
+  "checks": [
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/backend/**/*.py", "op": "max", "value": 0, "label": "backend/*.py 零字面量 /Users/ 路径"},
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/scripts/**/*.py", "op": "max", "value": 0, "label": "scripts/*.py 零字面量 /Users/ 路径"},
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/scripts/**/*.sh", "op": "max", "value": 0, "label": "scripts/*.sh 零字面量 /Users/ 路径"},
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/*.sh", "op": "max", "value": 0, "label": "顶层入口 *.sh 零字面量 /Users/ 路径"},
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/memory/**/*.py", "op": "max", "value": 0, "label": "memory/*.py 零字面量 /Users/ 路径"},
+    {"type": "grep_count", "pattern": "/Users/", "path": "{src}/memory/**/*.sh", "op": "max", "value": 0, "label": "memory/*.sh 零字面量 /Users/ 路径"}
+  ]
+}

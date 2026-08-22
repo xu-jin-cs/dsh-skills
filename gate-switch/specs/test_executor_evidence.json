@@ -1,0 +1,13 @@
+{
+  "gate": "test_executor_evidence",
+  "desc": "测试执行证据门：接件校验+证据完整性。A=证据链完整可交付；B=拒绝执行/标记证据异常，violations 即异常清单（防假证据假通过率）",
+  "checks": [
+    {"type": "file_exists", "path": "{evidence}/batch_meta.json", "label": "批次元数据存在"},
+    {"type": "json_field", "path": "{evidence}/batch_meta.json", "field": "batch_id", "op": "not_empty", "label": "batch_id 非空"},
+    {"type": "json_field", "path": "{evidence}/batch_meta.json", "field": "cross_validation_hash", "op": "not_empty", "label": "签发 hash 非空（未签发拒绝执行）"},
+    {"type": "json_field", "path": "{evidence}/batch_meta.json", "field": "env_label", "op": "not_empty", "label": "env_label 非空"},
+    {"type": "file_exists", "path": "{evidence}/manifest.json", "label": "证据清单 manifest 存在"},
+    {"type": "json_field", "path": "{evidence}/manifest.json", "field": "screenshots_taken", "op": "min", "value": 1, "label": "截图计数≥1（防零证据报通过）"},
+    {"type": "glob_count", "pattern": "{evidence}/screenshots/*.png", "op": "min", "value": 1, "label": "截图文件真实落盘（防计数虚报）"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "gate": "plan_first_audit",
+  "desc": "PLAN-FIRST-GATE 事后审计闸（2026-08-17 用户裁定『触发即强制执行』，REFORM-GATE 判A落地）：问题/需求信号命中的用户消息之后，首个执行类工具调用前必须有步骤清单输出；T1 违例进复盘。挂接点：复盘期必查（与 first_push_audit 同族）+ 人工随时可扳。",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/plan_first_audit.py", "expect": 0, "label": "PLAN-FIRST：问题/需求 turn 先列步骤后执行"}
+  ]
+}

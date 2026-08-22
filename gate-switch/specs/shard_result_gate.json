@@ -1,0 +1,8 @@
+{
+  "gate": "shard_result_gate",
+  "desc": "分身结果落盘核验（2026-08-17 结果落盘制落地，parallel-dispatch 三槽契约 SLOT-PRE ⑦ / SLOT-RECEIPT）：母体收编每路分身成果前扳 --set result=<任务书⑦指定的结果文件路径>。A=结果文件真实存在且非空，允许收编该路；B=成果未落盘（续派补落盘或标记该路损失，其余路不连坐）。防单屏障全有全无——workflow 取消/单片失败时已完成分身成果颗粒归仓。",
+  "checks": [
+    {"type": "file_exists", "path": "{result}", "label": "分身结果文件已落盘"},
+    {"type": "file_min_size", "path": "{result}", "bytes": 10, "label": "结果文件非空（防空壳落盘）"}
+  ]
+}

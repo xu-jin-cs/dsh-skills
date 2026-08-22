@@ -1,0 +1,17 @@
+{
+  "gate": "case_selfcheck",
+  "desc": "test-case-designer Step5 自检门禁（2026-08-15 裁定）：自检判定禁止手写，机械校验 12 项（三要素非空/方法合法集/scene_type 枚举/source_branch==scene_type/expected 非空/异步禁 smoke/mock⇒service_error/确认取消成对/smoke[5,8]/7类方法全覆盖/module 与契约逐字一致）。A=自检通过可提交 test-lead；B=violations 逐条修复后重扳。语义项（等价类充分性/断言强弱/场景合理性）不判，留 test-lead 软层审核。用法：--set cases=<用例JSON> --set schema=<.api-schema.json>；无契约时注入 --set schema=\"\"（空串跳过 module 校验）。",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "{cases}",
+      "label": "用例 JSON 存在"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/test-case-designer/scripts/case_selfcheck.py --cases \"{cases}\" --schema \"{schema}\"",
+      "expect": 0,
+      "label": "Step5 自检 12 项机械校验全过（任一违例 exit 1）"
+    }
+  ]
+}

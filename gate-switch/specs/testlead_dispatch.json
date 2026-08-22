@@ -1,0 +1,10 @@
+{
+  "gate": "testlead_dispatch",
+  "desc": "test-lead 三路下发门禁：输出三路输入齐备向量。A=三路齐全部下发；B=按 violations 识别缺口路——缺哪路搁置哪路（B 不是全停，其余路正常并行，violations 原文写入收口缺口原因）",
+  "checks": [
+    {"type": "file_exists", "path": "{project}/.api-schema.json", "label": "api 路：.api-schema.json"},
+    {"type": "file_exists", "path": "{project}/.prd.md", "label": "ui 路：.prd.md"},
+    {"type": "file_exists", "path": "{project}/.ui-proto.json", "label": "ui 路：.ui-proto.json"},
+    {"type": "file_exists", "path": "{project}/archmap/full_index.json", "label": "whitebox 路：archmap 基线"}
+  ]
+}

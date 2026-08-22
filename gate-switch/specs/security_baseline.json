@@ -1,0 +1,12 @@
+{
+  "gate": "security_baseline",
+  "desc": "安全左移基线闸（2026-08-17 REFORM-GATE 判A落地）：新项目/引擎交付前与 engine_health 同族体检时必扳。CORS 通配/明文口令/鉴权缺失/fail-open 默认四类回退机械拦截，全 A 才许上线。",
+  "checks": [
+    {"type": "grep_count", "pattern": "allow_origins\\s*=\\s*\\[\\s*[\"']\\*", "path": "/Users/xujin/agent-harness/backend/main.py", "op": "max", "value": 0, "label": "CORS 禁止通配 *（须 localhost 白名单）"},
+    {"type": "grep_count", "pattern": "(PASSWORD|PASS|TOKEN|SECRET)\\s*=\\s*[\"'][^\"'$\\s][^\"']*[\"']", "path": "/Users/xujin/agent-harness/start.sh", "op": "max", "value": 0, "label": "start.sh 无明文口令/token"},
+    {"type": "grep_count", "pattern": "(PASSWORD|PASS|TOKEN|SECRET)\\s*=\\s*[\"'][^\"'$\\s][^\"']*[\"']", "path": "/Users/xujin/agent-harness/backend/etl_mq.py", "op": "max", "value": 0, "label": "etl_mq.py 无明文口令（须 env 读取）"},
+    {"type": "grep_count", "pattern": "HARNESS_API_TOKEN", "path": "/Users/xujin/agent-harness/backend/common/auth_check.py", "op": "min", "value": 1, "label": "写端点鉴权依赖存在（token 映射 role）"},
+    {"type": "grep_count", "pattern": "allow_unconfigured['\"]?\\s*[:=]\\s*True", "path": "/Users/xujin/agent-harness/backend/services/node_gate_et.py", "op": "max", "value": 0, "label": "节点门禁止 fail-open 默认（allow_unconfigured 默认 True）"},
+    {"type": "file_exists", "path": "/Users/xujin/agent-harness/.env.example", "label": ".env.example 模板存在（口令外置配套）"}
+  ]
+}

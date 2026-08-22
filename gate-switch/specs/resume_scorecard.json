@@ -1,0 +1,7 @@
+{
+  "gate": "resume_scorecard",
+  "desc": "resume 96% 复刻精度门禁机考（2026-08-15 裁定，裁判运动员分离）：主线06 放行判定禁止模型自打分，必须扳动本开关照抄结论。机械核验 06_check_report.md 存在非空壳、verdict=PASS 终判行、最终轮加权总分≥96、preview/ 对比截图产物存在；美观度等纯语义项不机考，留软层目检。用法：--set run=<run_dir>",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/resume/scripts/resume_check.py --run-dir {run}", "expect": 0, "label": "resume 96% 复刻精度机考"}
+  ]
+}

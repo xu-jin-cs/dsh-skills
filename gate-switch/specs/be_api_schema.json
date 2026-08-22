@@ -1,0 +1,18 @@
+{
+  "gate": "be_api_schema",
+  "desc": "backend-engineer 交付物 .api-schema.json 机械自检（REFORM-GATE 改造 P5a）：契约权威=消费方 api-test-engineer 唯一权威输入契约（schema 2.0）。文件存在 + 接口数组非空 + 首接口必填字段（path/method/module三级/fields/scenes_applicable/response_schema_ref）+ 顶层 schema_version/response_schemas。async_pattern 仅异步接口声明（polling/callback），条件必填不在本闸；逐接口全量字段深校验由下游 api_scene_matrix.py 收口，本闸做交付点存在性拦截",
+  "checks": [
+    {"type": "file_exists", "path": "{schema_path}", "label": ".api-schema.json 交付物存在"},
+    {"type": "json_field", "path": "{schema_path}", "field": "schema_version", "op": "exists", "label": "顶层 schema_version 声明"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints", "op": "min_len", "value": 1, "label": "顶层 endpoints 接口数组非空"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.path", "op": "exists", "label": "接口 path（接口路径）"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.method", "op": "exists", "label": "接口 method（HTTP 方法）"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.module.major", "op": "exists", "label": "module 三级·major（大类）"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.module.minor", "op": "exists", "label": "module 三级·minor（小类）"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.module.feature", "op": "exists", "label": "module 三级·feature（功能）"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.fields", "op": "exists", "label": "接口 fields[] 字段约束（name/in/required/type/constraints）"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.scenes_applicable", "op": "exists", "label": "接口 scenes_applicable 场景分母声明"},
+    {"type": "json_field", "path": "{schema_path}", "field": "endpoints.0.response_schema_ref", "op": "exists", "label": "接口 response_schema_ref 响应结构引用"},
+    {"type": "json_field", "path": "{schema_path}", "field": "response_schemas", "op": "exists", "label": "顶层 response_schemas 响应结构定义"}
+  ]
+}

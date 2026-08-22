@@ -1,0 +1,8 @@
+{
+  "gate": "retro_generate_token",
+  "desc": "复盘 GENERATE 嵌入执行实证：复盘启动时先 touch {marker} 标记文件；着陆检查前跑本门禁，注册表与角色绑定必须新于标记（防'声明已执行但没跑命令'）",
+  "checks": [
+    {"type": "mtime_after", "path": "/Users/xujin/.agents/retro-skills-registry/registry-index.json", "ref_path": "{marker}", "label": "registry-index 已更新（GENERATE 真实执行）"},
+    {"type": "mtime_after", "path": "/Users/xujin/.agents/retro-skills-registry/role-retro-links.json", "ref_path": "{marker}", "label": "角色绑定已更新"}
+  ]
+}
