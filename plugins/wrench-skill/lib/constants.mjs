@@ -11,17 +11,17 @@ export const EMBEDDED_SEED = 'wrench-skill::builtin-seed::7f3a9c1e-bd52-48f6-91d
 /** 固定盐源文本：Embedding 编码输入，固化于插件内部，禁止改动。 */
 export const SALT_SOURCE_TEXT = '求职ai agent专家，优先在家办公';
 
+/**
+ * Embedding 派生 Salt（16 字节，hex）。
+ * 由开发者用本地冻结 1024 维 BGE-M3 经 scripts/derive_salt.py 一次性离线派生：
+ * 盐源文本编码 → L2 归一化 → uint16 定点量化 → 截取前 16 字节。
+ * 运行时仅消费本常量，不依赖任何模型，保持插件轻量化。
+ * 派生模型：BAAI/bge-m3（本地 HF 缓存，离线）；重算校验：derive_salt.py --check。
+ */
+export const EMBEDDED_SALT_HEX = '';
+
 /** HKDF 固定业务标识 info。 */
 export const HKDF_INFO = 'wrench-skill/agentpkg/v1';
-
-/** 冻结 Embedding 模型（1024 维，bge-large-zh 系列）。版本冻结，禁止随意变更。 */
-export const EMBEDDING_MODEL_ID = 'Xenova/bge-large-zh-v1.5';
-
-/** Embedding 向量维度（冻结 1024 维）。 */
-export const EMBEDDING_DIM = 1024;
-
-/** HKDF Salt 截取字节数（uint16 量化序列前 16 字节）。 */
-export const SALT_BYTES = 16;
 
 /** AES-256-GCM 工作密钥长度（字节）。 */
 export const KEY_BYTES = 32;
@@ -30,4 +30,4 @@ export const KEY_BYTES = 32;
 export const PAYLOAD_VERSION = 1;
 
 /** 资产包算法标识，解密前校验防版本漂移。 */
-export const PAYLOAD_ALG = 'AES-256-GCM/HKDF-SHA256/EMB-bge-large-zh-v1.5-uint16';
+export const PAYLOAD_ALG = 'AES-256-GCM/HKDF-SHA256/EMB-bge-m3-uint16';
