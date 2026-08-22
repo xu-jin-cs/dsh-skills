@@ -13,16 +13,20 @@
 **macOS / Linux**——复制下面三行命令，粘贴到终端运行即可：
 
 ```bash
-curl -LO https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.1.0.tgz
-curl -LO https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh
+curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.1.0.tgz
+curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/install.sh
 bash install.sh
 ```
+
+> 备用直链（任何时候可用）：把上面两条 URL 换为
+> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.1.0.tgz`
+> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh`
 
 **Windows PowerShell**：
 
 ```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.1.0.tgz" -OutFile "xujin-1.1.0.tgz"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh" -OutFile "install.sh"
+Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.1.0.tgz" -OutFile "xujin-1.1.0.tgz"
+Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/install.sh" -OutFile "install.sh"
 bash install.sh   # 推荐 Git Bash / WSL 执行
 ```
 
