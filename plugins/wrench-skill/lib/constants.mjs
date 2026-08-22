@@ -26,8 +26,8 @@ export const HKDF_INFO = 'wrench-skill/agentpkg/v1';
 /** AES-256-GCM 工作密钥长度（字节）。 */
 export const KEY_BYTES = 32;
 
-/** 资产包格式版本号：结构变更时 +1，插件解密前校验。 */
-export const PAYLOAD_VERSION = 1;
+/** 资产包格式版本号：结构变更时 +1，插件解密前校验。v2 = 增加 specs/engineRules 映射。 */
+export const PAYLOAD_VERSION = 2;
 
 /** 资产包算法标识，解密前校验防版本漂移。 */
 export const PAYLOAD_ALG = 'AES-256-GCM/HKDF-SHA256/EMB-bge-m3-uint16';

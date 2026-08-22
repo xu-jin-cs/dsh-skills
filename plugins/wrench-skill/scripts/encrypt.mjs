@@ -41,11 +41,10 @@ async function main() {
     throw new Error('manifest 格式错误：skills 必须是非空数组。');
   }
 
-  // 1. 组装资产 bundle
+  // 1. 组装资产 bundle（skills 支持 file 引用或 content 内联；specs/engineRules 透传）
   const skills = [];
   for (const entry of manifest.skills) {
-    const filePath = resolve(dirname(manifestPath), entry.file);
-    const content = await readFile(filePath, 'utf8');
+    const content = entry.content ?? await readFile(resolve(dirname(manifestPath), entry.file), 'utf8');
     skills.push({
       name: entry.name,
       description: entry.description,
@@ -55,7 +54,14 @@ async function main() {
     });
     console.log(`  ✓ 收录技能 ${entry.name}（${content.length} 字符）`);
   }
-  const bundle = { v: PAYLOAD_VERSION, generatedAt: new Date().toISOString(), skills };
+  const bundle = {
+    v: PAYLOAD_VERSION,
+    generatedAt: new Date().toISOString(),
+    skills,
+    specs: manifest.specs ?? {},
+    engineRules: manifest.engineRules ?? {},
+  };
+  console.log(`  ✓ 收录闸 spec ${Object.keys(bundle.specs).length} 份 / 引擎规则 ${Object.keys(bundle.engineRules).length} 份`);
 
   // 2. 与运行时一致的密钥派生（内置种子 + 内置派生 Salt 常量，零模型依赖）
   const key = deriveKey();
