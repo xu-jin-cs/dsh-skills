@@ -1555,24 +1555,7 @@ async function _etInner(payload, options) {
       }
 
       const invokeHook = () => {
-        if (hook === "artifact_validate") {
-          // failure_policy 实执行：max_retry + retry_delay_ms 仅对本钩子做有界重试
-          // （该校验幂等）；重试期间遵守 global_timeout_ms 上限。
-          // 注：本同步闭包内不做真实 sleep（JS 同步钩子无法让出事件循环），
-          // 有界重试语义保留，retry_delay 由下方异步路径处理。
-          const policy = payload.failure_policy || {};
-          const maxRetry = policy.max_retry || 0;
-          while (true) {
-            validateResult = _runArtifactValidate(spec, artifact);
-            if (validateResult.pass || executedRetry >= maxRetry) break;
-            if (globalTimeoutMs && (_now() - tStart) > globalTimeoutMs) break;
-            executedRetry += 1;
-          }
-          if (!validateResult.pass) {
-            code = "reject";
-            errorMsg = validateResult.failures.map((f) => f.message).join("; ");
-          }
-        } else if (hook === "state_intercept") {
+        if (hook === "state_intercept") {
           const [ok, nts, art, reason] = _runStateIntercept(spec, artifact);
           newTaskState = nts;
           artifact = art;
