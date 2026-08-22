@@ -51,5 +51,8 @@ console.log(removed ? "    已移除 wrench-skill 装载条目" : "    未找到
 '
 fi
 
+# 第 2.5 步：移除 CLI shim
+rm -f "${HOME}/.dsh/bin/wrench-gate" "${HOME}/.dsh/bin/wrench-engine" 2>/dev/null && echo "==> 已移除 CLI shim（~/.dsh/bin/wrench-gate / wrench-engine）"
+
 echo ""
 echo "✅ 卸载完成。DSH 重载后将自动注销技能并清空内存中的密钥与明文缓存，无任何残留。"

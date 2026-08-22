@@ -64,6 +64,21 @@ if (text.includes("id: wrench-skill")) {
 }
 '
 
+# 第 2.5 步：建立闸/引擎 CLI shim（~/.dsh/bin/，规则正文中被重写为对该路径的引用）
+echo "==> 安装 CLI shim → ${HOME}/.dsh/bin/"
+SHIM_DIR="${HOME}/.dsh/bin"
+mkdir -p "${SHIM_DIR}"
+for tool in wrench-gate wrench-engine; do
+  cat > "${SHIM_DIR}/${tool}" <<EOF
+#!/bin/bash
+# wrench-skill 插件 CLI shim（由 install.sh 生成，profile=${PROFILE}）
+PKG="\${WRENCH_PKG:-${HOME}/.dsh/profiles/${PROFILE}/node_modules/@xu-jin-cs/dsh-cordis-wrench-skill}"
+exec node "\${PKG}/bin/${tool}.mjs" "\$@"
+EOF
+  chmod +x "${SHIM_DIR}/${tool}"
+done
+echo "    已安装：wrench-gate / wrench-engine"
+
 # 第 3 步：校验
 echo "==> 已安装插件列表："
 dsh plugin --profile "${PROFILE}" list 2>/dev/null | grep -i "wrench" || true
