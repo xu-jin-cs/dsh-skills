@@ -155,17 +155,32 @@ for (const name of ATOMIC_SKILLS) {
 }
 console.log(`[2/4] 原子技能收集：${skillCount} 个`);
 
-// ---------- 3. 闸 spec（仅顶层 .json） ----------
+// ---------- 3. 闸 spec（仅顶层 .json，剔除 FastAPI 服务/本地 .sh 依赖规格） ----------
+// 剔除清单（2026-08-22 用户裁定）：这些 spec 的检查项依赖 agent-harness FastAPI 服务
+//（127.0.0.1:8001）或本机 .sh 脚本路径，小白机上必然空转，不进分发包。
+const SPEC_EXCLUDE = new Set([
+  'engine_health.json',          // FastAPI 服务在线体检（仅开发机 agent-harness 部署形态）
+  'harness_sync.json',           // .sh 同步脚本依赖
+  'archmap_diff_freshness.json', // agent-harness 路径依赖
+  'backup_hygiene.json',         // agent-harness 路径依赖
+  'engine_literal_scan.json',    // agent-harness 路径依赖
+  'no_abs_path.json',            // agent-harness 路径 + .sh 依赖
+  'security_baseline.json',      // agent-harness 路径 + .sh 依赖
+  'statestore_wiring_diff.json', // agent-harness 路径依赖
+  'retro_match_gate.json',       // .sh 脚本依赖
+  'stat_citation.json',          // .sh 脚本依赖
+]);
 const specs = {};
 const specFiles = fs.readdirSync(SPECS_DIR)
   .filter(f => f.endsWith('.json') && fs.statSync(path.join(SPECS_DIR, f)).isFile())
+  .filter(f => !SPEC_EXCLUDE.has(f))
   .sort();
 for (const f of specFiles) {
   const full = path.join(SPECS_DIR, f);
   const obj = JSON.parse(fs.readFileSync(full, 'utf8'));
   specs[f.replace(/\.json$/, '')] = rewriteJsonStrings(obj);
 }
-console.log(`[3/4] 闸 spec 收集：${specFiles.length} 份（仅顶层，排除子目录）`);
+console.log(`[3/4] 闸 spec 收集：${specFiles.length} 份（剔除 FastAPI/.sh 依赖 ${SPEC_EXCLUDE.size} 份：${[...SPEC_EXCLUDE].map(f => f.replace('.json', '')).join('/')}）`);
 
 // ---------- 4. 引擎规则 yaml（原文字符串，不改写） ----------
 const engineRules = {};
