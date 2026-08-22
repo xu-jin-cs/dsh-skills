@@ -5,10 +5,12 @@
  * 用法：
  *   wrench-engine sign --artifact <json|@文件> [--trace-id <id>] [--state-meta <json>] [--algo sha256|hmac-sha256]
  *   wrench-engine verify --artifact <json|@文件> --signature <sig> --trace-id <id> [--state-meta <json>] [--algo ...]
- *   wrench-engine step-sync <项目> <阶段> [说明] [角色]
+ *   wrench-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]
  *   wrench-engine et <payload.json|@文件>
  *
  * hmac-sha256 密钥只从环境变量 AGENT_ENGINE_SECRET 读取（与原 python 内核一致，无内置回落）。
+ * 内核不写死业务规则：step-sync 的合法跃迁表须由 --transitions 注入（如 '{"INIT":["DEV"],"DEV":["DONE"]}'），
+ * 未注入时按内核语义 block 并给出中文原因。
  */
 
 import { readFile } from 'node:fs/promises';
@@ -46,12 +48,14 @@ async function main() {
       break;
     }
     case 'step-sync': {
-      const [project, stage, desc, role] = rest;
+      const [project, stage, desc, role] = rest.filter((a) => !a.startsWith('--'));
       if (!project || !stage) {
-        console.error('用法：wrench-engine step-sync <项目> <阶段> [说明] [角色]');
+        console.error('用法：wrench-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]');
         process.exit(3);
       }
-      out = await stepSync(project, stage, { stepTitle: desc ?? stage, operator: role ?? 'cli' });
+      const transitions = flag(rest, '--transitions') ? await readJsonArg(flag(rest, '--transitions')) : undefined;
+      const initialState = flag(rest, '--initial-state');
+      out = await stepSync(project, stage, { stepTitle: desc ?? stage, operator: role ?? 'cli', transitions, initialState });
       break;
     }
     case 'et': {
