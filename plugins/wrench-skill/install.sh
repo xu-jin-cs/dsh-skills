@@ -41,13 +41,26 @@ const entry = `- insert:\n    - id: wrench-skill\n      name: ${JSON.stringify(p
 let text = existsSync(file) ? readFileSync(file, "utf8") : "";
 if (text.includes("id: wrench-skill")) {
   console.log("    条目已存在，跳过（幂等）");
-} else if (text.trim() === "" || text.trim() === "[]") {
-  writeFileSync(file, "# dsh profile patch layer\n" + entry);
-  console.log("    已创建 patch 文件并写入条目");
 } else {
-  if (!text.endsWith("\n")) text += "\n";
-  writeFileSync(file, text + "\n" + entry);
-  console.log("    已追加装载条目");
+  // 判定"空数组文档"：剥离注释行与空行后只剩 []（不能简单 trim 比较，注释行会导致误判）
+  const body = text.split("\n").filter((l) => l.trim() && !l.trim().startsWith("#")).join("\n").trim();
+  if (body === "" || body === "[]") {
+    // 保留原有注释头，仅把 [] 替换为条目
+    const lines = text.split("\n");
+    const out = [];
+    let inserted = false;
+    for (const l of lines) {
+      if (!inserted && l.trim() === "[]") { out.push(entry.replace(/\n$/, "")); inserted = true; }
+      else out.push(l);
+    }
+    if (!inserted) out.push(entry.replace(/\n$/, ""));
+    writeFileSync(file, out.join("\n").replace(/\n{3,}/g, "\n\n"));
+    console.log("    已写入装载条目（替换空数组占位）");
+  } else {
+    if (!text.endsWith("\n")) text += "\n";
+    writeFileSync(file, text + "\n" + entry);
+    console.log("    已追加装载条目");
+  }
 }
 '
 
