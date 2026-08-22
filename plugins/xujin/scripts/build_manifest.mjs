@@ -8,7 +8,7 @@
  *   3. 闸 spec       ~/.agents/skills/gate-switch/specs/*.json（仅顶层）→ specs{}
  *   4. 引擎规则      ~/agent-harness/backend/rules/*.yaml → engineRules{}（原文字符串）
  *
- * 全部文本内容执行调用路径重写（python3 本地路径 → ~/.dsh/bin/wrench-*）。
+ * 全部文本内容执行调用路径重写（python3 本地路径 → ~/.dsh/bin/xujin-*）。
  * 输出：plugins/xujin/manifest.real.json
  */
 import fs from 'node:fs';

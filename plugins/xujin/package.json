@@ -1,5 +1,5 @@
 {
-  "name": "@xu-jin-cs/dsh-cordis-xujin",
+  "name": "xujin",
   "description": "DSH Cordis 私有 Skill/规则插件（内置种子二道混淆加密分发，开源小白友好版）：零依赖轻量化，内存解密 + runtime 技能注册，明文不落地",
   "version": "1.1.0",
   "type": "module",
