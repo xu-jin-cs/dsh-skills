@@ -12,7 +12,7 @@
  *   4. 加密写出密文资产包，并做一次解密 roundtrip 自检 + 明文泄露扫描。
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deriveKey, encryptBundle, decryptBundle, zeroize } from '../lib/crypto.mjs';
@@ -63,6 +63,7 @@ async function main() {
   // 3. 加密
   const payload = encryptBundle(key, bundle);
   const outPath = resolve(process.cwd(), args.out);
+  await mkdir(dirname(outPath), { recursive: true });
   await writeFile(outPath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
   console.log(`→ 密文资产包已写出：${outPath}`);
 
