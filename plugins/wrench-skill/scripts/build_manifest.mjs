@@ -36,22 +36,7 @@ const stats = {
 
 function bump(map, key) { map.set(key, (map.get(key) || 0) + 1); }
 
-/**
- * 对一段文本执行全部重写规则。annotate=true 时（markdown 正文）对规则3追加行内注释标注。
- */
-function rewritePaths(text, { annotate = false } = {}) {
-  let out = text;
-  // R1: gate_switch.py --spec 内置 specs 路径 → wrench-gate <NAME>（保留其后 --set 等参数）
-  out = out.replace(
-    /(?:python3\s+)?~\/\.agents\/skills\/gate-switch\/scripts\/gate_switch\.py --spec ~\/\.agents\/skills\/gate-switch\/specs\/([A-Za-z0-9_-]+)\.json/g,
-    () => { stats.rewriteHits.gateSpecKnown++; return '~/.dsh/bin/wrench-gate $1'; }
-  );
-  // 上一行用函数返回无法插值，改用带 replace 的写法：
-  out = out; // noop 占位（见下方真正实现）
-  return out;
-}
-
-// 真正实现（函数式替换，保证计数与插值同时正确）
+/** 对一段文本执行全部重写规则（按优先级逐条）。annotate=true 时（markdown 正文）对规则3追加行内注释标注。 */
 function rewrite(text, { annotate = false } = {}) {
   let out = text;
   // R1
