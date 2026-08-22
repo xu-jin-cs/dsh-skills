@@ -4,9 +4,9 @@
  * 定位：非独立 Agent、非完整工作流；仅向 DeepSeek Harness 引擎提供
  * 可被模型/用户调用的校验规则与原子 Skill 能力。
  *
- * 加载链路（全自动，零密钥零配置）：
+ * 加载链路（全自动，零密钥零配置、零模型依赖）：
  *   读取 assets/rules.enc.json 密文资产
- *   → Embedding 派生 Salt（冻结 1024 维模型，见 lib/embedding.mjs）
+ *   → 内置种子 + 内置 Embedding 派生 Salt 常量（开发期由本地 BGE-M3 离线派生）
  *   → HKDF-SHA256 派生 AES-256-GCM 工作密钥（见 lib/crypto.mjs）
  *   → 内存解密 → ctx.skills.register 以 runtime 源注册 Skill/规则
  *   → 明文仅驻留内存，不落地任何文件；插件卸载时自动清空密钥与明文缓存。
@@ -15,7 +15,6 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { deriveSalt } from './embedding.mjs';
 import { deriveKey, decryptBundle, zeroize, DecryptError } from './crypto.mjs';
 
 export const name = 'wrench-skill';

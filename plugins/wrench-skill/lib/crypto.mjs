@@ -7,16 +7,23 @@
  * 安全约束：派生 Salt、AES 工作密钥、解密后明文禁止输出至任何日志。
  */
 
-import { hkdfSync, createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from 'node:crypto';
-import { EMBEDDED_SEED, HKDF_INFO, KEY_BYTES, PAYLOAD_VERSION, PAYLOAD_ALG } from './constants.mjs';
+import { hkdfSync, createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { EMBEDDED_SEED, EMBEDDED_SALT_HEX, HKDF_INFO, KEY_BYTES, PAYLOAD_VERSION, PAYLOAD_ALG } from './constants.mjs';
 
 /**
  * HKDF-SHA256 派生 AES-256-GCM 工作密钥。
- * @param {Buffer} salt Embedding 派生的 16 字节 Salt
+ * Salt 为开发期经本地 BGE-M3 离线派生后内置的常量（见 constants.mjs），
+ * 运行时零模型依赖。
  * @returns {Buffer} 32 字节工作密钥
  */
-export function deriveKey(salt) {
-  return Buffer.from(hkdfSync('sha256', Buffer.from(EMBEDDED_SEED, 'utf8'), salt, Buffer.from(HKDF_INFO, 'utf8'), KEY_BYTES));
+export function deriveKey() {
+  if (!/^[0-9a-f]{32}$/.test(EMBEDDED_SALT_HEX)) {
+    throw new DecryptError('[wrench-skill] 插件未注入派生 Salt：请先由开发者执行 scripts/derive_salt.py 并重新加密资产。');
+  }
+  const salt = Buffer.from(EMBEDDED_SALT_HEX, 'hex');
+  const key = Buffer.from(hkdfSync('sha256', Buffer.from(EMBEDDED_SEED, 'utf8'), salt, Buffer.from(HKDF_INFO, 'utf8'), KEY_BYTES));
+  salt.fill(0);
+  return key;
 }
 
 /**
