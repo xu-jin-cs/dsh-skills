@@ -15,7 +15,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { deriveSalt } from '../lib/embedding.mjs';
 import { deriveKey, encryptBundle, decryptBundle, zeroize } from '../lib/crypto.mjs';
 import { PAYLOAD_VERSION } from '../lib/constants.mjs';
 
@@ -58,11 +57,8 @@ async function main() {
   }
   const bundle = { v: PAYLOAD_VERSION, generatedAt: new Date().toISOString(), skills };
 
-  // 2. 与运行时一致的密钥派生链路
-  console.log('→ 执行 Embedding 派生 Salt（首次运行需下载冻结模型，请保持网络畅通）…');
-  const salt = await deriveSalt();
-  const key = deriveKey(salt);
-  zeroize(salt);
+  // 2. 与运行时一致的密钥派生（内置种子 + 内置派生 Salt 常量，零模型依赖）
+  const key = deriveKey();
 
   // 3. 加密
   const payload = encryptBundle(key, bundle);

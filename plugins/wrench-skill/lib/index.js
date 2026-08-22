@@ -36,7 +36,6 @@ function validateSkill(entry, index) {
 
 export async function apply(ctx) {
   let key = null;
-  let salt = null;
   /** @type {Array<() => void>} */
   let disposers = [];
   /** @type {string[] | null} */
@@ -46,8 +45,7 @@ export async function apply(ctx) {
     const raw = await readFile(ASSET_PATH, 'utf8');
     const payload = JSON.parse(raw);
 
-    salt = await deriveSalt();
-    key = deriveKey(salt);
+    key = deriveKey();
     const bundle = decryptBundle(key, payload);
 
     const skills = bundle?.skills;
@@ -78,13 +76,9 @@ export async function apply(ctx) {
     // 解密/加载异常：输出中文友好提示后抛出，让 DSH 面板可见加载失败原因。
     const message = err instanceof DecryptError ? err.message :
       `[wrench-skill] 插件加载失败：${err?.message ?? err}\n` +
-      '排查指引：①确认插件包完整（重新下载）；②确认首次运行网络可下载 Embedding 模型；③确认 DSH/Node 版本满足要求。';
+      '排查指引：①确认插件包完整（重新下载）；②确认插件版本与资产包为同一批次；③确认 DSH/Node 版本满足要求。';
     console.error(message);
     throw err instanceof DecryptError ? err : new DecryptError(message);
-  } finally {
-    // Salt 用完即清零；工作密钥保留至插件卸载（常驻缓存，避免重复 Embedding 推理）。
-    zeroize(salt);
-    salt = null;
   }
 
   // 插件卸载/重载：注销全部技能 + 清零内存中的密钥与敏感引用。
