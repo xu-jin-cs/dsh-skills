@@ -47,10 +47,9 @@ bash uninstall.sh default  # 指定 profile
 
 | 现象 | 原因与处理 |
 |---|---|
-| 首次加载较慢 | 插件需下载冻结版 Embedding 模型（约百 MB），仅首次，之后走本地缓存 |
 | 提示「密文校验未通过」 | 插件包传输损坏或被篡改 → 重新下载完整插件包 |
 | 提示「版本不匹配」 | 插件与资产包非同一批次 → 联系开发者获取匹配版本 |
-| 提示「Embedding 输出维度异常」 | Embedding 模型版本漂移 → 核对依赖版本，或联系开发者重新加密资产 |
+| 提示「未注入派生 Salt」 | 插件包被二次打包破坏了内置常量 → 重新从官方渠道下载 |
 
 ## ⚠️ 安全边界声明（必读）
 
@@ -63,13 +62,17 @@ bash uninstall.sh default  # 指定 profile
 ## 开发者区（重新打包私有规则）
 
 ```bash
+# 0. 仅首次/常量变更后：用本地冻结 BGE-M3（1024 维，HF 缓存离线加载）派生 Salt 并写回 constants
+python3 scripts/derive_salt.py
+#    日常体检（模型/盐源文本漂移检测）：python3 scripts/derive_salt.py --check
 # 1. 复制 manifest.example.json 为 my-manifest.json，填入你的技能清单
-# 2. 安装依赖（首次）
-npm install
-# 3. 加密打包（产出 assets/rules.enc.json，自带 roundtrip + 明文泄露双自检）
+# 2. 加密打包（产出 assets/rules.enc.json，自带 roundtrip + 明文泄露双自检，零依赖零网络）
 node scripts/encrypt.mjs --manifest my-manifest.json
-# 4. 打出分发包
+# 3. 打出分发包（仅 6 个文件、<10KB，零 node_modules）
 npm pack
 ```
 
-> 版本冻结铁律：`lib/constants.mjs` 中任何字段（种子/盐源文本/模型/info）变更后，必须重新执行第 3 步全量重新加密资产，否则解密必失败。
+> 架构说明：Embedding 派生只在开发期执行一次，派生结果（16 字节 Salt）以常量内置；
+> 插件运行时零模型、零依赖、零网络，仅 node:crypto 完成 HKDF 派生 + AES-256-GCM 内存解密。
+>
+> 版本冻结铁律：`lib/constants.mjs` 中任何字段（种子/盐源文本/Salt/info）变更后，必须重新执行第 2 步全量重新加密资产，否则解密必失败。
