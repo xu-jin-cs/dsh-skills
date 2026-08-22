@@ -171,10 +171,11 @@ const SPEC_EXCLUDE = new Set([
   'stat_citation.json',          // .sh 脚本依赖
 ]);
 const specs = {};
-const specFiles = fs.readdirSync(SPECS_DIR)
+// 本地真源可能已下架（用户裁定：闸能力由插件内置引擎承载）——目录不存在时按 0 份处理
+const specFiles = fs.existsSync(SPECS_DIR) ? fs.readdirSync(SPECS_DIR)
   .filter(f => f.endsWith('.json') && fs.statSync(path.join(SPECS_DIR, f)).isFile())
   .filter(f => !SPEC_EXCLUDE.has(f))
-  .sort();
+  .sort() : [];
 for (const f of specFiles) {
   const full = path.join(SPECS_DIR, f);
   const obj = JSON.parse(fs.readFileSync(full, 'utf8'));
@@ -210,7 +211,9 @@ function extractTransitions(yamlText) {
     if (inBlock) {
       const m = line.match(/^\s{8,}([A-Z_]+):\s*\[([^\]]*)\]\s*$/);
       if (m) {
-        transitions[m[1]] = m[2].split(',').map(s => s.trim()).filter(Boolean);
+        transitions[m[1]] = m[2].split(',')
+          .map(s => s.trim().replace(/^["']|["']$/g, ''))
+          .filter(Boolean);
       } else if (line.trim() && !line.trim().startsWith('#')) break; // 出块
     }
   }
@@ -243,9 +246,9 @@ function check(label, ok, detail = '') {
 console.log('自测：');
 const parsed = JSON.parse(fs.readFileSync(OUT_FILE, 'utf8'));
 check('① manifest.real.json 可解析', !!parsed && typeof parsed === 'object');
-check('② skills 数量 = 19+7 = 26', parsed.skills.length === 26, `实际 ${parsed.skills.length}`);
+check('② skills 数量 = 19+5 = 24（gate-switch/parallel-dispatch 本地真源已下架，能力由插件内置引擎承载）', parsed.skills.length === 24, `实际 ${parsed.skills.length}`);
 const specN = Object.keys(parsed.specs).length;
-check('③ specs ≥ 70（剔除 FastAPI/.sh 依赖 10 份后）', specN >= 70, `实际 ${specN}`);
+check('③ specs 数量记录（本地真源已下架，可为 0）', specN >= 0, `实际 ${specN}`);
 check('③b 引擎规则 ≥ 5 份（回迁）', Object.keys(parsed.engineRules ?? {}).length >= 5,
   `实际 ${Object.keys(parsed.engineRules ?? {}).length}`);
 check('③c 默认跃迁表已抽取且含 PENDING', (parsed.engineDefaults?.transitions?.PENDING?.length ?? 0) > 0,
@@ -254,7 +257,7 @@ const allContent = parsed.skills.map(s => s.content).join('\n')
   + '\n' + JSON.stringify(parsed.specs) + '\n' + JSON.stringify(parsed.engineRules);
 check('④ 不再出现 python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py',
   !allContent.includes('python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py'));
-const sample = [parsed.skills[0], parsed.skills[19], parsed.skills[25]].filter(Boolean);
+const sample = [parsed.skills[0], parsed.skills[19], parsed.skills[23]].filter(Boolean);
 check('⑤ 抽样 3 条 skill 的 description 非空',
   sample.length === 3 && sample.every(s => s.description && s.description.trim().length > 0),
   sample.map(s => s.name).join(', '));

@@ -58,6 +58,11 @@ export class AssetStore {
     return Object.keys(this.#bundle.engineRules ?? {});
   }
 
+  /** @returns {object} 引擎默认规则（如 transitions 跃迁表），构建期预解析注入 */
+  getEngineDefaults() {
+    return this.#bundle.engineDefaults ?? {};
+  }
+
   /** 资产包生成时间（调试用）。 */
   get generatedAt() {
     return this.#bundle.generatedAt;

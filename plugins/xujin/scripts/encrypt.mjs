@@ -63,6 +63,7 @@ async function main() {
     skills,
     specs: manifest.specs ?? {},
     engineRules: manifest.engineRules ?? {},
+    engineDefaults: manifest.engineDefaults ?? {},
   };
   console.log(`  ✓ 收录闸 spec ${Object.keys(bundle.specs).length} 份 / 引擎规则 ${Object.keys(bundle.engineRules).length} 份`);
 

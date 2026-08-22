@@ -12,7 +12,7 @@
 set -euo pipefail
 
 PROFILE="${1:-${DSH_PROFILE:-web}}"
-PKG_NAME="@xu-jin-cs/dsh-cordis-xujin"
+PKG_NAME="xujin"
 PROFILE_DIR="${DSH_HOME:-$HOME/.dsh}/profiles/${PROFILE}"
 PATCH_FILE="${PROFILE_DIR}/cordis.patch.yml"
 

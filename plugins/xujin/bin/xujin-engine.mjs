@@ -60,7 +60,13 @@ async function main() {
         console.error('用法：xujin-engine step-sync <项目> <阶段> [说明] [角色] [--transitions <json|@文件>] [--initial-state <态>]');
         process.exit(3);
       }
-      const transitions = flag(rest, '--transitions') ? await readJsonArg(flag(rest, '--transitions')) : undefined;
+      let transitions = flag(rest, '--transitions') ? await readJsonArg(flag(rest, '--transitions')) : undefined;
+      // 未显式注入时回落到资产包内置默认跃迁表（引擎规则回迁，构建期预解析）
+      if (!transitions) {
+        const { AssetStore } = await import('../lib/asset-store.mjs');
+        const store = await AssetStore.load();
+        transitions = store.getEngineDefaults().transitions;
+      }
       const initialState = flag(rest, '--initial-state');
       out = await stepSync(project, stage, { stepTitle: desc ?? stage, operator: role ?? 'cli', transitions, initialState });
       break;

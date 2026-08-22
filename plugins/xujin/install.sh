@@ -14,7 +14,7 @@ set -euo pipefail
 
 PROFILE="${1:-${DSH_PROFILE:-web}}"
 PKG_REF="${2:-}"
-PKG_NAME="@xu-jin-cs/dsh-cordis-xujin"
+PKG_NAME="xujin"
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE_DIR="${DSH_HOME:-$HOME/.dsh}/profiles/${PROFILE}"
 PATCH_FILE="${PROFILE_DIR}/cordis.patch.yml"
@@ -74,7 +74,7 @@ for tool in xujin-gate xujin-engine; do
   cat > "${SHIM_DIR}/${tool}" <<EOF
 #!/bin/bash
 # xujin 插件 CLI shim（由 install.sh 生成，profile=${PROFILE}）
-PKG="\${WRENCH_PKG:-${HOME}/.dsh/profiles/${PROFILE}/node_modules/@xu-jin-cs/dsh-cordis-xujin}"
+PKG="\${XUJIN_PKG:-${HOME}/.dsh/profiles/${PROFILE}/node_modules/${PKG_NAME}}"
 exec node "\${PKG}/bin/${tool}.mjs" "\$@"
 EOF
   chmod +x "${SHIM_DIR}/${tool}"
