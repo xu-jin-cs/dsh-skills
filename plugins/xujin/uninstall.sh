@@ -54,5 +54,25 @@ fi
 # 第 2.5 步：移除 CLI shim
 rm -f "${HOME}/.dsh/bin/xujin-gate" "${HOME}/.dsh/bin/xujin-engine" 2>/dev/null && echo "==> 已移除 CLI shim（~/.dsh/bin/xujin-gate / xujin-engine）"
 
+# 第 2.6 步：移除查询闸焊点插件 dsh-trigger-auto（2026-08-23 随查询闸合并入包对称卸载）
+echo "==> 移除查询闸焊点插件 dsh-trigger-auto…"
+dsh plugin --profile "${PROFILE}" rm dsh-trigger-auto 2>/dev/null || echo "    （本就不在依赖中，跳过）"
+rm -rf "${DSH_HOME:-$HOME/.dsh}/plugins/dsh-trigger-auto" 2>/dev/null || true
+# 幂等移除 bundles 登记
+PROFILE_PKG="${PROFILE_DIR}/package.json" node --input-type=module -e '
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+const file = process.env.PROFILE_PKG;
+if (existsSync(file)) {
+  const pkg = JSON.parse(readFileSync(file, "utf8"));
+  const bundles = pkg?.dsh?.profile?.bundles;
+  if (Array.isArray(bundles) && bundles.includes("dsh-trigger-auto")) {
+    pkg.dsh.profile.bundles = bundles.filter((b) => b !== "dsh-trigger-auto");
+    writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+    console.log("    已移除 bundles 条目");
+  } else {
+    console.log("    bundles 无条目（幂等跳过）");
+  }
+}'
+
 echo ""
 echo "✅ 卸载完成。DSH 重载后将自动注销技能并清空内存中的密钥与明文缓存，无任何残留。"
