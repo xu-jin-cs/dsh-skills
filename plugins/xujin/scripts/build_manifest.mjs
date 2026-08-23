@@ -42,7 +42,7 @@ const stats = {
 function bump(map, key) { map.set(key, (map.get(key) || 0) + 1); }
 
 /** 对一段文本执行全部重写规则（按优先级逐条）。annotate=true 时（markdown 正文）对规则3追加行内注释标注。 */
-function rewrite(text, { annotate = false } = {}) {
+function rewrite(text, { annotate = false, selfSkill = null } = {}) {
   let out = text;
   // R1
   out = out.replace(
@@ -77,6 +77,19 @@ function rewrite(text, { annotate = false } = {}) {
       return `~/.dsh/bin/xujin-run ${skill}/${script}`;
     }
   );
+  // R6（2026-08-23 v1.5.0）：技能正文内的相对路径 python3 scripts/xxx.py → xujin-run <本技能>/xxx.py
+  // （治 dispatch_switch 等相对形态漏改断链；仅原子技能循环传入 selfSkill 时生效；
+  //  负向断言防误吞已含 ~/.agents 前缀的绝对路径）
+  if (selfSkill) {
+    out = out.replace(
+      /python3\s+(?![~\/])scripts\/([A-Za-z0-9_.-]+\.py)/g,
+      (_m, script) => {
+        stats.rewriteHits.skillRun++;
+        bump(stats.skillRunRefs, `${selfSkill}/${script}`);
+        return `~/.dsh/bin/xujin-run ${selfSkill}/${script}`;
+      }
+    );
+  }
   return out;
 }
 
@@ -153,7 +166,7 @@ for (const name of ATOMIC_SKILLS) {
     name,
     description,
     whenToUse,
-    content: rewrite(body, { annotate: true }),
+    content: rewrite(body, { annotate: true, selfSkill: name }),
     metadata: { source: 'atomic-skill', sourcePath: full },
   });
   skillCount++;
@@ -253,6 +266,7 @@ const parsed = JSON.parse(fs.readFileSync(OUT_FILE, 'utf8'));
 check('① manifest.real.json 可解析', !!parsed && typeof parsed === 'object');
 check('② skills 数量 = 19+7 = 26（2026-08-23 符号链接归位后恢复 7 原子技能收集）', parsed.skills.length === 26, `实际 ${parsed.skills.length}`);
 const specN = Object.keys(parsed.specs).length;
+check('③a 脚本引用重写必须 > 0（xujin-run 运行时配套，2026-08-23 v1.5.0 防复发）', (stats.rewriteHits.skillRun ?? 0) > 0, `实际 ${stats.rewriteHits.skillRun ?? 0}`);
 check('③ specs 数量必须 > 0（2026-08-23 0-spec 真空事故防复发：符号链接未建时构建曾静默收 0 份）', specN > 0, `实际 ${specN}`);
 check('③b 引擎规则 ≥ 5 份（回迁）', Object.keys(parsed.engineRules ?? {}).length >= 5,
   `实际 ${Object.keys(parsed.engineRules ?? {}).length}`);

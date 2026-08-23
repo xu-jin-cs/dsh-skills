@@ -19,8 +19,10 @@
  */
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { existsSync, mkdirSync, cpSync, readdirSync, statSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
 
 const PLUGIN_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BUNDLE_VERSION = 3; // v3 = Source-Available 明文批次（v2 = AES-256-GCM 加密批次，已退役）
@@ -79,6 +81,57 @@ async function main() {
     if (typeof s.content !== 'string' || s.content.length < 50) throw new Error(`自检失败：技能 ${s.name} 正文异常`);
   }
   console.log(`  ✓ 自检通过：明文可解析，${parsed.skills.length} 项技能正文完整`);
+
+  // 4. 脚本收割（2026-08-23 v1.5.0，reform 块 scripts_in_pack_20260823 判A）：
+  //    扫描重写后 bundle 的全部 xujin-run / xujin-gate --script 引用，把脚本实体从
+  //    ~/.agents/skills/<skill>/scripts/ 收割进 payload/skill-scripts/，shipped 副本内
+  //    ~/.agents/skills 根路径改写为 ~/.dsh/xujin-scripts/skills（目标机兼容）。
+  //    引用到的脚本源文件缺失即 FAIL（防断链）；另收割 gate-switch/data/*.json 信号真源。
+  const SKILLS_SRC = join(os.homedir(), '.agents', 'skills');
+  const HARVEST_ROOT = join(PLUGIN_ROOT, 'payload', 'skill-scripts');
+  const bundleText = JSON.stringify(bundle);
+  const refs = new Set(); // "<skill>/<script>"
+  for (const m of bundleText.matchAll(/xujin-run ([A-Za-z0-9_-]+)\/([A-Za-z0-9_.\/-]+\.py)/g)) {
+    refs.add(`${m[1]}/${m[2]}`);
+  }
+  for (const m of bundleText.matchAll(/xujin-gate --script ([A-Za-z0-9_.-]+\.py)/g)) {
+    refs.add(`gate-switch/${m[1]}`);
+  }
+  let harvested = 0;
+  const missing = [];
+  for (const ref of refs) {
+    const seg = ref.indexOf('/');
+    const skill = ref.slice(0, seg);
+    const script = ref.slice(seg + 1);
+    const src = join(SKILLS_SRC, skill, 'scripts', script);
+    const dst = join(HARVEST_ROOT, skill, 'scripts', script);
+    if (!existsSync(src)) { missing.push(ref); continue; }
+    mkdirSync(dirname(dst), { recursive: true });
+    // shipped 副本根路径改写（仅文本替换 ~ 起手形态，原文不动）
+    const content = readFileSync(src, 'utf8')
+      .replaceAll('~/.agents/skills', '~/.dsh/xujin-scripts/skills');
+    writeFileSync(dst, content, 'utf8');
+    harvested++;
+  }
+  if (missing.length > 0) {
+    throw new Error(`自检失败：${missing.length} 个被引用脚本源文件缺失（断链）：${missing.join(' / ')}`);
+  }
+  // data 真源收割（trigger_signals.json 等，供 dual_gates / trigger_signal_scan 等脚本目标机运行）
+  const dataSrc = join(SKILLS_SRC, 'gate-switch', 'data');
+  let dataN = 0;
+  if (existsSync(dataSrc)) {
+    for (const f of readdirSync(dataSrc)) {
+      const full = join(dataSrc, f);
+      if (f.endsWith('.json') && statSync(full).isFile()) {
+        const dstDir = join(HARVEST_ROOT, 'gate-switch', 'data');
+        mkdirSync(dstDir, { recursive: true });
+        cpSync(full, join(dstDir, f));
+        dataN++;
+      }
+    }
+  }
+  if (harvested === 0) throw new Error('自检失败：脚本收割数为 0（0 收集真空，防复发闸拦截）');
+  console.log(`  ✓ 脚本收割 ${harvested} 份 + data 真源 ${dataN} 份 → payload/skill-scripts/`);
   console.log(`完成：共打包 ${parsed.skills.length} 项技能 → ${outPath}`);
 }
 
