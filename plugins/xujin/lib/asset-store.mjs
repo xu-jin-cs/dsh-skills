@@ -1,14 +1,14 @@
 /**
- * 资产内存访问层：解密 rules.enc.json 并提供结构化只读访问。
- * 插件入口（lib/index.js）与 CLI（bin/*）共用；明文仅驻留本模块实例内，不落地。
+ * 资产访问层：直读明文 assets/rules.json 并提供结构化只读访问。
+ * 插件入口（lib/index.js）与 CLI（bin/*）共用。
+ * v3 起为 Source-Available 明文分发（2026-08-23 用户裁定），不再有解密链路。
  */
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { deriveKey, decryptBundle, zeroize, DecryptError } from './crypto.mjs';
 
-const DEFAULT_ASSET_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'rules.enc.json');
+const DEFAULT_ASSET_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'rules.json');
 
 export class AssetStore {
   #bundle;
@@ -17,20 +17,19 @@ export class AssetStore {
     this.#bundle = bundle;
   }
 
-  /** 从密文资产文件加载并解密（内存完成）。 */
+  /** 从明文资产文件加载。 */
   static async load(assetPath = DEFAULT_ASSET_PATH) {
     const raw = await readFile(assetPath, 'utf8');
-    const payload = JSON.parse(raw);
-    const key = deriveKey();
+    let bundle;
     try {
-      const bundle = decryptBundle(key, payload);
-      if (!bundle || !Array.isArray(bundle.skills)) {
-        throw new DecryptError('[xujin] 资产包结构异常：缺少 skills 数组。请重新下载完整插件包。');
-      }
-      return new AssetStore(bundle);
-    } finally {
-      zeroize(key);
+      bundle = JSON.parse(raw);
+    } catch {
+      throw new Error('[xujin] 资产包解析失败：assets/rules.json 不是合法 JSON。请重新下载完整插件包。');
     }
+    if (!bundle || !Array.isArray(bundle.skills)) {
+      throw new Error('[xujin] 资产包结构异常：缺少 skills 数组。请重新下载完整插件包。');
+    }
+    return new AssetStore(bundle);
   }
 
   /** @returns {Array} 全部技能条目（name/description/whenToUse/content/metadata） */
