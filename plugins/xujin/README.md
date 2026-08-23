@@ -350,8 +350,6 @@ npm pack                                                  # 3. 打出分发包
 
 > JSON 资产（assets/rules.json 与包内全部 spec）无法写注释：该目录下全部资产统一遵循仓库根目录 LICENSE（Source-Available）。
 
-```
-```
 ## 十、最小运行 Demo（仅 DSH-Harness 环境可用）
 
 必须在已安装 DeepSeek Harness 的终端环境执行：
