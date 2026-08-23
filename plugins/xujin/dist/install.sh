@@ -88,6 +88,38 @@ EOF
 done
 echo "    已安装：xujin-gate / xujin-engine"
 
+# 第 2.6 步：安装查询闸焊点插件 dsh-trigger-auto（通道⑥ query_weld：read/grep/glob 前置 declare 定性，2026-08-23 合并入包）
+echo "==> 安装查询闸焊点插件 dsh-trigger-auto…"
+XUJIN_PKG_DIR="${HOME}/.dsh/profiles/${PROFILE}/node_modules/${PKG_NAME}"
+TRIGGER_AUTO_SRC="${XUJIN_PKG_DIR}/payload/dsh-trigger-auto"
+TRIGGER_AUTO_HOME="${DSH_HOME:-$HOME/.dsh}/plugins/dsh-trigger-auto"
+if [ -d "${TRIGGER_AUTO_SRC}" ]; then
+  # 拷出到 profile node_modules 之外的稳定位置（防 pnpm 重装抹掉 file: 目标）
+  mkdir -p "$(dirname "${TRIGGER_AUTO_HOME}")"
+  rm -rf "${TRIGGER_AUTO_HOME}"
+  cp -R "${TRIGGER_AUTO_SRC}" "${TRIGGER_AUTO_HOME}"
+  dsh plugin --profile "${PROFILE}" rm dsh-trigger-auto 2>/dev/null || true
+  dsh plugin --profile "${PROFILE}" add "${TRIGGER_AUTO_HOME}"
+  # 幂等确保 bundles 登记（dsh.profile.bundles 缺项则补）
+  PROFILE_PKG="${PROFILE_DIR}/package.json" node --input-type=module -e '
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+const file = process.env.PROFILE_PKG;
+if (existsSync(file)) {
+  const pkg = JSON.parse(readFileSync(file, "utf8"));
+  const bundles = (((pkg.dsh ??= {}).profile ??= {}).bundles ??= []);
+  if (!bundles.includes("dsh-trigger-auto")) {
+    bundles.push("dsh-trigger-auto");
+    writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+    console.log("    已登记 dsh.profile.bundles: dsh-trigger-auto");
+  } else {
+    console.log("    bundles 条目已存在，跳过（幂等）");
+  }
+}'
+  echo "    已安装：dsh-trigger-auto（查询闸焊点）"
+else
+  echo "    （包内无 payload/dsh-trigger-auto，跳过）"
+fi
+
 # 第 3 步：校验
 echo "==> 已安装插件列表："
 dsh plugin --profile "${PROFILE}" list 2>/dev/null | grep -i "xujin" || true
