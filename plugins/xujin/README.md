@@ -40,6 +40,8 @@ dsh plugin --profile web list    # 列表中出现 xujin 即安装成功
 
 重启 DSH 或等待热重载后，插件自动完成内存解密并注册全部规则/技能。校验方式：会话技能目录中出现 `rule-00-root-safety` ~ `rule-13-workflow-router` 等 19 份规则技能；终端执行 `~/.dsh/bin/xujin-engine sign --artifact '{"test":1}'` 能输出签名即引擎可用。
 
+**v1.2 起合并查询闸焊点**：安装会一并注册 `dsh-trigger-auto` 插件（包内 `payload/dsh-trigger-auto`）。生效后 Agent 每个 turn 首个 `read`/`grep`/`glob` 检索动作前必须先过一次声明闸定性（`dual_gates.py declare`，判 not_query 也直接放行），否则被事前阻断并给出扳闸指引——这是设计本意，不是故障。
+
 ## 插件卸载
 
 ```bash
