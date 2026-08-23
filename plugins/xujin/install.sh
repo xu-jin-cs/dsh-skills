@@ -124,5 +124,5 @@ fi
 echo "==> 已安装插件列表："
 dsh plugin --profile "${PROFILE}" list 2>/dev/null | grep -i "xujin" || true
 echo ""
-echo "✅ 安装完成。重启 DSH（或等待热重载）后，插件将自动解密并在内存中注册技能。"
+echo "✅ 安装完成。重启 DSH（或等待热重载）后，插件将自动注册全部技能/规则/闸。"
 echo "   校验方式：在 DSH 会话中输入 /xujin-demo 或「扳手自检」。"

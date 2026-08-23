@@ -8,7 +8,7 @@
 # 做的事（全自动）：
 #   1. 从指定 DSH profile 移除插件包；
 #   2. 从 cordis.patch.yml 移除插件装载条目；
-#   3. DSH 重载插件时自动注销技能注册并清空内存中的密钥与明文缓存。
+#   3. DSH 重载插件时自动注销技能注册。
 set -euo pipefail
 
 PROFILE="${1:-${DSH_PROFILE:-web}}"
@@ -75,4 +75,4 @@ if (existsSync(file)) {
 }'
 
 echo ""
-echo "✅ 卸载完成。DSH 重载后将自动注销技能并清空内存中的密钥与明文缓存，无任何残留。"
+echo "✅ 卸载完成。DSH 重载后将自动注销全部技能注册。"
