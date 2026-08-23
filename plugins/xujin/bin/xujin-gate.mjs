@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 /**
  * xujin-gate —— 扳闸 CLI（替代 python3 gate_switch.py 的插件内执行入口）。
  *

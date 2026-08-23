@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 /**
  * build_assets.mjs — xujin 明文资产打包器（Source-Available 分发，2026-08-23 用户裁定替代加密分发）
  *

@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 /**
  * xujin-engine —— 引擎机制内核 CLI（签发/验签/状态同步/et 执行，插件内执行，无数据库）。
  *

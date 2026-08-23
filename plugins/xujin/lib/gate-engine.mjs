@@ -1,3 +1,8 @@
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 /**
  * gate-engine.mjs — 通用概率执行门禁骨架（实证族 L2 引擎）Node.js 移植版
  *

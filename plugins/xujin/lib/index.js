@@ -1,3 +1,8 @@
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 /**
  * xujin —— DSH Cordis 私有 Skill/规则插件（Source-Available 明文分发，开源小白友好版）。
  *

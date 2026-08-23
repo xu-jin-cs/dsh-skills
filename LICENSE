@@ -1,22 +1,21 @@
-Source-Available License（可见源许可）
+Copyright (c) 2024-2026 xu-jin-cs
 
-Copyright (c) 2026 xu-jin-cs
+# Source-Available License
+## Permitted Use
+Permission is hereby granted, free of charge, to any individual or organization obtaining a copy of this software and associated specification files (including gate specs, workflow rules, skill definitions, engine state machine definitions, documentation), to view, study, install, run, modify and use the Software solely for personal learning, internal non-public evaluation and private project integration, provided that all original copyright notices and this license are retained.
 
-本软件（含全部规则、技能、闸 spec、引擎规则与文档资产）以「可见源」（Source-Available）方式发布。
+## Prohibited Use
+Without prior written authorization from the original author (xu-jin-cs), any of the following acts are strictly prohibited:
+1. Forking, copying, modifying, repackaging and publishing derivative works as independent public repositories on GitHub, Gitee or other code hosting platforms;
+2. Redistributing, selling, licensing, renting the Software or its derivative works for commercial purposes;
+3. Providing online services, SaaS capabilities, paid technical support based on the Software or its modified derivative version for commercial profit;
+4. Removing, altering or obscuring the original copyright statement, license declaration, original architecture attribution information in source files and documentation.
 
-您被授权（✅）：
-1. 个人学习、查看本软件全部源码与资产内容；
-2. 本地部署、在内部 DSH（DeepSeek Harness）环境中自用；
-3. 为非商业目的修改本软件，且须保留出处与原创架构溯源声明。
+## Authorization Application
+If you need to obtain commercial authorization, or permission to publish a public derivative fork, please contact the original author for written licensing agreement.
 
-未经著作权人书面授权，禁止（❌）：
-1. 未授权 Fork、二次公开发布、改包重发；
-2. 商用售卖、将本软件作为商业 SaaS/托管服务对外提供；
-3. 移植到其他 AI/Agent 框架开源发布；
-4. 移除或篡改本许可声明与溯源信息。
+## Disclaimer
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-所有公开引用、二次学习、二次改造必须保留「原创架构溯源声明」。
-
-本软件按「现状」提供，不附任何明示或默示担保；上线业务需自行完成全量测试，作者不承担衍生业务风险。
-
-—— 商业授权请联系作者线下获取。
+## Attribution Notice
+The overall architecture including L1 Declaration Gate / L2 Mechanical Wrench / L3 Verification Gate, Parasite Nest parallel execution, Plan-Select scheme selection engine, Dual-Gates query pre-check system, 17-state engineering workflow is originally designed by xu-jin-cs. Any public reference must retain clear source attribution.

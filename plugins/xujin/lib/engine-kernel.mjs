@@ -1,3 +1,8 @@
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 /**
  * engine-kernel.mjs — agent 引擎机制内核（签发/状态同步）Node.js ESM 移植版
  *

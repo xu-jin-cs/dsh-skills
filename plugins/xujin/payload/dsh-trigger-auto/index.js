@@ -1,3 +1,8 @@
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 // dsh-trigger-auto — 触发面全扳手化核心载体（M1：插件 + L0 硬命中投递，2026-08-22 设计 v3 落地）
 // 通道① 用户输入：agent/pre-step 首 step 检测新 user 消息（user/message 仅为 session 追加事件，
 //       不支持 additionalContexts 中间件改写，实证见 dsh-tool-cordis PostToolDecision 契约）

@@ -1,3 +1,8 @@
+// Copyright (c) 2024-2026 xu-jin-cs
+// Source-Available License
+// Personal / internal non-public usage is permitted.
+// Public forked redistribution and commercial service release are prohibited without written authorization.
+
 /**
  * 资产访问层：直读明文 assets/rules.json 并提供结构化只读访问。
  * 插件入口（lib/index.js）与 CLI（bin/*）共用。
