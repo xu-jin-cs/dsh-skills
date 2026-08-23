@@ -1,8 +1,55 @@
-# xujin —— DSH Cordis 私有 Skill / 规则 / 闸 / 引擎插件
+# xujin —— DeepSeek Harness 专属工程治理插件
 
 > 仓库：https://github.com/xu-jin-cs/dsh-skills （插件目录 `plugins/xujin`）
-> 分发方式：**Source-Available 明文分发**（v1.4.0 起）——包内全部规则、技能、闸、引擎规则明文可见，可查看/学习/自用，禁止未授权商用再分发（见 `LICENSE`）。
-> 插件定位：**非独立 Agent、非完整工作流**，仅向 DeepSeek Harness 引擎提供可被调用的校验规则、闸开关、原子 Skill 与引擎机制内核（签发/状态同步）能力。
+
+本插件为 100% 原创、仅适配 DeepSeek Harness（DSH / Cordis）生态的外置增强治理插件，不属于 DSH 官方原生内核，为独立自研架构扩展层。
+不通用、不支持其他 Agent 框架，所有机制、闸规则、状态机、检索架构专为 DSH-Harness 事件总线、任务调度、会话生命周期深度定制。
+
+## 原创架构溯源声明（公开确权）
+
+本 xujin DSH 技能插件 v1.4.0 为作者独立原创设计，完整自研体系包括：
+
+- L1 声明闸 / L2 机械扳手闸 / L3 交付校验闸 三层分层门禁体系
+- 寄生巢并行分身执行机制（宿主闸产出副本、并行隔离、失败不连坐）
+- Plan-Select 多维方案择优引擎
+- Dual-Gates 双闸检索前置架构（声明定性 + 定向溯源检索）
+- 78 份可机械判定 Spec 零裁量门禁系统
+- 17 态标准化工程流程状态机
+- 完整闸序总线：问题闸 → 计划闸 → 收益闸 → 并行闸
+
+整套体系为 DSH-Harness 生态独有扩展设计，所有公开引用、二次学习、二次改造必须保留本溯源声明。
+
+## 开源模式说明（防摘桃子）
+
+本项目采用 Source-Available 源码可见模式：
+
+- ✅ 允许：个人学习、本地部署、内部 DSH 环境自用
+- ❌ 禁止：未授权 Fork、二次公开发布、改包重发、商用售卖、对外 SaaS 服务
+- ❌ 禁止：移植到其他 AI/Agent 框架开源发布
+
+完整约束见仓库根目录 LICENSE 文件。
+
+## DSH-Harness 专属适配说明
+
+本插件所有能力强依赖 DSH 原生机制：
+
+- 依赖 DSH Cordis 事件总线注入规则
+- 依赖 DSH 会话 Turn 生命周期、任务调度模型
+- 依赖 DSH 插件加载体系、Profile 机制、CLI 运行时
+- 依赖 DSH 原生 Read/Grep/Glob 检索链路做闸前置拦截
+
+无法脱离 DSH-Harness 独立运行，不属于通用开源框架。
+
+## 统一术语对照表（DSH 专属）
+
+| 术语 | DSH 专属释义 |
+|---|---|
+| L1/L2/L3 分层闸 | DSH 外置三层治理：L1 路由声明、L2 机械判定、L3 交付终审 |
+| 寄生巢分身 | DSH 任务并行扩展：单任务派生多分身、隔离执行、独立落盘 |
+| 双闸 Dual-Gates | DSH 检索强管控：先定性、再检索，杜绝无边界乱查、幻觉溯源 |
+| 四态退出码 | DSH 闸控统一标准：0 放行 / 2 阻断 / 3 澄清 / 4 违规 |
+| Plan-Select 引擎 | DSH 需求求解择优机制，最低步骤、最高复用优先级决策 |
+| 闸序总线 | DSH 多闸联动固定顺序，杜绝模型乱执行、乱跳过门禁 |
 
 ---
 
@@ -295,10 +342,6 @@ python3 ~/.agents/skills/dual-gates/scripts/dual_gates.py declare --raw "<本tur
 
 ---
 
-## 📜 Source-Available 许可声明（必读）
-
-本插件以 **Source-Available（可见源）** 明文分发：包内全部规则、技能、闸 spec、引擎规则均为明文，可查看、可学习、可在个人/内部环境安装使用；**禁止未经授权的商业再分发、转售或作为商业服务对外提供**。完整条款见 `LICENSE` 文件。商业授权请联系作者线下获取。
-
 ## 开发者区（重新打包）
 
 ```bash
@@ -306,3 +349,24 @@ node scripts/build_manifest.mjs                          # 1. 收集资产生成
 node scripts/build_assets.mjs --manifest manifest.real.json   # 2. 明文打包资产
 npm pack                                                  # 3. 打出分发包
 ```
+## 十、最小运行 Demo（仅 DSH-Harness 环境可用）
+
+必须在已安装 DeepSeek Harness 的终端环境执行：
+
+```bash
+# 执行标准门禁测试（纯检查原语闸，零配置直跑）
+echo demo > /tmp/xujin_demo.txt
+~/.dsh/bin/xujin-gate shard_result_gate --set result=/tmp/xujin_demo.txt
+# → verdict: A（文件真实存在且非空），退出码 0；把路径改成不存在的文件即判 B（退出码 2）
+
+# 问题闸（决策树四节点强制填充闸）标准用法：先把问题块落盘再过闸
+~/.dsh/bin/xujin-gate problem_gate --set block=<问题块文件路径>
+
+# 审计日志自动落盘（DSH 专属路径）
+cat ~/.dsh/xujin-engine/audit.jsonl
+```
+
+## 免责与边界声明
+
+本插件为 DeepSeek Harness 专属自研扩展，非官方内核组件，仅适配 DSH 生态。请勿移植至其他 Agent 框架公开分发。工具仅供技术研究与内部工程治理使用，上线业务需自行完成全量测试，作者不承担衍生业务风险。
+

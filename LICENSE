@@ -1,21 +1,22 @@
-MIT License
+Source-Available License（可见源许可）
 
 Copyright (c) 2026 xu-jin-cs
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+本软件（含全部规则、技能、闸 spec、引擎规则与文档资产）以「可见源」（Source-Available）方式发布。
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+您被授权（✅）：
+1. 个人学习、查看本软件全部源码与资产内容；
+2. 本地部署、在内部 DSH（DeepSeek Harness）环境中自用；
+3. 为非商业目的修改本软件，且须保留出处与原创架构溯源声明。
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+未经著作权人书面授权，禁止（❌）：
+1. 未授权 Fork、二次公开发布、改包重发；
+2. 商用售卖、将本软件作为商业 SaaS/托管服务对外提供；
+3. 移植到其他 AI/Agent 框架开源发布；
+4. 移除或篡改本许可声明与溯源信息。
+
+所有公开引用、二次学习、二次改造必须保留「原创架构溯源声明」。
+
+本软件按「现状」提供，不附任何明示或默示担保；上线业务需自行完成全量测试，作者不承担衍生业务风险。
+
+—— 商业授权请联系作者线下获取。
