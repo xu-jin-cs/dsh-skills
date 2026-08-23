@@ -58,19 +58,19 @@
 **macOS / Linux**——复制三行粘贴到终端：
 
 ```bash
-curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.4.0.tgz
+curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.5.0.tgz
 curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/install.sh
 bash install.sh
 ```
 
 > 备用直链（任何时候可用）：把上面 URL 换为
-> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.4.0.tgz`
+> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.5.0.tgz`
 > `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh`
 
 **Windows PowerShell**：
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.4.0.tgz" -OutFile "xujin-1.4.0.tgz"
+Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.5.0.tgz" -OutFile "xujin-1.5.0.tgz"
 Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/install.sh" -OutFile "install.sh"
 bash install.sh   # 推荐 Git Bash / WSL 执行
 ```
@@ -99,6 +99,7 @@ dsh plugin --profile web list    # 列表中出现 xujin 与 dsh-trigger-auto �
 | 闸 spec | 78 份 | 机械可判的 0/1 门禁，由 `xujin-gate` 执行（见第五节） |
 | 引擎硬规则 | 5 组 53 条 + 17 状态状态机 | L1 调度/L3 校验/输出治理/强制路由（见第六节） |
 | 随包插件 | dsh-trigger-auto | 查询闸焊点：检索动作前置定性（见第七节） |
+| 技能脚本运行时 | 30+ 份 .py + 信号真源 | payload/skill-scripts（单刀双掷 dispatch_switch、plan_select、dual_gates、trigger_signals.json 等实体随包，`xujin-run` 执行） |
 
 ---
 
@@ -173,6 +174,8 @@ dsh plugin --profile web list    # 列表中出现 xujin 与 dsh-trigger-auto �
 | merge_gate | 合并槽门禁：文件级冲突+大纲完整性 | 分身成果合并前 |
 | receipt_gate | 分身结构化回报五字段契约校验 | 分身回报时 |
 | task_launch_gate | 同会话同任务第 4 次发起判 B（循环熔断） | 任务发起/重试前 |
+
+> 并行任务闸嵌套的单刀双掷判定脚本 dispatch_switch.py 自 v1.5.0 起实体随包（`xujin-run parallel-dispatch/dispatch_switch.py`），新装机可完整执行。
 | loop_fuse | 复刻循环熔断：3 轮未过升级/同源补丁>2 次熔断 | 每轮循环/补丁前 |
 | parasite_nest_claim | 寄生巢落巢实证 | 声称已落巢时 |
 
@@ -285,6 +288,10 @@ PENDING → PRD_REVIEW → DESIGN → DEV_FRONTEND / DEV_BACKEND → PM_CONFIRM
 ~/.dsh/bin/xujin-gate <闸名> [--set 键=值 ...]
 ~/.dsh/bin/xujin-gate --spec-file <路径> [--set 键=值 ...]   # 显式 spec 调试
 
+# 技能脚本运行时（v1.5.0：单刀双掷/方案择优/双闸等判定脚本实体随包）
+~/.dsh/bin/xujin-run <技能>/<脚本.py> [参数...]
+# 示例：~/.dsh/bin/xujin-run parallel-dispatch/dispatch_switch.py --files 2 --units 1 --desc "任务"
+
 # 引擎内核
 ~/.dsh/bin/xujin-engine sign --trace-id <id> --artifact '<json>'     # 交付物签发（防篡改）
 ~/.dsh/bin/xujin-engine verify --trace-id <id> --artifact '<json>' --signature <签名>
@@ -301,7 +308,7 @@ PENDING → PRD_REVIEW → DESIGN → DEV_FRONTEND / DEV_BACKEND → PM_CONFIRM
 安装后 Agent 每个 turn 首个 `read`/`grep`/`glob` 检索动作前，必须先过一次声明闸定性：
 
 ```bash
-python3 ~/.agents/skills/dual-gates/scripts/dual_gates.py declare --raw "<本turn用户原始诉求>"
+~/.dsh/bin/xujin-run dual-gates/dual_gates.py declare --raw "<本turn用户原始诉求>"
 # 判 is_query → 续扳 query 闸定向溯源；判 not_query → 直接重试检索动作即放行
 ```
 
