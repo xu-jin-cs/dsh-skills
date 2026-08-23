@@ -54,6 +54,10 @@ fi
 # 第 2.5 步：移除 CLI shim
 rm -f "${HOME}/.dsh/bin/xujin-gate" "${HOME}/.dsh/bin/xujin-engine" 2>/dev/null && echo "==> 已移除 CLI shim（~/.dsh/bin/xujin-gate / xujin-engine）"
 
+# 第 2.55 步：移除技能脚本运行时（v1.5.0 对称卸载）
+rm -f "${HOME}/.dsh/bin/xujin-run" 2>/dev/null && echo "==> 已移除 xujin-run shim"
+rm -rf "${HOME}/.dsh/xujin-scripts" 2>/dev/null && echo "==> 已移除技能脚本库（~/.dsh/xujin-scripts）"
+
 # 第 2.6 步：移除查询闸焊点插件 dsh-trigger-auto（2026-08-23 随查询闸合并入包对称卸载）
 echo "==> 移除查询闸焊点插件 dsh-trigger-auto…"
 dsh plugin --profile "${PROFILE}" rm dsh-trigger-auto 2>/dev/null || echo "    （本就不在依赖中，跳过）"

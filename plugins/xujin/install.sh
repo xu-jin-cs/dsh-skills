@@ -120,6 +120,26 @@ else
   echo "    （包内无 payload/dsh-trigger-auto，跳过）"
 fi
 
+# 第 2.7 步：安装技能脚本运行时（v1.5.0：payload/skill-scripts → ~/.dsh/xujin-scripts/skills + xujin-run shim）
+echo "==> 安装技能脚本运行时…"
+SCRIPTS_SRC="${XUJIN_PKG_DIR}/payload/skill-scripts"
+SCRIPTS_HOME="${HOME}/.dsh/xujin-scripts/skills"
+if [ -d "${SCRIPTS_SRC}" ]; then
+  mkdir -p "${SCRIPTS_HOME}"
+  rm -rf "${SCRIPTS_HOME}"
+  cp -R "${SCRIPTS_SRC}/." "${SCRIPTS_HOME}/"
+  cat > "${SHIM_DIR}/xujin-run" <<EOF
+#!/bin/bash
+# xujin 插件 CLI shim（由 install.sh 生成，profile=${PROFILE}）
+PKG="\${XUJIN_PKG:-${HOME}/.dsh/profiles/${PROFILE}/node_modules/${PKG_NAME}}"
+exec node "\${PKG}/bin/xujin-run.mjs" "\$@"
+EOF
+  chmod +x "${SHIM_DIR}/xujin-run"
+  echo "    已安装：xujin-run + 技能脚本库（${SCRIPTS_HOME}）"
+else
+  echo "    （包内无 payload/skill-scripts，跳过）"
+fi
+
 # 第 3 步：校验
 echo "==> 已安装插件列表："
 dsh plugin --profile "${PROFILE}" list 2>/dev/null | grep -i "xujin" || true
