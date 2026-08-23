@@ -1,22 +1,19 @@
 /**
- * xujin —— DSH Cordis 私有 Skill/规则插件（内置种子二道混淆加密分发，开源小白友好版）。
+ * xujin —— DSH Cordis 私有 Skill/规则插件（Source-Available 明文分发，开源小白友好版）。
  *
  * 定位：非独立 Agent、非完整工作流；仅向 DeepSeek Harness 引擎提供
  * 可被调用的校验规则、闸开关与原子 Skill 能力。
  *
- * 加载链路（全自动，零密钥零配置、零模型依赖）：
- *   读取 assets/rules.enc.json 密文资产
- *   → 内置种子 + 内置 Embedding 派生 Salt 常量（开发期由本地 BGE-M3 离线派生）
- *   → HKDF-SHA256 派生 AES-256-GCM 工作密钥（见 lib/crypto.mjs）
- *   → 内存解密 → ctx.skills.register 以 runtime 源注册全部规则/原子技能
- *   → 明文仅驻留内存，不落地任何文件；插件卸载时自动清空密钥与明文缓存。
+ * 加载链路（全自动，零配置、零模型依赖）：
+ *   直读 assets/rules.json 明文资产（v3 起 Source-Available 明文分发，2026-08-23 用户裁定）
+ *   → ctx.skills.register 以 runtime 源注册全部规则/原子技能。
  *
- * 闸开关与引擎内核不走技能注册，由 CLI 入口独立解密执行：
+ * 闸开关与引擎内核不走技能注册，由 CLI 入口独立加载执行：
  *   ~/.dsh/bin/xujin-gate  <spec名> [--set k=v]   —— 扳闸（四态退出码）
  *   ~/.dsh/bin/xujin-engine <sign|verify|step-sync|et> … —— 签发/状态同步内核
  */
 
-import { DecryptError } from './crypto.mjs';
+class AssetError extends Error {}
 import { AssetStore } from './asset-store.mjs';
 
 export const name = 'xujin';
@@ -44,14 +41,14 @@ export async function apply(ctx) {
     store = await AssetStore.load();
     const skills = store.listSkills();
     if (skills.length === 0) {
-      throw new DecryptError('[xujin] 资产包内容为空：解密成功但没有任何技能条目。请重新下载完整插件包。');
+      throw new AssetError('[xujin] 资产包内容为空：没有任何技能条目。请重新下载完整插件包。');
     }
     for (let i = 0; i < skills.length; i++) {
       const problem = validateSkill(skills[i], i);
-      if (problem) throw new DecryptError(`[xujin] 资产包校验失败：${problem}。请联系开发者重新打包。`);
+      if (problem) throw new AssetError(`[xujin] 资产包校验失败：${problem}。请联系开发者重新打包。`);
     }
 
-    // 内存注册：明文 content 直接交给注册表，不写入任何本地文件。
+    // 内存注册：content 直接交给注册表，不写入任何本地文件。
     for (const s of skills) {
       disposers.push(ctx.skills.register({
         name: s.name,
@@ -64,25 +61,25 @@ export async function apply(ctx) {
     }
 
     console.info(
-      `[xujin] 插件加载成功：已注册 ${skills.length} 项加密技能/规则（内存运行，明文不落地）；` +
+      `[xujin] 插件加载成功：已注册 ${skills.length} 项技能/规则；` +
       `闸 spec ${store.listSpecs().length} 份、引擎规则 ${store.listEngineRules().length} 份可由 xujin-gate / xujin-engine 调用。`
     );
   } catch (err) {
-    // 解密/加载异常：输出中文友好提示后抛出，让 DSH 面板可见加载失败原因。
-    const message = err instanceof DecryptError ? err.message :
+    // 加载异常：输出中文友好提示后抛出，让 DSH 面板可见加载失败原因。
+    const message = err instanceof AssetError ? err.message :
       `[xujin] 插件加载失败：${err?.message ?? err}\n` +
-      '排查指引：①确认插件包完整（重新下载）；②确认插件版本与资产包为同一批次；③确认 DSH/Node 版本满足要求。';
+      '排查指引：①确认插件包完整（重新下载）；②确认 DSH/Node 版本满足要求。';
     console.error(message);
-    throw err instanceof DecryptError ? err : new DecryptError(message);
+    throw err instanceof AssetError ? err : new AssetError(message);
   }
 
-  // 插件卸载/重载：注销全部技能 + 清空内存中的明文资产引用。
+  // 插件卸载/重载：注销全部技能注册。
   ctx.on('dispose', () => {
     for (const dispose of disposers) {
       try { dispose(); } catch { /* 忽略注销异常，保证清理继续 */ }
     }
     disposers = [];
     store = null;
-    console.info('[xujin] 插件已卸载：技能注册已注销，内存密钥与明文缓存已清空。');
+    console.info('[xujin] 插件已卸载：技能注册已注销。');
   });
 }

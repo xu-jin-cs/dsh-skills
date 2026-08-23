@@ -1,7 +1,7 @@
 {
   "name": "xujin",
-  "description": "DSH Cordis 私有 Skill/规则插件（内置种子二道混淆加密分发，开源小白友好版）：零依赖轻量化，内存解密 + runtime 技能注册，明文不落地；v1.3 全量资产（19规则+7技能+78闸spec+5引擎规则）+ 查询闸焊点 dsh-trigger-auto",
-  "version": "1.3.0",
+  "description": "DSH Cordis 私有 Skill/规则/闸/引擎插件（Source-Available 明文分发，开源小白友好版）：零依赖轻量化，26 技能+78 闸 spec+5 引擎规则明文可见，runtime 技能注册 + 查询闸焊点",
+  "version": "1.4.0",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -16,12 +16,12 @@
     "payload/"
   ],
   "scripts": {
-    "encrypt": "node scripts/encrypt.mjs"
+    "build": "node scripts/build_assets.mjs --manifest manifest.real.json"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"
   },
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=20"
   }
