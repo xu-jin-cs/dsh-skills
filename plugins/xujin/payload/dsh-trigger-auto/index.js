@@ -16,26 +16,35 @@
 //       本 turn 无 dual_gates declare 留痕（dual_gates_audit.jsonl 内 timestamp>=turnStart
 //       的 declaration_gate_start，5s 容差）即事前硬阻断 + 扳闸指引；扳完重试穿透放行。
 // 工程纪律：扫描子进程超时 10s 强杀、一切失败静默返回 null（不拖垮主流程，事后审计闸兜底）。
+// v1.5 可移植：全部路径常量经 SKILLS_HOME/LOGS_DIR 探测回退（~/.agents 缺席 → ~/.dsh/xujin-scripts，
+//       v1.5.0 脚本入包配套；dev 机 ~/.agents 存在走原路径零影响，process.env.TRIGGER_AUTO_* 覆盖优先不变）。
 // v1 残差（如实声明）：只提醒不阻断；bash 命令经变量拼接/包装脚本间接执行的形态不进正则视野。
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { appendFileSync, mkdirSync, openSync, readSync, closeSync, statSync, readFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, openSync, readSync, closeSync, statSync, readFileSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
+import os from "node:os";
 
 const name = "dsh-trigger-auto";
 
-const SCAN_SCRIPT = "/Users/xujin/.agents/skills/gate-switch/scripts/trigger_signal_scan.py";
-const GATE_LOG = process.env.TRIGGER_AUTO_GATE_LOG || "/Users/xujin/.agents/logs/gate_switch.jsonl";
-const DANGER_DIR = process.env.TRIGGER_AUTO_DANGER_DIR || "/Users/xujin/.agents/logs/danger_cmd";
-const SIGNALS_JSON = process.env.TRIGGER_AUTO_SIGNALS || "/Users/xujin/.agents/skills/gate-switch/data/trigger_signals.json";
+// ===== v1.5 目标机路径 fallback（reform 块 scripts_in_pack_20260823 判A）=====
+// 新装机无 ~/.agents：技能脚本回退 ~/.dsh/xujin-scripts/skills，日志回退 ~/.dsh/xujin-scripts/logs
+const HOME = os.homedir();
+const SKILLS_HOME = existsSync(`${HOME}/.agents/skills`) ? `${HOME}/.agents/skills` : `${HOME}/.dsh/xujin-scripts/skills`;
+const LOGS_DIR = existsSync(`${HOME}/.agents/logs`) ? `${HOME}/.agents/logs` : `${HOME}/.dsh/xujin-scripts/logs`;
+
+const SCAN_SCRIPT = `${SKILLS_HOME}/gate-switch/scripts/trigger_signal_scan.py`;
+const GATE_LOG = process.env.TRIGGER_AUTO_GATE_LOG || `${LOGS_DIR}/gate_switch.jsonl`;
+const DANGER_DIR = process.env.TRIGGER_AUTO_DANGER_DIR || `${LOGS_DIR}/danger_cmd`;
+const SIGNALS_JSON = process.env.TRIGGER_AUTO_SIGNALS || `${SKILLS_HOME}/gate-switch/data/trigger_signals.json`;
 const SCAN_TIMEOUT_MS = 10_000;
 const DEDUP_TAIL_LINES = 20;
 const TAIL_READ_BYTES = 16 * 1024;
 
 // ===== v6 通道③：扇出焊点（块M fanout_weld_hook，reform_gate 判A 块 fanout_weld_20260822）=====
-const DISPATCH_LOG = process.env.TRIGGER_AUTO_DISPATCH_LOG || "/Users/xujin/.agents/logs/dispatch_switch.jsonl";
+const DISPATCH_LOG = process.env.TRIGGER_AUTO_DISPATCH_LOG || `${LOGS_DIR}/dispatch_switch.jsonl`;
 const DISPATCH_WINDOW_MS = 10 * 60 * 1000; // 留痕有效窗口：近 10 分钟
-const FANOUT_FALLBACK_LOG = process.env.TRIGGER_AUTO_FANOUT_FALLBACK_LOG || "/Users/xujin/.agents/logs/fanout_weld_fallback.jsonl";
+const FANOUT_FALLBACK_LOG = process.env.TRIGGER_AUTO_FANOUT_FALLBACK_LOG || `${LOGS_DIR}/fanout_weld_fallback.jsonl`;
 const FANOUT_TOOLS = new Set(["subagent", "subagent_fork"]);
 
 // ===== v7 通道④：收编焊点 merge_weld_hook（块R，reform_gate 判A 块 merge_weld_20260822）=====
@@ -55,7 +64,7 @@ function settleInfo(message) {
 function mergeWeldMessage(subId, verb) {
   return noticeMessage(
     `[MERGE-WELD] 分身 ${subId} 已 ${verb}。收编前必扳（判定禁止手写，照抄执行）：\n` +
-    `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/shard_result_gate.json --set result=<该片落盘路径> 判 A\n` +
+    `~/.dsh/bin/xujin-gate shard_result_gate --set result=<该片落盘路径> 判 A\n` +
     `单片失败/取消弃该片不连坐，禁止连坐丢弃其他分身已落盘成果。`,
     `merge-weld: ${subId} ${verb}`
   );
@@ -66,15 +75,15 @@ function mergeWeldMessage(subId, verb) {
 // dual_gates declare 留痕（dual_gates_audit.jsonl 内 timestamp >= turnStart 的
 // declaration_gate_start），无则 deny + 扳闸指引，扳完重试即穿透放行。
 // 闸只强制"定性发生过"，不强制"必须是查询"——is_query/not_query 分流是 declare 的职权。
-const DUAL_GATES_AUDIT = process.env.TRIGGER_AUTO_DUAL_GATES_AUDIT || "/Users/xujin/.agents/logs/dual_gates_audit.jsonl";
-const QUERY_FALLBACK_LOG = process.env.TRIGGER_AUTO_QUERY_FALLBACK_LOG || "/Users/xujin/.agents/logs/query_weld_fallback.jsonl";
+const DUAL_GATES_AUDIT = process.env.TRIGGER_AUTO_DUAL_GATES_AUDIT || `${LOGS_DIR}/dual_gates_audit.jsonl`;
+const QUERY_FALLBACK_LOG = process.env.TRIGGER_AUTO_QUERY_FALLBACK_LOG || `${LOGS_DIR}/query_weld_fallback.jsonl`;
 const QUERY_WINDOW_MS = 10 * 60 * 1000; // 无 turn 状态（插件中途加载）时的窗口兜底，同 fanout 口径
 const QUERY_TOOLS = new Set(["read", "grep", "glob"]);
 
 // ===== v8 通道⑤：todo_write 附身计划闸（块Q v3 修订增补，reform_gate 判A 块 plan_gate_weld_20260822）=====
-const ATTACHED_PLAN_SCRIPT = "/Users/xujin/.agents/skills/gate-switch/scripts/attached_plan.py";const ATTACHED_PLAN_FALLBACK =
+const ATTACHED_PLAN_SCRIPT = `${SKILLS_HOME}/gate-switch/scripts/attached_plan.py`;const ATTACHED_PLAN_FALLBACK =
   "[ATTACHED-PLAN] 方案形成中：须生成 3 维度槽位候选池落盘 ~/.agents/logs/plan_select/POOL-<ts>.md 并扳 " +
-  "python3 ~/.agents/skills/plan-select/scripts/plan_select.py --pool <池文件>；chosen 后必跟收益闸（reform_gate 判A才执行）。" +
+  "~/.dsh/bin/xujin-run plan-select/plan_select.py --pool <池文件>；chosen 后必跟收益闸（reform_gate 判A才执行）。" +
   "单路径无选择须显式声明豁免理由。";
 
 // 取 attached_plan.py 文案（进程内缓存；失败/超时用内嵌 fallback，恒不炸宿主——同附身脚本族 exit 0 纪律）
@@ -248,7 +257,7 @@ function dangerReminder(command) {
     `命中命令原文：${command}\n` +
     (cmdfile ? `命令原文已落盘：${cmdfile}\n` : `（命令原文落盘失败，请手动落盘后扳闸）\n`) +
     `必扳开关（判定禁止手写，照抄输出）：\n` +
-    `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/danger_cmd_gate.json --set cmdfile=${cmdfile ?? "<落盘文件>"}\n` +
+    `~/.dsh/bin/xujin-gate danger_cmd_gate --set cmdfile=${cmdfile ?? "<落盘文件>"}\n` +
     `判 A 才执行、判 B 即阻断（确需执行须用户显式批准）。`;
   return noticeMessage(text, `danger-cmd: ${command.slice(0, 60)}`);
 }
@@ -480,7 +489,7 @@ function apply(ctx) {
           reason:
             `[TRIGGER-AUTO] 扇出阻断（fanout_weld_hook）：近 10 分钟 dispatch_switch 留痕 verdict=B（掷点B=合法串行），` +
             `本就不该扇出——请按串行推进；确属并行误判请重新扳闸：\n` +
-            `python3 ~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py --files <文件数> --units <无依赖单元数> --desc "<任务>"（判 A 再来）`,
+            `~/.dsh/bin/xujin-run parallel-dispatch/dispatch_switch.py --files <文件数> --units <无依赖单元数> --desc "<任务>"（判 A 再来）`,
         };
       }
       return {
@@ -489,7 +498,7 @@ function apply(ctx) {
           `[TRIGGER-AUTO] 扇出阻断（fanout_weld_hook）：同 turn 第 ${state.count} 个分身调用，近 10 分钟无 dispatch_switch 判A留痕` +
           (verdict === "OTHER" ? "（仅有 CLARIFY/VIOLATION 留痕，不算过闸）" : "") +
           `。并行闸机械判定优先于扇出（判定禁止手写，照抄执行）：\n` +
-          `python3 ~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py --files <文件数> --units <无依赖单元数> --desc "<任务>"\n` +
+          `~/.dsh/bin/xujin-run parallel-dispatch/dispatch_switch.py --files <文件数> --units <无依赖单元数> --desc "<任务>"\n` +
           `判 A 后重试本调用即放行。`,
       };
     } catch (error) {
@@ -516,7 +525,7 @@ function apply(ctx) {
         reason:
           `[TRIGGER-AUTO] 检索阻断（query_weld_hook）：本 turn 尚无 dual_gates declare 定性留痕，` +
           `检索三件套（read/grep/glob）事前须先过声明闸（判定禁止手写，照抄执行）：\n` +
-          `python3 ~/.agents/skills/dual-gates/scripts/dual_gates.py declare --raw "<本turn用户原始诉求>" --session-id "$DSH_SESSION_ID"\n` +
+          `~/.dsh/bin/xujin-run dual-gates/dual_gates.py declare --raw "<本turn用户原始诉求>" --session-id "$DSH_SESSION_ID"\n` +
           `is_query 续扳 query 闸；not_query 直接重试本调用即放行。`,
       };
     } catch (error) {
@@ -569,7 +578,7 @@ function apply(ctx) {
             `命中命令原文：${command}\n` +
             (cmdfile ? `命令原文已落盘：${cmdfile}\n` : `（落盘失败，请手动落盘命令原文后扳闸）\n`) +
             `放行唯一通道（判定禁止手写，照抄执行）：\n` +
-            `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/danger_cmd_gate.json --set cmdfile=${cmdfile ?? "<落盘文件>"}\n` +
+            `~/.dsh/bin/xujin-gate danger_cmd_gate --set cmdfile=${cmdfile ?? "<落盘文件>"}\n` +
             `判 A 后重试本命令即放行；判 B 维持阻断（确需执行须用户显式批准）。`,
         };
       }
@@ -598,7 +607,7 @@ function apply(ctx) {
           reminder = noticeMessage(
             `[TRIGGER-AUTO] 分身扇出提醒（fanout_weld_hook）：本 turn 首个分身已放行；` +
             `同 turn 第 2 个 subagent/subagent_fork 调用起，须有 dispatch_switch 判A留痕（近 10 分钟），否则 pre-execute 阻断。` +
-            `未扳请补扳：python3 ~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py --files <文件数> --units <无依赖单元数> --desc "<任务>"`,
+            `未扳请补扳：~/.dsh/bin/xujin-run parallel-dispatch/dispatch_switch.py --files <文件数> --units <无依赖单元数> --desc "<任务>"`,
             "fanout-first: remind dispatch_switch"
           );
         }
