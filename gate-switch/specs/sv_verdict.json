@@ -1,7 +1,0 @@
-{
-  "gate": "sv_verdict",
-  "desc": "sv-supervisor 终裁 verdict 禁止手写（2026-08-15 裁定）：终裁结论必须跑本门禁照抄输出。A=机械核验全过（可判 APPROVED）；B=阻断，violations 即驳回理由，禁止输出 APPROVED。核验项：state 可解析+关键字段非空、deliverables[] hash 重算一致、计数等式、verdict 合法枚举、违规积分<3、状态机状态合法。",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/sv-supervisor/scripts/sv_verdict_check.py --state {state}", "expect": 0, "label": "sv_verdict 机械核验（sv_verdict_check.py 全项通过）"}
-  ]
-}

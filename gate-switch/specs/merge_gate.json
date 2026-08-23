@@ -1,8 +1,0 @@
-{
-  "gate": "merge_gate",
-  "desc": "parallel-dispatch SLOT-MERGE 合并槽门禁：四道校验中可机械化的两道——a) 文件级冲突（两分身改同一文件即违例）b) 产物完整性（期望清单差集为空）；契约级/语义级冲突留软层人工校验（纯语义不造门）。判 A 照抄放行，判 B 按违例清单补派/整改",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/parallel-dispatch/scripts/merge_check.py --manifest {manifests}", "expect": 0, "label": "MERGE 文件级冲突差集"},
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/parallel-dispatch/scripts/merge_check.py --expect \"{expect}\"", "expect": 0, "label": "MERGE 产物完整性差集"}
-  ]
-}

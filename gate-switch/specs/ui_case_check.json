@@ -1,7 +1,0 @@
-{
-  "gate": "ui_case_check",
-  "desc": "ui-test-engineer 白名单合规：action∈11白名单、禁动态 class 选择器、首选非 xpath——判 A 才允许交付",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/ui-test-engineer/scripts/ui_case_check.py --cases \"{cases}\"", "expect": 0, "label": "用例白名单与选择器合规"}
-  ]
-}

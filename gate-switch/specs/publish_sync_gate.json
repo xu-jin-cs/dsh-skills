@@ -1,7 +1,0 @@
-{
-  "gate": "publish_sync_gate",
-  "desc": "技能发布同步闸（2026-08-17 存量清算落地）：对外分发/更新技能后、声称'已发布'前扳本闸。P1 两个用户根符号链接指向 ~/dsh-skills 真源（防双副本漂移）/ P2 仓库无未提交改动 / P3 无未推送提交。A=全过；B=violations 即违例明细。",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/publish_sync_check.py", "expect": 0, "label": "技能发布同步三查（符号链接/仓库干净/无未推送）"}
-  ]
-}

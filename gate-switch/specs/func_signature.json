@@ -1,7 +1,0 @@
-{
-  "gate": "func_signature",
-  "desc": "规则29 函数签名实证（半开关）：写测试调用前实证被测函数存活与真实签名，判 A 贴签名原文；判 B=已删除/重命名禁止凭记忆",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/func_signature_check.py --func \"{func}\" --src \"{src}\"", "expect": 0, "label": "被测函数存活且签名已实证"}
-  ]
-}

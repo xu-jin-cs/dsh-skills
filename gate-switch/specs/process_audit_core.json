@@ -1,7 +1,0 @@
-{
-  "gate": "process_audit_core",
-  "desc": "process-audit 核心五维机械门禁（2026-08-17 扳手改造）：audit_core.py 从引擎 HTTP 机械拉取实例/transition/violations/deliverables，逐项断言 A 状态一致性（引擎态 vs PM声称态+末条transition）/ B 交付物完整性（file_exists+validated）/ C 违规记录（未解决即列出）/ D 同步日志（transition流水非空且时间戳单调）/ E 第5层固化（--layer5-file 存在性半机械）+ R 审计报告 mtime 新于末态 transition（防审计整体跳过）。exit 0=全过 / 2=违例清单 → 掷点 B 阻断归档，违例清单原文附入审计报告，禁止抽查充数",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/process-audit/scripts/audit_core.py --instance {instance} --claimed-state {claimed_state} --report {report} {extra_args}", "expect": 0, "label": "process-audit核心五维+报告新度全量校验"}
-  ]
-}

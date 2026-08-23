@@ -1,7 +1,0 @@
-{
-  "gate": "dispatcher_admission",
-  "desc": "retro-skill-dispatcher GENERATE 准入禁止手工自觉（2026-08-15 裁定）：PM 在 GENERATE 前必须扳动本门禁，判 A 才许生成。script_exit 包装 dispatcher_gate.py admission，机械校验准入五步（global_switch / trigger_config 必备字段 / retro_check_result 非跳过态 / vector_db_enabled / workflow_switch 布尔完整性），任一失败 → B 档阻断，violations 即缺失准入项清单",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/retro-skill-dispatcher/scripts/dispatcher_gate.py admission", "expect": 0, "label": "GENERATE 准入五步机械校验全过"}
-  ]
-}

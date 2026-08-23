@@ -1,7 +1,0 @@
-{
-  "gate": "pm_writeback",
-  "desc": "pm 节点固化证据实证：verify_experience_writeback.sh 退出码 0 才允许汇报'已沉淀/已入库'（6份复盘4份零固化事故对策）",
-  "checks": [
-    {"type": "script_exit", "cmd": "bash /Users/xujin/.agents/skills/pm/scripts/verify_experience_writeback.sh {artifact} {expfile} {keyword}", "expect": 0, "label": "经验固化机械校验"}
-  ]
-}

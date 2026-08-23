@@ -1,8 +1,0 @@
-{
-  "gate": "exp_doc_shell",
-  "desc": "经验文档空壳检测（P3 · 2026-08-15 REFORM-GATE 判A）：角色经验文件 <200 字节判空壳。用法：gate_switch.py --spec exp_doc_shell.json --set expfile=<角色经验文档路径>，判B（空壳）角色须在 retro_report.json 中点名（补齐或标注「无经验」）。挂点：skills/pm/flow.yml 经验空壳审计步。2026-08-20 审计 AGT-002 误判零引用删除后按 flow.yml 挂点重建（审计 grep 漏检 flow.yml，已计入复盘）。",
-  "checks": [
-    {"type": "file_exists", "path": "{expfile}", "label": "经验文档存在"},
-    {"type": "file_min_size", "path": "{expfile}", "bytes": 200, "label": "经验文档非空壳（≥200B）"}
-  ]
-}

@@ -1,9 +1,0 @@
-{
-  "gate": "whitebox_html_delivery",
-  "desc": "whitebox-coverage 终判 HTML 报告桌面交付实证闸（2026-08-17 C域开关化，块4 retro-pm-129 同类）：机械核验 HTML 报告已复制到 /Users/xujin/Desktop/{project}_白盒测试报告_{batch}.html——仅文字提及路径不构成有效交付，桌面副本缺失即终判步骤未完成（B 档）。file_exists+file_min_size+mtime_after 三原语，与 ppt_delivery 同构、零脚本。扳动时机：渲染成功并 cp Desktop 后、输出终判汇报回执前。用法：--set project=<项目名> --set batch=<批次> --set project_path=<项目路径（evidence 归档原件所在工程根）>",
-  "checks": [
-    {"type": "file_exists", "path": "/Users/xujin/Desktop/{project}_白盒测试报告_{batch}.html", "label": "HTML 报告已复制到 Desktop（桌面副本缺失视为终判步骤未完成）"},
-    {"type": "file_min_size", "path": "/Users/xujin/Desktop/{project}_白盒测试报告_{batch}.html", "bytes": 2000, "label": "桌面 HTML 副本非空壳（≥2000B）"},
-    {"type": "mtime_after", "path": "/Users/xujin/Desktop/{project}_白盒测试报告_{batch}.html", "ref_path": "{project_path}/evidence/tdd/{project}_白盒测试报告_{batch}.html", "label": "桌面副本新于 evidence 归档原件（本次真实 cp，非旧证据冒充）"}
-  ]
-}

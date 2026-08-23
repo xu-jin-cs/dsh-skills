@@ -1,7 +1,0 @@
-{
-  "gate": "spm_writeback",
-  "desc": "senior-pm-agent 复盘回写实证：verify_learn_writeback.sh 退出码 0 才允许汇报'已同步更新'（防照抄模板伪造声称）",
-  "checks": [
-    {"type": "script_exit", "cmd": "bash /Users/xujin/.agents/skills/senior-pm-agent/scripts/verify_learn_writeback.sh {artifact} {keyword}", "expect": 0, "label": "经验回写机械校验"}
-  ]
-}

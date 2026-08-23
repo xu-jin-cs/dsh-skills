@@ -1,7 +1,0 @@
-{
-  "gate": "first_push_audit",
-  "desc": "L2 开关第一推动事后审计闸（2026-08-17 REFORM-GATE 判立即改落地，短板A改造）：无钩子环境下'何时该扳开关'靠自觉、不扳不留痕。本闸扫 DSH 会话 jsonl + 开关留痕 jsonl，检测'模式信号在、对应留痕缺'不对称：F1 ≥2 次 subagent 族扇出但无 dispatch_switch 掷点 / F2 方案特征但无 reform_gate 掷点 / F3 复盘触发词命中但无 retro_generate_token 掷点 / F4 掷点 A 但零真扇出 / F5 engine 流程特征无 health 掷点（WARNING）/ F6 retro 触发词命中但窗口内 _active_match.md 未更新（retro-match 该跑没跑，消费链第一环，2026-08-17 消费链路 REFORM-GATE 断点1 落地）/ F7 起手式缺失（2026-08-17 REFORM-GATE 判 A，规则制定者自我盲区实证：4 条问卷提交未开清单/未掷点/串行无理由对 F1-F6 全隐身）：F7a 单回合工具调用≥4 但无 todo/write → 长链任务未开清单起手式；F7b 同形命令跨≥3 回合重复且窗口内无 todo/write 无 dispatch_switch 掷点 → 批量任务零起手式。判 A=会话全部开关第一推动合规；判 B=violations 即应扳未扳清单，复盘记违规、比率进 B/A 审计。挂接点：复盘第四部分着陆检查前（01_workflows.md 复盘标准结构）+ 人工随时可扳。",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/gate_first_push_audit.py", "expect": 0, "label": "第一推动七查：扇出/方案/复盘/真扇出/engine 预警/retro-match 运行/起手式"}
-  ]
-}

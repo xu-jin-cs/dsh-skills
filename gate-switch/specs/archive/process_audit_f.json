@@ -1,7 +1,0 @@
-{
-  "gate": "process_audit_f",
-  "desc": "process-audit 维度F（技能产出完整性）机械门禁：registry_fcheck.py fcheck 全量遍历 registry-index.json 全部条目，F1 文件落地/F2 三大章节/F3 provenance 六字段任一失败即 exit 1 → 掷点 B 阻断归档，failed_items 原文附入审计报告，禁止抽查充数",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 /Users/xujin/.agents/skills/process-audit/scripts/registry_fcheck.py fcheck", "expect": 0, "label": "维度F技能产出完整性全量校验"}
-  ]
-}

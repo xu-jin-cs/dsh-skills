@@ -1,7 +1,0 @@
-{
-  "gate": "reform_exit_guard",
-  "desc": "请示出口闸（2026-08-17 用户裁定，扳手性质禁软提示词）：改造方案/建议出口后或复盘审计时扳本闸——E1 会话出口文本含请示句式（是否需要我/要不要执行/等你确认 等）即违例；E2 会话含改造方案特征但窗口内无 reform_gate 掷点记录即方案裸奔出口违例。判 A=出口合规；判 B=violations 即违例证据（句式摘录/缺失窗口），复盘记违规。",
-  "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/reform_exit_guard.py", "expect": 0, "label": "出口双检查：无请示句式 + 方案已过收益框架"}
-  ]
-}

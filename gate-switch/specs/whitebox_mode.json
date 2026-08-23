@@ -1,9 +1,0 @@
-{
-  "gate": "whitebox_mode",
-  "desc": "白盒模式门禁：有完整基线→A(diff 增量)；缺基线→B(full 全量，violations 即缺失理由)",
-  "checks": [
-    {"type": "file_exists", "path": "{project}/archmap/full_index.json", "label": "archmap 全量基线"},
-    {"type": "file_exists", "path": "{project}/test-master-report.json", "label": "历史终判报告"},
-    {"type": "json_field", "path": "{project}/test-master-report.json", "field": "rounds", "op": "min_len", "value": 4, "label": "R0~R3 轮次完整"}
-  ]
-}

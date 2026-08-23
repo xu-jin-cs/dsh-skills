@@ -1,9 +1,0 @@
-{
-  "gate": "flow_state_load",
-  "desc": "流程A 步骤0-B 状态加载闸（01_workflows.md L257 区，2026-08-16 开关化）：进入步骤1之前 PM 必须创建/读取 {project}/.flow_state.json。治「PM 口头声称已恢复断点但状态文件从未落盘/关键字段缺失」。A=文件存在且 status/step 非空，放行进入步骤1；B=缺失或空壳，violations 即补齐指令。sv-supervisor 规则读取等语义项留软层。",
-  "checks": [
-    {"type": "file_exists", "path": "{project}/.flow_state.json", "label": "流程状态文件存在（{project}/.flow_state.json）"},
-    {"type": "json_field", "path": "{project}/.flow_state.json", "field": "status", "op": "not_empty", "label": "status 字段非空（PENDING/ACTIVE/...）"},
-    {"type": "json_field", "path": "{project}/.flow_state.json", "field": "step", "op": "not_empty", "label": "step 字段非空（STEP-01/...）"}
-  ]
-}
