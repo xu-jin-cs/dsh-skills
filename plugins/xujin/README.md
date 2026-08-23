@@ -76,7 +76,7 @@ bash install.sh   # 推荐 Git Bash / WSL 执行
 ```
 
 > 默认装入 `web` profile；装其他 profile：`bash install.sh default`。
-> 安装内容：插件本体 + 2 个 CLI shim（`~/.dsh/bin/xujin-gate` / `xujin-engine`）+ 查询闸焊点插件 dsh-trigger-auto。
+> 安装内容：插件本体 + 3 个 CLI shim（`xujin-gate` / `xujin-engine` / `xujin-run`）+ 查询闸焊点插件 dsh-trigger-auto。
 
 **安装校验**：
 
@@ -281,7 +281,7 @@ PENDING → PRD_REVIEW → DESIGN → DEV_FRONTEND / DEV_BACKEND → PM_CONFIRM
 任意态 → FROZEN；PM_CONFIRM / CODE_REVIEW / ACCEPTANCE → ROLLBACK
 ```
 
-### 两个 CLI
+### 三个 CLI
 
 ```bash
 # 扳闸（四态退出码 0=A / 2=B / 3=CLARIFY / 4=VIOLATION）
