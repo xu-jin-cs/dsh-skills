@@ -39,7 +39,7 @@ bash install.sh   # 推荐 Git Bash / WSL 执行
 dsh plugin --profile web list    # 列表中出现 xujin 与 dsh-trigger-auto 即成功
 ```
 
-重启 DSH（或等热重载）后：会话技能目录出现 `rule-00-root-safety` ~ `rule-13-workflow-router` 等 19 份规则技能与 7 个原子技能；终端执行 `~/.dsh/bin/xujin-gate reform_gate --help` 能列出 spec 即闸可用。
+重启 DSH（或等热重载）后：会话技能目录出现 `rule-00-root-safety` ~ `rule-13-workflow-router` 等 19 份规则技能与 7 个原子技能；终端执行 `~/.dsh/bin/xujin-gate 任意名` 能列出可用 spec 清单（共 78 份）即闸引擎可用。
 
 **卸载**：`bash uninstall.sh`（默认 web profile）——插件、查询闸焊点、CLI shim 全部移除，DSH 重载后自动注销全部技能注册。
 
