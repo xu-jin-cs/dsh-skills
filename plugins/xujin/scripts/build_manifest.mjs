@@ -246,9 +246,9 @@ function check(label, ok, detail = '') {
 console.log('自测：');
 const parsed = JSON.parse(fs.readFileSync(OUT_FILE, 'utf8'));
 check('① manifest.real.json 可解析', !!parsed && typeof parsed === 'object');
-check('② skills 数量 = 19+5 = 24（gate-switch/parallel-dispatch 本地真源已下架，能力由插件内置引擎承载）', parsed.skills.length === 24, `实际 ${parsed.skills.length}`);
+check('② skills 数量 = 19+7 = 26（2026-08-23 符号链接归位后恢复 7 原子技能收集）', parsed.skills.length === 26, `实际 ${parsed.skills.length}`);
 const specN = Object.keys(parsed.specs).length;
-check('③ specs 数量记录（本地真源已下架，可为 0）', specN >= 0, `实际 ${specN}`);
+check('③ specs 数量必须 > 0（2026-08-23 0-spec 真空事故防复发：符号链接未建时构建曾静默收 0 份）', specN > 0, `实际 ${specN}`);
 check('③b 引擎规则 ≥ 5 份（回迁）', Object.keys(parsed.engineRules ?? {}).length >= 5,
   `实际 ${Object.keys(parsed.engineRules ?? {}).length}`);
 check('③c 默认跃迁表已抽取且含 PENDING', (parsed.engineDefaults?.transitions?.PENDING?.length ?? 0) > 0,

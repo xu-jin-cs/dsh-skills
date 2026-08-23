@@ -13,19 +13,19 @@
 **macOS / Linux**——复制下面三行命令，粘贴到终端运行即可：
 
 ```bash
-curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.2.0.tgz
+curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.3.0.tgz
 curl -LO https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/install.sh
 bash install.sh
 ```
 
 > 备用直链（任何时候可用）：把上面两条 URL 换为
-> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.2.0.tgz`
+> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.3.0.tgz`
 > `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh`
 
 **Windows PowerShell**：
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.2.0.tgz" -OutFile "xujin-1.2.0.tgz"
+Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/xujin-1.3.0.tgz" -OutFile "xujin-1.3.0.tgz"
 Invoke-WebRequest -Uri "https://github.com/xu-jin-cs/dsh-skills/releases/latest/download/install.sh" -OutFile "install.sh"
 bash install.sh   # 推荐 Git Bash / WSL 执行
 ```
@@ -38,7 +38,7 @@ bash install.sh   # 推荐 Git Bash / WSL 执行
 dsh plugin --profile web list    # 列表中出现 xujin 即安装成功
 ```
 
-重启 DSH 或等待热重载后，插件自动完成内存解密并注册全部规则/技能。校验方式：会话技能目录中出现 `rule-00-root-safety` ~ `rule-13-workflow-router` 等 19 份规则技能；终端执行 `~/.dsh/bin/xujin-engine sign --artifact '{"test":1}'` 能输出签名即引擎可用。
+重启 DSH 或等待热重载后，插件自动完成内存解密并注册全部规则/技能。校验方式：会话技能目录中出现 `rule-00-root-safety` ~ `rule-13-workflow-router` 等 19 份规则技能与 gate-switch / parallel-dispatch 等 7 个原子技能（v1.3 起资产包内含 78 份闸 spec，`xujin-gate reform_gate` 等规则内扳闸指令全部可用）；终端执行 `~/.dsh/bin/xujin-engine sign --artifact '{"test":1}'` 能输出签名即引擎可用。
 
 **v1.2 起合并查询闸焊点**：安装会一并注册 `dsh-trigger-auto` 插件（包内 `payload/dsh-trigger-auto`）。生效后 Agent 每个 turn 首个 `read`/`grep`/`glob` 检索动作前必须先过一次声明闸定性（`dual_gates.py declare`，判 not_query 也直接放行），否则被事前阻断并给出扳闸指引——这是设计本意，不是故障。
 

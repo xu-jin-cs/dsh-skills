@@ -1,7 +1,7 @@
 {
   "name": "xujin",
-  "description": "DSH Cordis 私有 Skill/规则插件（内置种子二道混淆加密分发，开源小白友好版）：零依赖轻量化，内存解密 + runtime 技能注册，明文不落地；v1.2 合并查询闸焊点 dsh-trigger-auto（read/grep/glob 前置 declare 定性）",
-  "version": "1.2.0",
+  "description": "DSH Cordis 私有 Skill/规则插件（内置种子二道混淆加密分发，开源小白友好版）：零依赖轻量化，内存解密 + runtime 技能注册，明文不落地；v1.3 全量资产（19规则+7技能+78闸spec+5引擎规则）+ 查询闸焊点 dsh-trigger-auto",
+  "version": "1.3.0",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
