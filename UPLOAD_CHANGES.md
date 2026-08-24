@@ -44,3 +44,11 @@
   - `~/.agents/AGENTS.md`
   - `~/.claude/CLAUDE.md`
   - `~/.codex/AGENTS.md`
+
+### 4. Xj-engine 任务域与桥接层（2026-08-25 追加）
+
+- 新增 `task_complete` / `task_cancel` / `task_archive`
+- 新增完成证据校验
+- 新增审计事件类型
+- 新增 `BridgeExecutor` 桥接执行层
+- 新增 `docs/bridge_contract.md`

@@ -31,3 +31,20 @@
   - `~/.agents/engine_registry.json`
   - `~/.dsh/engine_registry.json`
 - 全局 Agent 配置已声明默认引擎
+
+### 2026-08-25（任务域 + 桥接层）
+
+- 新增 `task.py`：任务生命周期动作
+  - `task.complete`
+  - `task.cancel`
+  - `task.archive`
+- 新增 `BridgeExecutor`：内核执行桥接分发，前端 adapter 外部注册
+- 新增完成证据校验：
+  - `complete` 必须携带非空 `evidence`
+- 新增审计事件：
+  - `task_complete_event`
+  - `task_cancel_event`
+  - `task_archive_event`
+- 新增 `docs/bridge_contract.md`：桥接契约、adapter 接口、事件结构
+- 扩展 `et_contract.py` Payload Schema：新增 `task` 块
+- 扩展 Output Schema：新增 `task_result`
