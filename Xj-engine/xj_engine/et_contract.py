@@ -358,56 +358,6 @@ PAYLOAD_SCHEMA: dict[str, Any] = {
             "default": False,
             "description": "开启则出参附加本次规则快照，生产默认关闭",
         },
-        # ── 执行多agent 契约（2026-08-25 引擎内置 agent 执行器） ──
-        # 引擎按契约调度执行各 agent 节点（LLM 执行器），pm 等业务编排
-        # 作为 nodes 数据传入，引擎不内置任何具体业务 agent。不传则跳过本钩子。
-        "agent_exec": {
-            "type": "object",
-            "description": "【引擎内置】多 agent 编排执行：引擎按契约逐节点/并行执行各 agent，不传则跳过",
-            "required": ["nodes"],
-            "properties": {
-                "nodes": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "object",
-                        "required": ["id", "agent"],
-                        "properties": {
-                            "id": {"type": "string", "minLength": 1},
-                            "agent": {
-                                "type": "object",
-                                "required": ["role", "prompt"],
-                                "properties": {
-                                    "role": {"type": "string", "description": "agent 角色名（如 spm/fe/be）"},
-                                    "prompt": {
-                                        "type": "string",
-                                        "description": "agent 系统提示（角色身份 + 技能/约束指引），由调用方渲染传入",
-                                    },
-                                    "input_from": {
-                                        "type": "array",
-                                        "items": {"type": "string"},
-                                        "description": "本节点输入取自上一步节点输出键或 artifact 内字段；缺省为空",
-                                    },
-                                    "output_key": {
-                                        "type": "string",
-                                        "description": "本节点产出的状态键名，供下游 input_from 引用；缺省用节点 id",
-                                    },
-                                },
-                                "additionalProperties": False,
-                            },
-                            "parallel": {"type": "boolean", "default": False},
-                            "parallel_group": {"type": "string", "description": "同组节点并行执行，组内全完成再进下一步"},
-                            "depends_on": {"type": "array", "items": {"type": "string"}, "description": "前置节点 id 列表（并行组内用于排序输入）"},
-                        },
-                        "additionalProperties": False,
-                    },
-                },
-                "max_steps": {"type": "integer", "default": 50},
-                "provider": {"type": "string", "description": "LLM 提供方标识，缺省用内核默认执行器"},
-                "model": {"type": "string", "description": "LLM 模型名，缺省用执行器默认"},
-            },
-            "additionalProperties": False,
-        },
     },
     "additionalProperties": False,
 }
@@ -523,10 +473,6 @@ OUTPUT_SCHEMA: dict[str, Any] = {
         "task_result": {
             "type": ["object", "null"],
             "description": "task 生命周期动作结果（task_complete/task_cancel/task_archive）",
-        },
-        "agent_result": {
-            "type": ["object", "null"],
-            "description": "执行多agent 结果：{output_key: output_text, ...}，引擎内置 agent 执行器产出",
         },
         "_debug": {
             "type": "object",

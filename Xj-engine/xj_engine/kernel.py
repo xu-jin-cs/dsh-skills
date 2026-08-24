@@ -64,7 +64,7 @@ def _mask_snapshot(obj: Any) -> Any:
     return obj
 
 # 固定钩子时序（artifact_validate 为平台扩展校验钩子，先于状态拦截）
-HOOK_ORDER = ("artifact_validate", "state_intercept", "gate_guard", "content_issue", "agent_exec")
+HOOK_ORDER = ("artifact_validate", "state_intercept", "gate_guard", "content_issue")
 
 
 def _exec_with_timeout(fn: Callable[[], None], timeout_ms: float) -> bool:
@@ -854,7 +854,6 @@ def _et_inner(payload: dict[str, Any]) -> dict[str, Any]:
     issue_meta: dict[str, Any] | None = None
     hook_elapsed: dict[str, float] = {}
     task_result: dict[str, Any] | None = None
-    agent_result: dict[str, Any] | None = None
 
     rc = payload.get("resource_control") or {}
     hook_timeout_ms = rc.get("hook_timeout_ms")
@@ -893,7 +892,7 @@ def _et_inner(payload: dict[str, Any]) -> dict[str, Any]:
             def _invoke_hook() -> None:
                 nonlocal code, error_msg, executed_retry, artifact
                 nonlocal validate_result, new_task_state, gate_result
-                nonlocal signed_artifact, issue_meta, agent_result
+                nonlocal signed_artifact, issue_meta
                 if hook == "artifact_validate":
                     # failure_policy 实执行：max_retry + retry_delay_ms 仅对本钩子
                     # 做有界重试（该校验幂等）；重试期间遵守 global_timeout_ms 上限
@@ -931,8 +930,6 @@ def _et_inner(payload: dict[str, Any]) -> dict[str, Any]:
                         spec, artifact, trace_id,
                         state_spec=payload.get("state_intercept"),
                     )
-                elif hook == "agent_exec":
-                    agent_result = _run_agent_exec(spec, artifact)
 
             t0 = time.monotonic()
             completed = True
@@ -1036,7 +1033,6 @@ def _et_inner(payload: dict[str, Any]) -> dict[str, Any]:
         "failure_info": failure_info,
         "audit_meta": payload.get("audit_meta"),
         "task_result": task_result,
-        "agent_result": agent_result,
     }
     if payload.get("debug"):
         out["_debug"] = {
