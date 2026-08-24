@@ -1,6 +1,6 @@
 # xujin —— DeepSeek Harness 专属工程治理插件
 
-> 仓库：https://github.com/xu-jin-cs/dsh-skills （插件目录 `plugins/xujin`）
+> 仓库：https://github.com/xu-jin-cs/dsh-skills （插件目录 `plugins/Xj-rules`）
 
 本插件为 100% 原创、仅适配 DeepSeek Harness（DSH / Cordis）生态的外置增强治理插件，不属于 DSH 官方原生内核，为独立自研架构扩展层。
 不通用、不支持其他 Agent 框架，所有机制、闸规则、状态机、检索架构专为 DSH-Harness 事件总线、任务调度、会话生命周期深度定制。
@@ -64,8 +64,8 @@ bash install.sh
 ```
 
 > 备用直链（任何时候可用）：把上面 URL 换为
-> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/xujin-1.5.0.tgz`
-> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/xujin/dist/install.sh`
+> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/Xj-rules/dist/xujin-1.5.0.tgz`
+> `https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/plugins/Xj-rules/dist/install.sh`
 
 **Windows PowerShell**：
 

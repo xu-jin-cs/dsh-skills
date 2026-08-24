@@ -14,7 +14,7 @@
  *   4. 引擎规则      ~/agent-harness/backend/rules/*.yaml → engineRules{}（原文字符串）
  *
  * 全部文本内容执行调用路径重写（python3 本地路径 → ~/.dsh/bin/xujin-*）。
- * 输出：plugins/xujin/manifest.real.json
+ * 输出：plugins/Xj-rules/manifest.real.json
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,7 +25,7 @@ const RULES_DIR = path.join(HOME, '.agents/rules');
 const SKILLS_DIR = path.join(HOME, '.agents/skills');
 const SPECS_DIR = path.join(SKILLS_DIR, 'gate-switch/specs');
 const ENGINE_RULES_DIR = path.join(HOME, 'agent-harness/backend/rules');
-const PLUGIN_DIR = path.join(HOME, 'dsh-skills/plugins/xujin');
+const PLUGIN_DIR = path.join(HOME, 'dsh-skills/plugins/Xj-rules');
 const OUT_FILE = path.join(PLUGIN_DIR, 'manifest.real.json');
 
 const ATOMIC_SKILLS = [
