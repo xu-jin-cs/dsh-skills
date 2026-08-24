@@ -1,0 +1,5 @@
+# 可选中间件依赖：仅使用 middleware/ 时安装
+pika>=1.3
+redis>=5.0
+minio>=7.2
+urllib3>=1.26

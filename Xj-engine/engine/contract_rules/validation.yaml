@@ -1,0 +1,72 @@
+# validation.yaml — 接入校验规则唯一真源
+# 迁移依据：规则迁移台账 表1-#3~#9、表2-H4(constants 白名单/拦截表)/H5(消灭代码默认值)/H6(魔数注册)
+# 冲突裁定：C1(白名单/拦截表唯一在本表)、C4(大小分层唯一在本表)、C6(md5 scope_key=tenant_id)
+# overridable 约定：映射节点内 `overridable: true` 标记整棵子树可被 payload.options 覆盖；
+# 标量叶子以 {value: X, overridable: true} 包装（rules_loader 解包后按原值返回）。
+
+# 台账 表1-#4：12 格式白名单（与 constants.py GENERAL_FORMAT_WHITELIST 双定义已裁定单真源）
+# 2026-08-17 用户裁定扩列 13 格式：追加 json（REFORM-GATE 判A，复用 text_parser 纯文本解析）
+whitelist:
+  - txt
+  - md
+  - json
+  - docx
+  - doc
+  - wps
+  - xlsx
+  - xls
+  - csv
+  - pptx
+  - ppt
+  - html
+  - htm
+
+# 台账 表1-#5：11 类显式拦截格式（含 pdf，隔离红线 ISO-6 的判定依据）
+blocklist:
+  - pdf
+  - zip
+  - rar
+  - exe
+  - dll
+  - jpg
+  - jpeg
+  - png
+  - gif
+  - mp4
+  - mp3
+
+# 台账 表1-#6：大小阈值（absolute 50MB 硬拦截，options 可覆盖）；
+# sync/async 分层已拆桩（FIX-ASYNC）：引擎无异步消费方，所有文件同步走全链，
+# sync_max_mb/async_max_mb 键保留仅为台账兼容，无代码消费
+size_tiers:
+  overridable: true
+  sync_max_mb: 10
+  async_max_mb: 50
+  absolute_max_mb: 50
+
+# 台账 表1-#7：文件名清洗与校验共用同一条规则
+filename:
+  max_length: 200
+  allowed_charset_regex: '^[一-龥a-zA-Z0-9_\- .]+$'
+  forbidden_chars: '/\\:*?"<>|'
+
+# 台账 表1-#8（改造）：scope_key 由 kb_space_id 裁定为 tenant_id（C6）；enabled 可覆盖
+md5_dedup:
+  enabled:
+    value: true
+    overridable: true
+  scope_key: tenant_id
+  force_reparse_flag: force_reparse   # 重试时 MD5 去重跳过自身（防自杀，契约 §2.5-4）
+
+# 台账 表1-#9 + 表2-H6：开关迁移；魔数字节表是行为数据不搬 YAML，impl 注册条目指向实现
+magic:
+  enabled: true
+  check_extensions: [docx, xlsx, pptx, doc, wps]
+  impl: engine.general.magic
+
+# 台账 表1-#3：tmp 保留期 success 24h / failure 168h（旧引擎 failure 侧未消费为已知桩，
+# 新引擎 general_post 执行器必须双侧分流消费），options 可覆盖
+tmp_retention:
+  overridable: true
+  success_hours: 24
+  failure_hours: 168

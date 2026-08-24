@@ -1,0 +1,42 @@
+# ETL 异步化告警规则三件套（契约冻结：docs/etl_async_contract_20260817.md R7）
+#
+# 挂载方式：在 prometheus.yml 的 rule_files 中引入本路径，例如：
+#   rule_files:
+#     - <你的 Prometheus 配置目录>/middleware/prometheus_rules/etl_engine.yaml
+# 然后 reload Prometheus（kill -HUP <pid> 或 POST /-/reload）。
+# 本变更只落配置文件，不动 Prometheus 运行配置。
+#
+# 指标来源：rabbitmq_exporter 暴露的 rabbitmq_queue_messages（队列就绪消息数）。
+
+groups:
+  - name: etl_engine
+    rules:
+      # 积压超阈值：主队列就绪消息 >20 持续 30s → warning
+      - alert: EtlVectorTaskBacklogHigh
+        expr: rabbitmq_queue_messages{queue="etl_vector_index_task"} > 20
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "ETL 向量索引主队列积压超阈值"
+          description: "队列 etl_vector_index_task 就绪消息数 >20 已持续 30s，消费能力不足或 consumer 异常，请检查 etl-index-consumer 进程与 GPU/embed 负载。"
+
+      # 积压持续增长：5m 新增积压 >10 且持续 60s → critical
+      - alert: EtlBacklogGrowing
+        expr: increase(rabbitmq_queue_messages{queue="etl_vector_index_task"}[5m]) > 10
+        for: 60s
+        labels:
+          severity: critical
+        annotations:
+          summary: "ETL 向量索引主队列积压持续增长"
+          description: "队列 etl_vector_index_task 5 分钟内新增积压 >10 条且持续 60s，疑似 consumer 停摆或处理卡死，请立即检查 /tmp/etl-index-consumer.log 与 WATCHDOG 日志。"
+
+      # DLQ 新增任务：1m 内 DLQ 新增 >0 持续 10s → critical（卡死/失败样本待人工处理）
+      - alert: EtlDLQNewTask
+        expr: increase(rabbitmq_queue_messages{queue="etl_vector_index_dlq"}[1m]) > 0
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "ETL 向量索引 DLQ 出现新任务"
+          description: "队列 etl_vector_index_dlq 1 分钟内有新增消息，存在处理失败/卡死样本，需人工排查（DLQ 样本保留不自动重建）。"
