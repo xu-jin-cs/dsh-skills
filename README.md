@@ -1,8 +1,23 @@
 # dsh-skills
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 生态的轻量通用技能包。纯文件形态、零依赖、零安装脚本——放进技能发现根即生效。
+面向 DeepSeek Harness / Claude Code / Kimi Code / Codex 等多 Agent 生态的轻量通用技能包。
+纯文件形态、零依赖、零安装脚本——放进各自技能发现根即生效。
 
-Reusable, lightweight skills for the DeepSeek Harness ecosystem. Plain files, zero dependencies.
+Reusable, lightweight skills for multiple AI coding agents: DeepSeek Harness, Claude Code, Kimi Code, Codex, and more. Plain files, zero dependencies.
+
+---
+
+## 兼容矩阵 / Compatibility
+
+| 目标环境 | 技能目录 | 说明 |
+|---|---|---|
+| DeepSeek Harness | `~/.dsh/skills` 或 `~/.agents/skills` | DSH 原生，支持 watcher 热加载 |
+| Claude Code | `~/.claude/skills` | 标准 `SKILL.md` 格式，复制即用 |
+| Kimi Code | `~/.agents/skills` | 标准 `SKILL.md` 格式，复制即用 |
+| Codex | `~/.codex/skills` | 标准 `SKILL.md` 格式，复制后按环境调整路径 |
+
+> 技能本体统一为标准 `SKILL.md` + YAML frontmatter；不同编辑器仅“技能发现根目录”不同。
+> DSH 专用 CLI（`dsh-skill.sh`）仍可用于 DSH 环境，其他环境直接复制技能目录即可。
 
 ---
 
@@ -124,7 +139,7 @@ No restart needed — DSH's skill watcher hot-reloads new entries.
 ## 设计原则 / Principles
 
 1. **轻量化**：规则类技能为单文件 `SKILL.md` + YAML frontmatter（`name` + `description`），无代码、无依赖；引擎类技能（如 `archmap`）自包含分发，依赖显式声明于各自 `requirements.txt`；
-2. **通用**：不含任何引擎私有逻辑，不绑定特定后端，他人的 engine 零冲突；
+2. **通用**：不含任何引擎私有逻辑，不绑定特定后端；标准 `SKILL.md` 格式，可被 DSH / Claude Code / Kimi Code / Codex 等加载；他人的 engine 零冲突；
 3. **自动触发**：触发词与场景写在 `description` 中，由 DSH 注入会话目录做场景匹配，命中即主动加载，无需显式指令。
 
 ## 方法论 / Methodology
@@ -140,7 +155,16 @@ MIT
 
 # dsh-skills (English)
 
-Reusable, lightweight skills for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) ecosystem. Plain files, zero dependencies — drop them into a skill discovery root and they work.
+Reusable, lightweight skills for multiple AI coding agents: DeepSeek Harness, Claude Code, Kimi Code, Codex, and more. Plain files, zero dependencies — drop them into the skill discovery root of your agent and they work.
+
+### Compatibility
+
+| Agent | Skill directory |
+|---|---|
+| DeepSeek Harness | `~/.dsh/skills` or `~/.agents/skills` |
+| Claude Code | `~/.claude/skills` |
+| Kimi Code | `~/.agents/skills` |
+| Codex | `~/.codex/skills` |
 
 ## Skills
 
@@ -190,7 +214,7 @@ No restart needed — DSH's skill watcher hot-reloads new entries.
 ## Principles
 
 1. **Lightweight** — rule-type skills are a single `SKILL.md` + YAML frontmatter, no code, no deps; engine-type skills (archmap, gate-switch) are self-contained with explicit `requirements.txt`.
-2. **Universal** — no private engine logic, no backend lock-in; zero conflicts with your own engine.
+2. **Universal** — no private engine logic, no backend lock-in; standard `SKILL.md` format works with DSH, Claude Code, Kimi Code, Codex, and more; zero conflicts with your own engine.
 3. **Auto-trigger** — triggers live in each skill's `description`; DSH injects them into the session catalog for scene matching.
 
 ## Methodology
