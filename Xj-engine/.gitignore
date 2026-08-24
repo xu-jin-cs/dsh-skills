@@ -6,3 +6,4 @@ data/
 .env
 
 *.egg-info/
+OPTIMIZATION.md
