@@ -1,0 +1,12 @@
+{
+  "gate": "task_launch_gate",
+  "desc": "会话循环熔断：每次任务发起前置记账（按会话维度），同会话同一任务累计发起>3次（第4次）禁止加入并上报用户决定；复盘动作清空当前会话任务版。计数留痕 jsonl 不凭记忆。",
+  "checks": [
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/task_launch_gate/scripts/task_launch_gate.py --session-id \"{session_id}\" --task \"{task}\" --action record",
+      "expect": 0,
+      "label": "同会话任务发起未触熔断（记录并放行）"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "gate": "engine_literal_scan",
+  "desc": "短板2防复发闸（2026-08-20 REFORM-GATE 判A）：「引擎零业务常量」从软规则升级为机械扫描。词表驱动扫描引擎层目录（由 data/engine_literal_wordlist.json 的 scan_dirs 配置，按自己项目改写），命中非白名单业务字面量即判 B。词表 ~/.agents/skills/engine_literal_scan/data/engine_literal_wordlist.json 只增不删；legacy_allowlist 存量登记只减不增。挂点：复盘着陆闸族 + 引擎代码交付期。",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "~/.agents/skills/engine_literal_scan/data/engine_literal_wordlist.json",
+      "label": "词表数据文件存在"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/engine_literal_scan/scripts/engine_literal_scan.py",
+      "expect": 0,
+      "label": "引擎层业务字面量零命中（白名单存量除外）"
+    }
+  ]
+}

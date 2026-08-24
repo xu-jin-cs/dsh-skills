@@ -1,0 +1,12 @@
+{
+  "gate": "scope_boundary",
+  "desc": "范围边界机械拦截（SV-GATE-001 重生版：git diff 变更文件集 vs 范围清单集合运算，替代旧 YAML 文本关键词桩）。A=无越界放行提交；B=阻断，越界清单即理由（须 PM 确认纳入或删除——即使代码已写也要删掉）",
+  "checks": [
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/scope-boundary-gate/scripts/scope_diff_check.py --repo \"{repo}\" --allow \"{allow}\" --base \"{base}\"",
+      "expect": 0,
+      "label": "变更文件全部在 PRD/task-breakdown 范围内（例外：IDE 配置/类型声明白名单）"
+    }
+  ]
+}

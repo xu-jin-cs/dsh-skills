@@ -1,0 +1,16 @@
+{
+  "gate": "prd_inputs",
+  "desc": "项目前置输入准入闸（01_workflows.md 规则6，2026-08-16 开关化）：用户上传压缩包或给出项目路径时，PM 必须先校验 {project}/.prd.md + {project}/.ui-proto.json 双输入齐备再开展后续工作。治「PM 凭用户口述需求直接开工，事后发现无 PRD 无 UI 原型」。A=双输入齐备放行 Step1；B=缺项清单即 violations，补齐后重新扳动。",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "{project}/.prd.md",
+      "label": "总需求 PRD 存在（{project}/.prd.md）"
+    },
+    {
+      "type": "file_exists",
+      "path": "{project}/.ui-proto.json",
+      "label": "UI 原型存在（{project}/.ui-proto.json）"
+    }
+  ]
+}

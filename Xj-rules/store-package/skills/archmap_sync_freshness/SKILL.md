@@ -1,0 +1,29 @@
+---
+name: archmap_sync_freshness
+description: "archmap ETL 配置契约报告新鲜度机械闸（2026-08-16 D 域批量开关化，archmap/SKILL.md 模式 D L195 回填约定）：修改 ETL 配置后必须 /archmap sync 重生成契约报告——机械核验 {project}/archmap/etl_rules/ETL"
+---
+
+# archmap_sync_freshness — gate-switch 实证闸
+
+## 用途与触发
+
+archmap ETL 配置契约报告新鲜度机械闸（2026-08-16 D 域批量开关化，archmap/SKILL.md 模式 D L195 回填约定）：修改 ETL 配置后必须 /archmap sync 重生成契约报告——机械核验 {project}/archmap/etl_rules/ETL配置契约对齐报告.md 新于被改 ETL 配置 {etl_config}（调用方绑定实际被改的 yaml 路径）。治「改了配置没 sync 导致契约报告漂移」。声称 sync 已回填前扳此闸，判 A 才许声称；判 B = 先跑 /archmap <项目> sync 后重扳。注：产物路径以引擎实际输出 etl_rules/ETL配置契约对齐报告.md 为准（etl_profiler.py:485）。
+
+## 扳动命令
+
+```bash
+python3 ~/.agents/skills/archmap_sync_freshness/scripts/gate_switch.py --spec ~/.agents/skills/archmap_sync_freshness/scripts/specs/archmap_sync_freshness.json --set etl_config=<etl_config> --set project=<project>
+```
+
+判定禁止手写：必须实跑上述命令并照抄输出结论，禁止凭印象声称通过/不通过。
+
+## 退出码语义
+
+| 退出码 | 含义 |
+|--:|---|
+| 0 | A：全部机械核验通过，放行 |
+| 2 | B：有违例阻断，violations 即违例清单/修复指令 |
+| 3 | CLARIFY：输入信号不足，先澄清再扳 |
+| 4 | VIOLATION：spec 非法或前置条件缺失（按输出整改后重扳） |
+
+留痕：`~/.agents/logs/gate_switch.jsonl`。

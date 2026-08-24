@@ -1,0 +1,12 @@
+{
+  "gate": "receipt_gate",
+  "desc": "parallel-dispatch SLOT-RECEIPT 回报槽门禁：分身结构化回报五字段契约机械校验（status 枚举 / artifacts 数组与存在性 / deviation·blocker·todo_final 字符串字段），判 A 照抄放行，判 B 即时 send_message 续派整改",
+  "checks": [
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/parallel-dispatch/scripts/receipt_check.py --receipt \"{receipt}\"",
+      "expect": 0,
+      "label": "RECEIPT 回报五字段契约机械校验"
+    }
+  ]
+}

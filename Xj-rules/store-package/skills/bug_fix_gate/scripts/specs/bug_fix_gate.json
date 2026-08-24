@@ -1,0 +1,12 @@
+{
+  "gate": "bug_fix_gate",
+  "desc": "bug-fix-strategy 修复级别机械门禁（2026-08-15 裁定）：script_exit 包装 bug_fix_switch.py，机械核验禁止跳级/重构重复次数闸/>3文件确认闸；占位符 {bug_id} {level} 由 --set 注入，expect 0（判 A 才许动手，判 B 照抄理由）",
+  "checks": [
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/bug-fix-strategy/scripts/bug_fix_switch.py --bug-id {bug_id} --level {level}",
+      "expect": 0,
+      "label": "修复级别判定：跳级闸+重构重复次数闸+确认闸"
+    }
+  ]
+}

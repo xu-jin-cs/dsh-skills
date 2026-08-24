@@ -1,0 +1,38 @@
+{
+  "gate": "goal_gate",
+  "desc": "长期目标创建/续轮前置闸（2026-08-20 用户裁定废弃自主修码任务并根治重复触发落地点）。根治本会话事故：create_goal 被无闸创建、目标自动续轮 2 次持续修码烧 token。挂点：任何 create_goal / 目标自动续轮之前必须过本闸。核心：目标须来自用户显式请求（软档）+ 必须带可接受预算 max_goal_rounds 介于 1 与 10（机械档）+ 续轮前须目标仍成立。A=objective 非空且 max_goal_rounds 在界；B=缺 objective 或 max_goal_rounds 缺失/越界；判定机械走 json_field。",
+  "checks": [
+    {
+      "type": "json_field",
+      "path": "{goal_block}",
+      "field": "objective",
+      "op": "exists",
+      "value": true,
+      "label": "目标 objective 非空（缺失=模型臆造，不可创建）"
+    },
+    {
+      "type": "json_field",
+      "path": "{goal_block}",
+      "field": "max_goal_rounds",
+      "op": "min",
+      "value": 1,
+      "label": "预算下限：max_goal_rounds ≥1（无预算=无限烧 token，拒绝）"
+    },
+    {
+      "type": "json_field",
+      "path": "{goal_block}",
+      "field": "max_goal_rounds",
+      "op": "max",
+      "value": 10,
+      "label": "预算上限：max_goal_rounds ≤10（长任务必须分多次用户确认，防失控续轮）"
+    },
+    {
+      "type": "json_field",
+      "path": "{goal_block}",
+      "field": "user_requested",
+      "op": "exists",
+      "value": true,
+      "label": "声明目标来自用户显式请求（WARNING 软档：误授权否决项，诚实自述）"
+    }
+  ]
+}

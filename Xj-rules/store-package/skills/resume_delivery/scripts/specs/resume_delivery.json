@@ -1,0 +1,11 @@
+{
+  "gate": "resume_delivery",
+  "desc": "resume-direct 节点3 交付实证闸（对齐 ppt_delivery，2026-08-17 改造）：机械核验成品已复制到 ~/Desktop/{name}.pptx——仅文字提及路径不构成有效交付。open -R 亮显为 Finder 交互动作、无落盘产物可机械核验，留软层自觉执行（用户明确要求不打开时除外）。扳动时机：cp 完成后、输出交付回执前。用法：--set name=<主题命名（不含 .pptx 后缀，建议 resume_姓名_岗位）>",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "~/Desktop/{name}.pptx",
+      "label": "成品已复制到 Desktop"
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "gate": "ppt_gate_a",
+  "desc": "ppt 主链 Gate A（设计决策出口，2026-08-15 裁定自归档 legacy-workflow 引擎迁移 gate-switch）：主线06 质检通过后、主线07 渲染入参组装前扳动。机械核验 00~05 设计决策六件套产物存在性与必备字段；风格美观/复刻还原度评分等纯语义项不机考，留软层（主线06 目检）。用法：--set run=<run_dir>",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "{run}/00_scheme_selected.json",
+      "label": "套路选型产物存在"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/00_scheme_selected.json",
+      "field": "full_page_sequence",
+      "op": "not_empty",
+      "label": "套路页面序列非空"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/00_scheme_selected.json",
+      "field": "fixed_theme_color.primary",
+      "op": "exists",
+      "label": "套路主色字段存在"
+    },
+    {
+      "type": "file_exists",
+      "path": "{run}/01_requirement.json",
+      "label": "需求产物存在"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/01_requirement.json",
+      "field": "topic",
+      "op": "not_empty",
+      "label": "需求主题非空"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/01_requirement.json",
+      "field": "page_count",
+      "op": "min",
+      "value": 1,
+      "label": "需求页数≥1"
+    },
+    {
+      "type": "file_exists",
+      "path": "{run}/02_theme.json",
+      "label": "配色产物存在"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/02_theme.json",
+      "field": "colors",
+      "op": "not_empty",
+      "label": "色板非空"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/02_theme.json",
+      "field": "fonts",
+      "op": "not_empty",
+      "label": "字体配置非空"
+    },
+    {
+      "type": "file_exists",
+      "path": "{run}/03_assets.json",
+      "label": "素材搭配产物存在"
+    },
+    {
+      "type": "file_exists",
+      "path": "{run}/04_content.json",
+      "label": "文案产物存在"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/04_content.json",
+      "field": "slides",
+      "op": "min_len",
+      "value": 1,
+      "label": "文案页面数组非空"
+    },
+    {
+      "type": "file_exists",
+      "path": "{run}/05_layout.json",
+      "label": "排版产物存在"
+    },
+    {
+      "type": "json_field",
+      "path": "{run}/05_layout.json",
+      "field": "slides",
+      "op": "min_len",
+      "value": 1,
+      "label": "排版页面数组非空"
+    }
+  ]
+}

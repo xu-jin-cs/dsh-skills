@@ -1,0 +1,18 @@
+{
+  "gate": "ppt_extract_mode",
+  "desc": "ppt 节点03 分流判定：A=executed（模板目录存在且含 page_*.png，走解析+复刻）；B=passthrough（无模板，violations 即 passthrough 理由，不是失败而是分流依据）",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "{tpldir}",
+      "label": "模板截图目录存在"
+    },
+    {
+      "type": "glob_count",
+      "pattern": "{tpldir}/page_*.png",
+      "op": "min",
+      "value": 1,
+      "label": "含 page_*.png 分页截图"
+    }
+  ]
+}

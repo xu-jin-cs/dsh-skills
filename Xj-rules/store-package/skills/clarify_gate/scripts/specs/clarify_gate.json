@@ -1,0 +1,70 @@
+{
+  "gate": "clarify_gate",
+  "desc": "CLARIFY-GATE 需求五要素齐备性声明填充完整性机械校验：ui-designer Phase 0 判闸。把「需求五要素齐备性声明」块存为文件过本门禁。A=字段齐全允许进入 Step1 internal-taste-analyze；B=缺字段打回补全，violations 即缺失清单（防跳过声明/缺斤短两）。要素内容真假留软层+复盘审计。",
+  "checks": [
+    {
+      "type": "grep_count",
+      "pattern": "目标页面",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "五要素1：目标页面（状态+证据引文）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "组件范围",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "五要素2：组件范围（状态+证据引文）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "设计约束",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "五要素3：设计约束（状态+证据引文）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "验收标准",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "五要素4：验收标准（状态+证据引文）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "参考来源",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "五要素5：参考来源（状态+证据引文）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "判定",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "终局判定（PROCEED/CLARIFY）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "缺项",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "缺项清单（无则写明「无」）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "留痕",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "留痕确认（clarify_gate.jsonl 已落/将落）"
+    }
+  ]
+}

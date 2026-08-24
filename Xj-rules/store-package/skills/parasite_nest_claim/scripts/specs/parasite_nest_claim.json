@@ -1,0 +1,35 @@
+{
+  "gate": "parasite_nest_claim",
+  "desc": "寄生巢落巢实证闸（CLAIM-GATE 族）：声称某寄生虫已落巢时扳本闸。A=巢存储文件中该宿主闸的模板队列确含该任务且状态为休眠；B=落巢缺斤短两/伪造声称。--set nest=<宿主闸名> --set task=<任务名>",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "~/.agents/logs/parasite_nests.json",
+      "label": "寄生巢存储文件存在"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "\"host_gate\": \"{nest}\"",
+      "path": "~/.agents/logs/parasite_nests.json",
+      "op": "min",
+      "value": 1,
+      "label": "宿主闸 {nest} 的寄生巢存在"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "{task}",
+      "path": "~/.agents/logs/parasite_nests.json",
+      "op": "min",
+      "value": 1,
+      "label": "寄生虫任务已入巢"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "\"status\": \"dormant\"",
+      "path": "~/.agents/logs/parasite_nests.json",
+      "op": "min",
+      "value": 1,
+      "label": "任务入巢后处于休眠态（不执行、不调度）"
+    }
+  ]
+}

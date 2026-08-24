@@ -1,0 +1,12 @@
+{
+  "gate": "archmap_diff_freshness",
+  "desc": "archmap 复盘前 diff 留痕固定卡点（REFORM-GATE 激活战役 item1，2026-08-15 裁定）：校验 {project}/archmap/diff_history.jsonl 存在、非 0 字节空壳、且 mtime 晚于 {work_start}（复盘工作期起点，--set 绑定传入：标记文件路径/epoch秒/ISO8601）。A=本工作期 diff 留痕真实存在，放行复盘；B=留痕缺失/空壳/陈旧，violations 即违例清单，须先执行 archmap +diff 再重扳。背景：某引擎项目 diff_history.jsonl 建成至今 0 字节，prompt 约定已被实证失效（0/N 激活），故判定权收归机械门禁。",
+  "checks": [
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/archmap_diff_freshness/scripts/archmap_diff_check.py --project \"{project}\" --work-start \"{work_start}\"",
+      "expect": 0,
+      "label": "archmap diff 留痕新鲜度（存在+非空壳+新于工作期起点）"
+    }
+  ]
+}

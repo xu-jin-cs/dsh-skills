@@ -1,0 +1,17 @@
+{
+  "gate": "dispatcher_config_sync",
+  "desc": "dispatcher 配置变更同步证据：配置 mtime 新于文档时，文档必须同步更新（doc 新于 config 或同时）——防'已同步'假声称",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "{config}",
+      "label": "配置文件存在"
+    },
+    {
+      "type": "mtime_after",
+      "path": "{doc}",
+      "ref_path": "{config}",
+      "label": "文档同步时间新于配置变更"
+    }
+  ]
+}
