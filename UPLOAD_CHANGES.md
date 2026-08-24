@@ -65,3 +65,12 @@
   - `audit.py` 新增任务审计事件
   - `kernel.py` 接入任务动作执行
 - 已通过本地引擎验证和 standalone 副本验证
+
+### 6. Xj-engine 开箱即用剥离确认（2026-08-25 追加）
+
+- 确认引擎剥离到位：无 `/Users/xujin` 固定路径、无 `backend.`/`agent-harness` 私有依赖 import
+- `database.py` 默认库路径用 `Path(__file__)` 相对定位（跟随安装位置），非固定绝对路径，且可用 `XJ_ENGINE_DB_URL` 覆盖
+- `__pycache__`/`*.pyc`/`.DS_Store` 已被 `.gitignore` 忽略，不入库
+- 完整可安装：`pyproject.toml`（`pip install -e .`）+ CLI `xj-engine` + `kernel.et` 入口 + 必备文件全齐
+- 验证：`kernel.et` import 成功、`xj-engine health` 正常运行
+- 达到"别人拿到开箱即用"标准
