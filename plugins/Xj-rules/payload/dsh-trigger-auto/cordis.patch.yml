@@ -1,4 +1,0 @@
-# dsh-trigger-auto bundle patch：把触发面扳手投递插件插入 cordis 插件栈
-- insert:
-    - id: trigger-auto
-      name: 'dsh-trigger-auto'

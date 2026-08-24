@@ -7,6 +7,6 @@ node_modules/
 # wrench-skill 明文资产清单（中间产物，含私有规则，仅本地构建用）
 manifest.real.json
 
-# 技能全量源码不再公开分发（内容已随 plugins/Xj-rules 插件包发布，2026-08-23 用户裁定）
+# 技能全量源码不再公开分发（对外发布统一使用 kimicode 打包，2026-08-25 用户裁定）
 /gate-switch/
 /parallel-dispatch/
