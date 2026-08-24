@@ -627,6 +627,90 @@ def _run_content_issue(
 
 
 # ═══════════════════════════════════════════════════════════════
+# agent_exec：执行多agent 编排（引擎内置 agent 执行器，2026-08-25）
+# ═══════════════════════════════════════════════════════════════
+
+def _run_agent_exec(spec: dict[str, Any], artifact: Any) -> dict[str, Any]:
+    """执行多 agent 编排（引擎内置 agent 执行器）。
+
+    契约块 spec（agent_exec，见 et_contract.PAYLOAD_SCHEMA）：
+      { nodes: [{id, agent:{role,prompt,input_from,output_key},
+                 parallel, parallel_group, depends_on}],
+        max_steps, provider, model }
+    按节点顺序执行；同 parallel_group 的节点并行（线程池）。
+    每个节点用 ClaudeEngine（LLM）按 agent.prompt + 输入生成输出，
+    结果以 output_key（缺省节点 id）为键存入 dict 返回。
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from .claude_engine import ClaudeEngine
+
+    nodes = list(spec.get("nodes") or [])
+    max_steps = int(spec.get("max_steps") or len(nodes) or 1)
+    if max_steps <= 0:
+        max_steps = len(nodes) or 1
+    result: dict[str, Any] = {}
+    visited: set[str] = set()
+
+    def _key(node: dict[str, Any]) -> str:
+        return (node.get("agent") or {}).get("output_key") or node["id"]
+
+    def _inputs(node: dict[str, Any]) -> str:
+        parts = []
+        for key in (node.get("agent") or {}).get("input_from") or []:
+            if key in result:
+                parts.append(f"[{key}]\n{result[key]}")
+            elif isinstance(artifact, dict) and key in artifact:
+                parts.append(f"[{key}]\n{artifact[key]}")
+        return "\n".join(parts)
+
+    def _run_one(node: dict[str, Any]) -> str:
+        ag = node.get("agent") or {}
+        engine = ClaudeEngine(model=spec.get("model") or "")
+        inp = _inputs(node)
+        user_text = (f"当前任务：以角色 [{ag.get('role')}] 执行本轮契约动作。\n"
+                     f"输入：\n{inp or '(无显式输入，依据角色身份与契约产出)'}")
+        out = engine.execute(user_text, system_prompt=ag.get("prompt") or f"你是 {ag.get('role')}。")
+        if out.get("error"):
+            raise RuntimeError(f"agent[{node['id']}] 执行失败: {out['error']}")
+        return out.get("text", "")
+
+    steps = 0
+    i = 0
+    while i < len(nodes) and steps < max_steps:
+        node = nodes[i]
+        if node["id"] in visited:
+            i += 1
+            continue
+        group = node.get("parallel_group")
+        if group:
+            todo = [n for n in nodes
+                    if n.get("parallel_group") == group and n["id"] not in visited]
+            if not todo:
+                visited.add(node["id"])
+                i += 1
+                continue
+            with ThreadPoolExecutor(max_workers=len(todo) or 1) as ex:
+                futures = {ex.submit(_run_one, n): n for n in todo}
+                for fut, n in futures.items():
+                    try:
+                        result[_key(n)] = fut.result()
+                    except Exception as e:
+                        result[_key(n)] = f"[agent error] {e}"
+                    visited.add(n["id"])
+            steps += 1
+        else:
+            try:
+                result[_key(node)] = _run_one(node)
+            except Exception as e:
+                result[_key(node)] = f"[agent error] {e}"
+            visited.add(node["id"])
+            steps += 1
+        i += 1
+
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════
 # resource_control：资源 & 配额前置检查
 # ═══════════════════════════════════════════════════════════════
 
