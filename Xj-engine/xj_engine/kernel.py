@@ -32,6 +32,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from . import audit as _audit
+from . import task as _task
 from .et_contract import (
     ContractViolationError,
     validate_output,
@@ -768,6 +769,7 @@ def _et_inner(payload: dict[str, Any]) -> dict[str, Any]:
     signed_artifact: Any = None
     issue_meta: dict[str, Any] | None = None
     hook_elapsed: dict[str, float] = {}
+    task_result: dict[str, Any] | None = None
 
     rc = payload.get("resource_control") or {}
     hook_timeout_ms = rc.get("hook_timeout_ms")
@@ -905,6 +907,16 @@ def _et_inner(payload: dict[str, Any]) -> dict[str, Any]:
         if code != "success" else None
     )
 
+    # ── 任务生命周期动作（task_complete / task_cancel / task_archive） ──
+    if code == "success" and payload.get("task"):
+        task_result = _task.run_task_action(
+            payload["task"], trace_id,
+            artifact=artifact, signed_artifact=signed_artifact,
+        )
+        if task_result.get("code") != "success":
+            code = task_result.get("code", "error")
+            error_msg = task_result.get("reason", "task action failed")
+
     # ── 投递装配 ──
     delivery_out = (
         _apply_delivery(payload["delivery"], signed_artifact if signed_artifact is not None else artifact, code)
@@ -936,6 +948,7 @@ def _et_inner(payload: dict[str, Any]) -> dict[str, Any]:
         "delivery": delivery_out,
         "failure_info": failure_info,
         "audit_meta": payload.get("audit_meta"),
+        "task_result": task_result,
     }
     if payload.get("debug"):
         out["_debug"] = {

@@ -41,6 +41,9 @@ class AuditEventType(str, Enum):
     GATE_GUARD = "gate_guard_event"                # gate_guard 门禁判定
     CONTENT_ISSUE = "content_issue_event"          # content_issue 签发
     ARTIFACT_VALIDATE = "artifact_validate_event"  # artifact_validate 交付物校验
+    TASK_COMPLETE = "task_complete_event"          # 任务完成
+    TASK_CANCEL = "task_cancel_event"              # 任务取消
+    TASK_ARCHIVE = "task_archive_event"            # 任务注销归档
 
 
 # ═══════════════════════════════════════════════════════════════

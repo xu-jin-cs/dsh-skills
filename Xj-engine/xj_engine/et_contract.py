@@ -289,6 +289,37 @@ PAYLOAD_SCHEMA: dict[str, Any] = {
             },
             "additionalProperties": False,
         },
+        # ── 任务域扩展：task_complete / task_cancel / task_archive ──
+        "task": {
+            "type": "object",
+            "description": "任务生命周期动作：完成后状态流转、证据校验、审计、签名、桥接通知",
+            "required": ["action", "task_id"],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["complete", "cancel", "archive"],
+                    "description": "complete=完成；cancel=取消；archive=注销归档",
+                },
+                "task_id": {"type": "string", "minLength": 1},
+                "from_state": {"type": "string", "description": "期望源状态，可选；缺省由 StateStore 当前状态决定"},
+                "to_state": {"type": "string", "description": "目标状态，可选；缺省按 action 映射：complete->completed / cancel->cancelled / archive->archived"},
+                "evidence": {
+                    "type": "object",
+                    "description": "完成证据：由 artifact_validate 或外部证据校验消费",
+                },
+                "targets": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "桥接目标，如 dsh / kimi / claude；缺省不通知前端",
+                },
+                "require_bridge_ack": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "桥接是否需要前端回执；未实现回执时按成功处理",
+                },
+            },
+            "additionalProperties": False,
+        },
         # ── 扩展块：审计元数据 ──
         "audit_meta": {
             "type": "object",
@@ -439,6 +470,10 @@ OUTPUT_SCHEMA: dict[str, Any] = {
         "delivery": _DELIVERY_OUT,
         "failure_info": _FAILURE_INFO_OUT,
         "audit_meta": {"type": ["object", "null"], "description": "入参审计元数据透传"},
+        "task_result": {
+            "type": ["object", "null"],
+            "description": "task 生命周期动作结果（task_complete/task_cancel/task_archive）",
+        },
         "_debug": {
             "type": "object",
             "description": "仅debug=true时返回：本次执行使用的规则快照、各钩子明细",
