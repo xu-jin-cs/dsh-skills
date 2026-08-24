@@ -24,7 +24,7 @@ import os
 import uuid
 from typing import Any
 
-from backend.engine.et_contract import ETContract
+from .et_contract import ETContract
 
 # ═══════════════════════════════════════════════════════════════
 # 业务规则常量（ET 层持有，与旧 test_gates.py 逐字节等价盘活）

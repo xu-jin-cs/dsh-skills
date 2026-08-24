@@ -31,14 +31,14 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from backend.engine import audit as _audit
-from backend.engine import task as _task
-from backend.engine.et_contract import (
+from . import audit as _audit
+from . import task as _task
+from .et_contract import (
     ContractViolationError,
     validate_output,
     validate_payload,
 )
-from backend.engine.et_sign import default_secret, compute_signature
+from .et_sign import default_secret, compute_signature
 
 _logger = logging.getLogger(__name__)
 
@@ -588,7 +588,7 @@ def _run_content_issue(
     签名原文（P2-3）：canonical({trace_id, artifact, state_meta})，
     state_meta = {current_state, target_state} 取自 state_intercept spec，无则 {}。
     artifact 为注水印后的终态（ENG-WM-ASYMM：签名覆盖水印，交付物逐字节可验）。
-    验签走 backend.engine.et_sign.verify_issue（同一规则重算）。
+    验签走 et_sign.verify_issue（同一规则重算）。
     """
     issue_meta: dict[str, Any] = dict(spec.get("attach_issue_meta") or {})
     signed = artifact

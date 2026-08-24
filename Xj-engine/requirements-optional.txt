@@ -1,0 +1,2 @@
+# 可选：ClaudeEngine 使用 Anthropic API 时需要
+anthropic>=0.40

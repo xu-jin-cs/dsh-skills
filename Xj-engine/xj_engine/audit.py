@@ -10,7 +10,7 @@ emit_audit 落库；query_by_trace 按 trace_id 全链检索，支撑
   content_issue_event / artifact_validate_event
 
 表：engine_audit_events（trace_id 索引），create_all 幂等。
-生产默认接 backend.database.engine（首次使用时惰性建表）；
+生产默认接本地 database.engine（首次使用时惰性建表）；
 测试用 set_engine(tmp_engine) 或 emit_audit(..., engine=tmp_engine) 指向临时库。
 """
 
@@ -25,7 +25,7 @@ from sqlalchemy import Column, DateTime, Integer, JSON, String, Text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.database import Base
+from .database import Base
 
 
 def _utcnow() -> datetime:
@@ -68,7 +68,7 @@ _AUDIT_TABLES = [EngineAuditEvent.__table__]
 
 
 # ═══════════════════════════════════════════════════════════════
-# 引擎绑定（默认 backend.database.engine，可注入临时库）
+# 引擎绑定（默认本地 database.engine，可注入临时库）
 # ═══════════════════════════════════════════════════════════════
 
 _engine: Optional[Engine] = None
@@ -98,13 +98,13 @@ def is_bound() -> bool:
 
 
 def _open_session(engine: Optional[Engine]):
-    """优先用显式 engine；其次 set_engine 注入的；最后默认 backend.database.engine。"""
+    """优先用显式 engine；其次 set_engine 注入的；最后默认本地 database.engine。"""
     global _engine, _Session
     if engine is not None:
         _ensure_tables(engine)
         return sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)()
     if _Session is None:
-        from backend.database import engine as default_engine
+        from .database import engine as default_engine
         set_engine(default_engine)
     return _Session()
 

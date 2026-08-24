@@ -52,3 +52,16 @@
 - 新增审计事件类型
 - 新增 `BridgeExecutor` 桥接执行层
 - 新增 `docs/bridge_contract.md`
+
+### 5. Xj-engine 重新生成（以本地引擎为真源）
+
+- 本地引擎 `agent-harness/backend/engine` 已补齐任务域和桥接层
+- 以本地引擎为真源重新生成 `Xj-engine/` standalone 副本
+- 副本包含：
+  - `task.py`（task_complete / task_cancel / task_archive）
+  - `BridgeExecutor`
+  - `docs/bridge_contract.md`
+  - `et_contract.py` 新增 `task` 块和 `task_result`
+  - `audit.py` 新增任务审计事件
+  - `kernel.py` 接入任务动作执行
+- 已通过本地引擎验证和 standalone 副本验证

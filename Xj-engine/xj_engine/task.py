@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from backend.engine import audit as _audit
-from backend.engine.state_store import SqliteStateStore
+from . import audit as _audit
+from .state_store import SqliteStateStore
 
 # action → 目标状态
 ACTION_TO_STATE = {
