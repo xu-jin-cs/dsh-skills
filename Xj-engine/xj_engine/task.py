@@ -8,10 +8,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
-from . import audit as _audit
-from .state_store import SqliteStateStore
+from backend.engine import audit as _audit
+from backend.engine.state_store import SqliteStateStore
 
 # action → 目标状态
 ACTION_TO_STATE = {
@@ -29,13 +29,7 @@ ACTION_TO_AUDIT = {
 
 
 def validate_task_evidence(action: str, evidence: Any) -> tuple[bool, str]:
-    """完成证据校验（任务语义）。
-
-    目前规则：
-    - complete 必须携带非空 evidence dict
-    - cancel / archive 不强制证据
-    后续可扩展为 artifact_validate 同一套机械校验。
-    """
+    """完成证据校验（任务语义）。"""
     if action == "complete":
         if not isinstance(evidence, dict) or not evidence:
             return False, "task.complete 必须携带非空 evidence（完成证据）"
@@ -57,13 +51,7 @@ class BridgeEvent:
 
 
 class BridgeExecutor:
-    """通用桥接执行器。
-
-    用法：
-        executor = BridgeExecutor()
-        executor.register_adapter("dsh", my_dsh_adapter)
-        executor.dispatch(event)
-    """
+    """通用桥接执行器。"""
 
     def __init__(self) -> None:
         self._adapters: dict[str, Callable[[BridgeEvent], dict]] = {}
@@ -90,7 +78,6 @@ class BridgeExecutor:
         return results
 
 
-# 全局默认桥接执行器（内核使用；外部可替换）
 _default_executor = BridgeExecutor()
 
 
@@ -105,17 +92,6 @@ def run_task_action(
     artifact: Any = None,
     signed_artifact: Any = None,
 ) -> dict[str, Any]:
-    """执行任务生命周期动作。
-
-    返回：
-    {
-      "task_id": ...,
-      "action": ...,
-      "to_state": ...,
-      "audit": {...},
-      "bridge": [...],
-    }
-    """
     action = task["action"]
     task_id = task["task_id"]
     to_state = task.get("to_state") or ACTION_TO_STATE[action]
@@ -123,13 +99,11 @@ def run_task_action(
     targets = task.get("targets") or []
     require_ack = bool(task.get("require_bridge_ack", False))
 
-    # 1. 完成证据校验
     ok, reason = validate_task_evidence(action, evidence)
     if not ok:
         return {"code": "reject", "reason": reason,
                 "task_id": task_id, "action": action, "to_state": to_state}
 
-    # 2. 状态流转（StateStore）
     store = SqliteStateStore()
     from_state = task.get("from_state")
     try:
@@ -151,7 +125,6 @@ def run_task_action(
         return {"code": "error", "reason": f"状态流转失败: {exc}",
                 "task_id": task_id, "action": action, "to_state": to_state}
 
-    # 3. 审计
     audit_event = ACTION_TO_AUDIT[action]
     audit_out = _audit.emit_audit(
         audit_event,
@@ -163,7 +136,6 @@ def run_task_action(
         extra={"evidence": evidence or {}, "targets": targets, "to_state": to_state},
     )
 
-    # 4. 桥接通知
     bridge_event = BridgeEvent(
         event_type=audit_event.value,
         task_id=task_id,

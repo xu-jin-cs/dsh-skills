@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.DS_Store
-data/
-*.db
-.env
-
-*.egg-info/
-OPTIMIZATION.md

@@ -11,8 +11,8 @@ StateStore 双写统一收口（短板3修复，2026-08-20）。
 行为约定（与 instances.py:761 既有范式一致）：
 - 失败只 logger.warning 告警，绝不阻断主流程（返回 False）；
 - 同状态（from_state == to_state）视为无迁移，直接跳过；
-- SqliteStateStore / emit_audit 惰性 import 并默认接本地 database.engine，
-  测试可通过重绑本地 database.engine + audit.set_engine 指向临时库。
+- SqliteStateStore / emit_audit 惰性 import 并默认接 backend.database.engine，
+  测试可通过重绑 backend.database.engine + audit.set_engine 指向临时库。
 
 resync 说明：若 StateStore 追踪状态滞后于调用方声明的 from_state（历史窗口期
 未接线的迁移所致），先补一行 resync 追赶轨迹再记录本次迁移，保证历史链连续
@@ -46,8 +46,8 @@ def wire_state_transition(
     if from_state is not None and from_state == to_state:
         return False  # 同状态无迁移（对齐 same-state 语义：不推版本、不落历史行）
     try:
-        from .state_store import SqliteStateStore
-        from .audit import emit_audit, AuditEventType
+        from backend.engine.state_store import SqliteStateStore
+        from backend.engine.audit import emit_audit, AuditEventType
 
         store = SqliteStateStore()
         store.ensure_instance(instance_id, from_state or to_state)
@@ -89,7 +89,7 @@ def wire_state_registration(instance_id: str, initial_state: str, *, source: str
     if not isinstance(instance_id, str) or not instance_id:
         return False
     try:
-        from .state_store import SqliteStateStore
+        from backend.engine.state_store import SqliteStateStore
 
         SqliteStateStore().ensure_instance(instance_id, initial_state)
         return True

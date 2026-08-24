@@ -3,10 +3,7 @@
 注意：Prompt 不再硬编码，由调用方通过 prompt_store/core_loader 渲染后传入 system_prompt 参数。
 """
 
-try:
-    import anthropic
-except ImportError:  # 可选依赖：不使用 ClaudeEngine 时无需安装 anthropic
-    anthropic = None
+import anthropic
 import re
 
 
@@ -22,12 +19,10 @@ class ClaudeEngine:
         self.temperature = temperature
         self.max_retries = max_retries
         self.base_url = base_url
-        self._client = None
+        self._client: anthropic.Anthropic | None = None
 
     @property
-    def client(self):
-        if anthropic is None:
-            raise ImportError("使用 ClaudeEngine 需要安装 anthropic：pip install anthropic")
+    def client(self) -> anthropic.Anthropic:
         if not self._client:
             self._client = anthropic.Anthropic(api_key=self.api_key or None, **({"base_url": self.base_url} if self.base_url else {}))
         return self._client

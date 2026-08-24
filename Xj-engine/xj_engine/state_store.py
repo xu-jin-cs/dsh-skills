@@ -11,7 +11,7 @@ StateStore — 引擎状态持久化收口（P2-5，2026-08-17）。
 - StateConflictError  乐观锁版本冲突（可重试，StateStoreError 子类）
 
 表创建走 Base.metadata.create_all(tables=[...], checkfirst) 幂等；
-生产默认接本地 database.engine，测试传临时 sqlite 的 db_url/engine。
+生产默认接 backend.database.engine，测试传临时 sqlite 的 db_url/engine。
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-from .database import Base
+from backend.database import Base
 
 
 def _utcnow() -> datetime:
@@ -126,7 +126,7 @@ class SqliteStateStore(StateStore):
     SQLite StateStore。
 
     用法：
-        store = SqliteStateStore()                    # 生产：本地 database.engine
+        store = SqliteStateStore()                    # 生产：backend.database.engine
         store = SqliteStateStore(db_url="sqlite:////tmp/x.db")   # 测试：临时库
         store = SqliteStateStore(engine=my_engine)    # 复用已有 engine
     """
@@ -138,7 +138,7 @@ class SqliteStateStore(StateStore):
             kwargs = {"connect_args": {"check_same_thread": False}} if db_url.startswith("sqlite") else {}
             self._engine = create_engine(db_url, **kwargs)
         else:
-            from .database import engine as default_engine
+            from backend.database import engine as default_engine
             self._engine = default_engine
         # 幂等建表（仅本模块的两张表，不触碰其他 Base 模型）
         Base.metadata.create_all(bind=self._engine, tables=_STATE_TABLES)

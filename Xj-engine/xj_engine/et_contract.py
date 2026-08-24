@@ -520,6 +520,6 @@ class ETContract(ABC):
 
     def __call__(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """生成 Payload 并直接交付内核执行，返回标准出参。"""
-        from .kernel import et  # 延迟导入，避免环
+        from backend.engine.kernel import et  # 延迟导入，避免环
 
         return et(self.build_payload(*args, **kwargs))
