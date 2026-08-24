@@ -6,6 +6,50 @@ Reusable, lightweight skills for the DeepSeek Harness ecosystem. Plain files, ze
 
 ---
 
+## 上传必看：Git 发布前兼容性检查
+
+> 以后任何项目上传到 Git 前，必须先按此清单检查；不通过禁止上传。
+
+### 1. 路径必须可移植
+
+- [ ] 禁止出现本机绝对路径：`/Users/<用户名>`、`C:\Users\...`、`/home/...`
+- [ ] 路径统一使用相对路径 `./data/...`、`$HOME`、`Path.home()` 或环境变量
+- [ ] 代码、文档、配置中不得出现私人目录名
+
+### 2. 凭据必须清零
+
+- [ ] 不得出现真实 `password` / `secret` / `token` / `api_key` / 私钥
+- [ ] 已泄露的账号密码必须删除
+- [ ] 新增 `.env.example`，真实配置通过环境变量注入
+
+### 3. 私有依赖必须剥离
+
+- [ ] 不得 import 外部私有项目模块，例如 `backend.*`、`etl.common.*`
+- [ ] 不得出现内部私有项目名：`agent-harness`、`retro-skills-registry`、`Xj-rules`、个人名等
+- [ ] 仓库必须能独立 `clone` 后按 README 安装并运行
+
+### 4. 无关文件必须忽略
+
+- [ ] `data/`、`__pycache__/`、`*.pyc`、`.DS_Store`、`node_modules/`、`*.tgz`、`*.zip` 不入库
+- [ ] 数据库文件、模型权重、大体积临时文件不入库
+
+### 5. 上传前必须执行校验
+
+```bash
+# 绝对路径扫描：应无命中
+grep -RIn --exclude-dir=.git --exclude-dir=data -E '/Users/|C:\\Users|/home/' .
+
+# 凭据扫描：不应出现真实密码/密钥
+grep -RIn --exclude-dir=.git -iE 'password|secret|token|api[_-]?key' .
+
+# 语法/配置校验
+python3 -m py_compile $(find . -name '*.py' -not -path './.git/*')
+```
+
+- [ ] Python 语法检查通过
+- [ ] YAML / JSON 解析通过
+- [ ] 在全新目录 `git clone` 后，按 README 跑通最小示例
+
 ## 技能清单 / Skills
 
 | 技能 | 说明 |
