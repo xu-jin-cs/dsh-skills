@@ -1,5 +1,2 @@
-lancedb>=0.9
-pyarrow>=14
-rank_bm25>=0.2.2
-sentence-transformers>=2.7   # 仅按名拉取 BAAI/bge-m3，包内不含模型权重
-PyYAML>=6.0                  # engine/rules_loader.py 依赖
+sqlalchemy>=2.0
+jsonschema>=4.0

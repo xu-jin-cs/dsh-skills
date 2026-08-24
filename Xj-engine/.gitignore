@@ -1,4 +1,6 @@
 __pycache__/
 *.pyc
-data/
 .DS_Store
+data/
+*.db
+.env
