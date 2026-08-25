@@ -26,7 +26,7 @@
 ## 引擎
 
 **无内置引擎** — 机械门禁 / 批次签发 / 状态机流转全部交由引擎裁决。默认接线为 `Xj-engine`
-（Python 包 `xj_engine`，入口 `xj_engine.kernel.et`，CLI `xj-engine`）：
+（Python 包 `engine`，入口 `engine.kernel.et`，CLI `xj-engine`）：
 
 - 机械门禁 / 批次签发 / 状态机：按引擎 **et 契约**调用（统一入口，禁带 expression；出参
   `code ∈ success/reject/block/timeout/error`，非 success 一律不得推进）。

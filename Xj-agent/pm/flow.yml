@@ -3,7 +3,7 @@ description: PM全流程研发调度中枢（13 节点流程 · 公开骨架版�
 aliases:
 - /pm
 # ============================================================
-# 引擎归属：默认 Xj-engine（Python 包 xj_engine / CLI xj-engine）。
+# 引擎归属：默认 Xj-engine（Python 包 engine / CLI xj-engine）。
 # 端点/组件明细见 pm/SKILL.md「引擎归属」节（唯一权威，本文件不重复书写）；离线禁降级。
 # 统一入口为引擎 et 契约（ET Payload，禁带 expression）；
 # 状态推进两步——先 et 判定（state_intercept.allowed_pairs）→ success 后
@@ -11,7 +11,7 @@ aliases:
 # 引擎为可插拔，通过环境变量切换（见 SKILL.md / scripts/engine_preflight.sh）。
 # ============================================================
 engine_name: Xj-engine
-engine_api: xj_engine.kernel.et
+engine_api: engine.kernel.et
 input_schema:
   type: object
   required:

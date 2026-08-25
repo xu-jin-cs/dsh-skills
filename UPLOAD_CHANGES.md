@@ -5,7 +5,7 @@
 
 ## 2026-08-25 · 任务完成 hook + 种入闸（Xj-engine）追加
 
-### 8. 任务完成埋点 hook（`Xj-engine/xj_engine/task_complete_hook.py` + CLI）
+### 8. 任务完成埋点 hook（`Xj-engine/engine/task_complete_hook.py` + CLI）
 
 - 新增 `task_complete_hook.py`：完成埋点 hook——构造合法 ET payload 调 `et()` 触发 `task.complete`，`task.complete` 追加权威完成记录（状态 pending→completed + TASK_COMPLETE 审计），该记录即完成标记。
 - 新增 CLI：`xj-engine complete --task-id <id> --evidence '<json>'`。
@@ -36,7 +36,7 @@
   - `pm/scripts/flow_kernel.py` — 节点流转内核（规则全入参）
   - `pm/scripts/engine_preflight.sh` — 引擎健康检查（默认 `xj-engine health`）
   - `pm/scripts/verify_experience_writeback.sh` — 经验固化机械校验
-- 引擎接线：默认指向同仓库 `Xj-engine`（`xj_engine.kernel.et` / CLI `xj-engine`），通过环境变量可插拔（`ENGINE_HEALTH_CMD` / `ENGINE_START_CMD` / `PM_HARNESS_SYNC_CMD`）。
+- 引擎接线：默认指向同仓库 `Xj-engine`（`engine.kernel.et` / CLI `xj-engine`），通过环境变量可插拔（`ENGINE_HEALTH_CMD` / `ENGINE_START_CMD` / `PM_HARNESS_SYNC_CMD`）。
 - **角色集收敛为 11 个（2026-08-25 用户裁定）**：`flow.yml` 的 `invoked_skills` 由 18 收敛到 **11 个去重角色**——`senior-pm-agent` / `detail-product-manager` / `ui-designer` / `frontend-development` / `backend-engineer` / `operation-deployment` / `test-lead` / `whitebox-coverage` / `api-test-engineer` / `ui-test-engineer` / `retro-skill-dispatcher`。剔除并入：archmap（非 pm 角色）、acceptance-manager（验收→test-lead）、sv-supervisor（审批→PM/引擎）、task-breakdown（拆解→spm）、test-executor（执行→test-lead）、process-audit（合规→test-lead）、retro-subagent（复盘→retro-skill-dispatcher）。
 - 新增 `pm/requirements.txt`（PyYAML / jsonschema）声明脚本运行依赖，使 `flow_kernel.py` 可开箱运行。
 - **角色 agent 集分发（2026-08-25 用户裁定）**：`Xj-agent/agents/` 随包分发 pm 的 **11 个角色技能**，下载即拥有完整 pm 工作流——`senior-pm-agent` / `detail-product-manager` / `ui-designer` / `frontend-development` / `backend-engineer` / `operation-deployment` / `test-lead` / `whitebox-coverage` / `api-test-engineer` / `ui-test-engineer` / `retro-skill-dispatcher`。每个均已去敏（无 agent-harness / retro-skills-registry / gate-switch / /Users/xujin 绝对路径），剥离 `learned-skills/` 内部复盘与经验文档；python 脚本语法校验通过、全量私有残留扫描零命中。
@@ -74,7 +74,7 @@
 ### 3. Xj-engine（独立引擎）
 
 - 从 `agent-harness/backend/engine` 提取为独立引擎
-- 新增 `Xj-engine/xj_engine/` Python 包
+- 新增 `Xj-engine/engine/` Python 包
 - 移除 `backend.database` 依赖，新增本地 `database.py`
 - 移除 `backend.services.test_skills` 依赖，`skills.py` 改为 stub
 - `claude_engine.py` 的 `anthropic` 改为可选依赖

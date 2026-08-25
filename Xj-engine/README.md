@@ -4,8 +4,8 @@
 
 - `agent-harness` 只是可选平台宿主，不是引擎
 - 本机默认引擎注册为 `Xj-engine`
-- Python 包：`xj_engine`
-- 入口：`xj_engine.kernel.et`
+- Python 包：`engine`
+- 入口：`engine.kernel.et`
 - CLI：`xj-engine`
 
 ## 内容
@@ -41,7 +41,7 @@ pip install -r requirements-optional.txt
 ## 使用
 
 ```python
-from xj_engine.kernel import et
+from engine.kernel import et
 # 按 ET 契约传入 payload 调用
 ```
 
@@ -56,7 +56,7 @@ xj-engine complete --task-id task-001 --evidence '{"output_file":"result.json"}'
 任务完成埋点 hook（完成埋点触发 → hook 调 task.complete → 落权威完成记录）：
 
 ```python
-from xj_engine.task_complete_hook import task_complete_hook
+from engine.task_complete_hook import task_complete_hook
 result = task_complete_hook(task_id="task-001", evidence={"output_file": "result.json"})
 # result["task_result"]["to_state"] == "completed"，TASK_COMPLETE 审计已落库
 ```
@@ -79,7 +79,7 @@ result = task_complete_hook(task_id="task-001", evidence={"output_file": "result
 桥接执行器在内核调用，具体前端 adapter 通过契约实现：
 
 ```python
-from xj_engine.task import get_bridge_executor
+from engine.task import get_bridge_executor
 
 def adapter_dsh(event):
     # 调用 todo_write 标记 completed

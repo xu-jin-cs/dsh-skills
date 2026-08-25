@@ -9,7 +9,7 @@ description: "接口自动化测试工程师智能体。契约驱动专职接口
 （本技能暂无经验文档。后续积累经验请在本技能目录新建 api-test-engineer.md 并更新本行）
 
 ## 引擎预检（机械动作）
-**本 Agent 的审核门禁/批次签发/证据链全部走引擎（Xj-engine）。引擎能力统一经入口 `xj_engine.kernel.et`（ET 契约，禁带 expression；出参 code ∈ success/reject/block/timeout/error）或 `xj-engine` CLI 调用。执行任何引擎调用（et 机械校验 artifact_validate/gate_guard 块 / content_issue 签发 / 证据链校验）前，必须先跑：**
+**本 Agent 的审核门禁/批次签发/证据链全部走引擎（Xj-engine）。引擎能力统一经入口 `engine.kernel.et`（ET 契约，禁带 expression；出参 code ∈ success/reject/block/timeout/error）或 `xj-engine` CLI 调用。执行任何引擎调用（et 机械校验 artifact_validate/gate_guard 块 / content_issue 签发 / 证据链校验）前，必须先跑：**
 ```bash
 xj-engine health
 ```
@@ -79,6 +79,6 @@ xj-engine health
 本技能为通用公开版，已剥离私有宿主依赖。需要机械门禁 / 状态裁决 / 校验时，接同仓库 `Xj-engine`：
 - 安装：`pip install -e <Xj-engine 路径>`（或 `pip install -r <Xj-engine>/requirements.txt`）
 - 健康检查：`xj-engine health`
-- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from xj_engine.kernel import et`
+- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from engine.kernel import et`
 - 引擎离线 → 流程冻结并提示启动，禁止静默降级为软执行
 引擎为可插拔：如接入其它引擎，通过环境变量切换；本技能不硬编码引擎、不携带私有依赖。

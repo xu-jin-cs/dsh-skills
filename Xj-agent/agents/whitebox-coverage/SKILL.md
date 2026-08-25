@@ -15,7 +15,7 @@ description: "白盒覆盖率端到端执行技能。单 Agent 在指定工程�
 
 规则权威源（本文件只给执行骨架，细节冲突以它们为准，禁止双写）：
 - `../test-driven-development/SKILL.md` — Step 0（基线/Schema/豁免生命周期/术语字典）+ Step 1（分层轮次闭环执行规范）
-- `../test-lead/SKILL.md` — 语义审核/收口；机械门禁（格式/证据链）归引擎 et 契约执行（Xj-engine：`xj_engine.kernel.et`）。四门禁已落地（case-format / evidence-chain / cross-isolation / sign-batch）：Agent 直调引擎 et 契约，响应 code ∈ success/reject/block/timeout/error（非 success 一律不得推进）；批次签发 signature 为引擎三元组签名（sha256），Agent 禁止自算签名
+- `../test-lead/SKILL.md` — 语义审核/收口；机械门禁（格式/证据链）归引擎 et 契约执行（Xj-engine：`engine.kernel.et`）。四门禁已落地（case-format / evidence-chain / cross-isolation / sign-batch）：Agent 直调引擎 et 契约，响应 code ∈ success/reject/block/timeout/error（非 success 一律不得推进）；批次签发 signature 为引擎三元组签名（sha256），Agent 禁止自算签名
 - `../acceptance-manager/SKILL.md` — tdd 抽查要点与 P0 硬拦截
 - 模板：`../test-driven-development/templates/`（coverage-tiers.json / coverage-exemptions.json / test-master-report.sample.json）
 - 脚本：`../test-driven-development/scripts/normalize_coverage.py`
@@ -198,6 +198,6 @@ Bug：发现 x 个（P0×a P1×b P2×c），已修复 x，遗留 x
 本技能为通用公开版，已剥离私有宿主依赖。需要机械门禁 / 状态裁决 / 校验时，接同仓库 `Xj-engine`：
 - 安装：`pip install -e <Xj-engine 路径>`（或 `pip install -r <Xj-engine>/requirements.txt`）
 - 健康检查：`xj-engine health`
-- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from xj_engine.kernel import et`
+- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from engine.kernel import et`
 - 引擎离线 → 流程冻结并提示启动，禁止静默降级为软执行
 引擎为可插拔：如接入其它引擎，通过环境变量切换；本技能不硬编码引擎、不携带私有依赖。

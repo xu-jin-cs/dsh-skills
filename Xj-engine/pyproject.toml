@@ -16,7 +16,7 @@ dependencies = [
 claude = ["anthropic>=0.40"]
 
 [project.scripts]
-xj-engine = "xj_engine.cli:main"
+xj-engine = "engine.cli:main"
 
 [tool.setuptools]
-packages = ["xj_engine"]
+packages = ["engine"]

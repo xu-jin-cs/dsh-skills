@@ -54,11 +54,11 @@ python3 scripts/flow_kernel.py advance \
 
 ## 引擎归属（默认 Xj-engine）
 
-**本工作流无内置引擎**，机械门禁 / 状态机流转 / 交付物校验全部交由引擎裁决。默认接线为 `Xj-engine`（Python 包 `xj_engine`，入口 `xj_engine.kernel.et`，CLI `xj-engine`）：
+**本工作流无内置引擎**，机械门禁 / 状态机流转 / 交付物校验全部交由引擎裁决。默认接线为 `Xj-engine`（Python 包 `engine`，入口 `engine.kernel.et`，CLI `xj-engine`）：
 
 - 安装与使用见同仓库 `Xj-engine/README.md`。
 - 健康检查：`xj-engine health`。
-- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'` 或 `from xj_engine.kernel import et`。
+- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'` 或 `from engine.kernel import et`。
 - 引擎离线 → 流程冻结并提示启动，禁止静默降级为软执行。
 
 > 引擎为可插拔：如接入其它引擎，通过环境变量（`ENGINE_HEALTH_CMD` / `ENGINE_START_CMD`，见 `scripts/engine_preflight.sh`）与 `PM_HARNESS_SYNC_CMD` 切换，业务规则不硬编码进引擎。

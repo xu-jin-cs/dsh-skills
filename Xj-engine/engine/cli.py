@@ -14,12 +14,12 @@ import sys
 
 def _cmd_health() -> int:
     try:
-        import xj_engine.kernel as kernel
-        import xj_engine.database as database
+        import engine.kernel as kernel
+        import engine.database as database
         print(json.dumps({
             "status": "ok",
             "engine": "Xj-engine",
-            "entry": "xj_engine.kernel.et",
+            "entry": "engine.kernel.et",
             "database": str(database.DATABASE_URL),
             "has_et": hasattr(kernel, "et"),
         }, ensure_ascii=False, indent=2))
@@ -32,7 +32,7 @@ def _cmd_health() -> int:
 def _cmd_run(payload_text: str) -> int:
     try:
         payload = json.loads(payload_text)
-        from xj_engine.kernel import et
+        from engine.kernel import et
         result = et(payload)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result.get("code") == "success" else 1
@@ -61,7 +61,7 @@ def main(argv=None) -> int:
     if args.cmd == "run":
         return _cmd_run(args.payload)
     if args.cmd == "complete":
-        from xj_engine.task_complete_hook import main_cli
+        from engine.task_complete_hook import main_cli
         return main_cli(args.task_id, args.evidence, args.trace_id)
     parser.print_help()
     return 2

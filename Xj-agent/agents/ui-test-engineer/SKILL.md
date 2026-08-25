@@ -29,9 +29,9 @@ UI 自动化测试工作流规则 `ui-auto-test-workflow.yaml`（部署时按需
 1. **L1 需求拆解**：颗粒度校验（页面跳转 / 表单限制 / 交互反馈 / 校验规则），任一模糊 → 疑问清单退回 SPM/DPM；达标输出需求拆解台账
 2. **L2 用例设计**：正向主流程 + 边界值自动展开（boundary-expander 边界展开工具：输入 `base.json` / `fields.json`，输出 `cases.json`）
 3. **L3 元素校验**：`missing=0` 才允许交付（element-scanner 元素校验工具：`validate <前端src> cases.json`）
-4. **L4 脚本交付**：用例与可执行脚本双形态同源产出，交 test-lead 语义审核 + 引擎 et 契约（Xj-engine，artifact_validate / gate_guard 校验块）机械校验（2026-08-17 引擎替换：旧 test_gates 实现已退役，改接新内核 TestGatesET → `xj_engine.kernel.et`，响应为新内核出参）：spec-emitter 脚本发射工具（`cases.json` → `<模块>.spec.ts`）
+4. **L4 脚本交付**：用例与可执行脚本双形态同源产出，交 test-lead 语义审核 + 引擎 et 契约（Xj-engine，artifact_validate / gate_guard 校验块）机械校验（2026-08-17 引擎替换：旧 test_gates 实现已退役，改接新内核 TestGatesET → `engine.kernel.et`，响应为新内核出参）：spec-emitter 脚本发射工具（`cases.json` → `<模块>.spec.ts`）
 
-> **四门禁已落地（2026-08-17）**：Agent 通过引擎 et 契约（Xj-engine）调用四门禁校验块（case-format / evidence-chain / cross-isolation / sign-batch），或按 TestGatesET 同等 Payload 直调 `xj_engine.kernel.et`。响应为新内核出参：`code ∈ success/reject/block/timeout/error`，细节看 `validate_result` / `issue_meta` / `failure_info`；**非 success 一律不得推进**。批次签发响应 `issue_meta.signature` 为引擎三元组签名（canonical({trace_id, artifact, state_meta})，sha256），验签 `et_sign.verify_issue`；旧五元组签名一次性失效（预期行为）；Agent 禁止自算签名。设计稿存档备查：引擎文档 `test_gates_et_design.md`。
+> **四门禁已落地（2026-08-17）**：Agent 通过引擎 et 契约（Xj-engine）调用四门禁校验块（case-format / evidence-chain / cross-isolation / sign-batch），或按 TestGatesET 同等 Payload 直调 `engine.kernel.et`。响应为新内核出参：`code ∈ success/reject/block/timeout/error`，细节看 `validate_result` / `issue_meta` / `failure_info`；**非 success 一律不得推进**。批次签发响应 `issue_meta.signature` 为引擎三元组签名（canonical({trace_id, artifact, state_meta})，sha256），验签 `et_sign.verify_issue`；旧五元组签名一次性失效（预期行为）；Agent 禁止自算签名。设计稿存档备查：引擎文档 `test_gates_et_design.md`。
 
 ## 按需执行流程（仅显式 run 指令才进入）
 - 执行前 healthCheck 确认被测应用可达
@@ -74,6 +74,6 @@ UI 自动化测试工作流规则 `ui-auto-test-workflow.yaml`（部署时按需
 本技能为通用公开版，已剥离私有宿主依赖。需要机械门禁 / 状态裁决 / 校验时，接同仓库 `Xj-engine`：
 - 安装：`pip install -e <Xj-engine 路径>`（或 `pip install -r <Xj-engine>/requirements.txt`）
 - 健康检查：`xj-engine health`
-- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from xj_engine.kernel import et`
+- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from engine.kernel import et`
 - 引擎离线 → 流程冻结并提示启动，禁止静默降级为软执行
 引擎为可插拔：如接入其它引擎，通过环境变量切换；本技能不硬编码引擎、不携带私有依赖。

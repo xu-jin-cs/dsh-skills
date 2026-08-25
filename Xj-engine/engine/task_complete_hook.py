@@ -13,7 +13,7 @@
     evidence 必须非空（引擎强制校验）。
 
 用法：
-  from xj_engine.task_complete_hook import task_complete_hook
+  from engine.task_complete_hook import task_complete_hook
   result = task_complete_hook(task_id="xxx", evidence={"output": "result.json"})
 
 CLI：

@@ -6,7 +6,7 @@
 
 - 从本地引擎 `agent-harness/backend/engine` 复制为独立引擎
 - 目录：`dsh-skills/Xj-engine/`
-- Python 包：`xj_engine`
+- Python 包：`engine`
 
 ### 兼容性改造
 

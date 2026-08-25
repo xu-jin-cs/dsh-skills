@@ -53,7 +53,7 @@ def adapter_dsh(event: BridgeEvent) -> dict:
 注册方式：
 
 ```python
-from xj_engine.task import get_bridge_executor
+from engine.task import get_bridge_executor
 
 executor = get_bridge_executor()
 executor.register_adapter("dsh", adapter_dsh)
