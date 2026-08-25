@@ -70,9 +70,6 @@ agents:
     - skip_input_validation
     - direct_assign_dev_test
     - output_code
-  invoked_skills:
-  - sv-supervisor
-  - archmap
 # ============================================================
 # 步骤2 · SPM 大产品经理：需求分析
 # ============================================================
@@ -103,8 +100,6 @@ agents:
     forbid:
     - skip_prd_six_elements
     - output_code
-  invoked_skills:
-  - senior-pm-agent
 # ============================================================
 # 步骤3 · PM 确认PRD + task_breakdown 任务分片
 # ============================================================
@@ -132,9 +127,6 @@ agents:
   permissions:
     forbid:
     - skip_sv_handshake
-  invoked_skills:
-  - task-breakdown
-  - sv-supervisor
 # ============================================================
 # 步骤4 · DPM 细节产品经理：交互设计
 # ============================================================
@@ -170,8 +162,6 @@ agents:
     forbid:
     - skip_state
     - output_production_code
-  invoked_skills:
-  - detail-product-manager
 # ============================================================
 # 步骤5a · ui-designer 界面设计师（并行）
 # ============================================================
@@ -199,8 +189,6 @@ agents:
     forbid:
     - generate_image
     - modify_frontend_code
-  invoked_skills:
-  - ui-designer
 # ============================================================
 # 步骤5b · test-lead 测试负责：并行下发三路测试设计（并行）
 # ============================================================
@@ -239,11 +227,6 @@ agents:
     - self_sign_batch
     - execute_test
     - fabricate_data
-  invoked_skills:
-  - test-lead
-  - whitebox-coverage
-  - api-test-engineer
-  - ui-test-engineer
 # ============================================================
 # 步骤6a · FE 前端工程师
 # ============================================================
@@ -274,8 +257,6 @@ agents:
     - modify_backend_contract
     - skip_build_verify
     - over_scope_dev
-  invoked_skills:
-  - frontend-development
 # ============================================================
 # 步骤6b · BE 后端工程师
 # ============================================================
@@ -307,8 +288,6 @@ agents:
     forbid:
     - skip_api_contract
     - silent_exception_swallow
-  invoked_skills:
-  - backend-engineer
 # ============================================================
 # 步骤7-9 · PM：代码审查 + 自测确认 + 冒烟门禁（质量左移）
 # ============================================================
@@ -344,9 +323,6 @@ agents:
     forbid:
     - pass_without_review
     - enter_full_test_with_smoke_failure
-  invoked_skills:
-  - test-executor
-  - sv-supervisor
 # ============================================================
 # 步骤10 · test-lead 全量测试：下发 → 语义审核 → 收口（引擎门禁把关）
 # ============================================================
@@ -382,11 +358,6 @@ agents:
     forbid:
     - self_sign_batch
     - override_engine_verdict
-  invoked_skills:
-  - test-lead
-  - whitebox-coverage
-  - api-test-engineer
-  - ui-test-engineer
 # ============================================================
 # 步骤12 · OPS 运维部署
 # （顺序说明：引擎状态机 DEPLOY→ACCEPTANCE 为唯一合法流向，验收在部署后做最终判定，
@@ -416,8 +387,6 @@ agents:
   permissions:
     forbid:
     - zip_contains_non_source
-  invoked_skills:
-  - operation-deployment
 # ============================================================
 # 步骤13 · acceptance-manager 验收经理
 # ============================================================
@@ -449,8 +418,6 @@ agents:
     forbid:
     - debug_bug
     - pass_unqualified
-  invoked_skills:
-  - acceptance-manager
 # ============================================================
 # 步骤13.5 · process-audit 流程合规审计（2026-08-15 R4 接线：qa 之后、retro 之前）
 # ============================================================
@@ -481,8 +448,6 @@ agents:
     - modify_audit_result
     - skip_dimension
     - join_dev_test_judgement
-  invoked_skills:
-  - process-audit
 # ============================================================
 # 步骤14 · 流程C 收尾（sv-supervisor 复核门禁）
 # ============================================================
@@ -520,10 +485,6 @@ agents:
     - retro_without_acceptance
     - no_landing_action
     - skip_sv_review
-  invoked_skills:
-  - retro-skill-dispatcher
-  - retro-subagent
-  - sv-supervisor
 # ============================================================
 # 流程B 缺陷回流（旁路，不进入下游）
 # ============================================================
