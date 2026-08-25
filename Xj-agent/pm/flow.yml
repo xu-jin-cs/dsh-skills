@@ -1,16 +1,17 @@
 name: pm
-description: PM全流程研发调度中枢（流程A · 2026-08-13 架构 · test-lead 三路测试收敛版）
+description: PM全流程研发调度中枢（13 节点流程 · 公开骨架版，引擎接线默认 Xj-engine）
 aliases:
 - /pm
 # ============================================================
-# 引擎归属：唯一引擎 = agent-harness backend/engine（http://127.0.0.1:8001/api）
+# 引擎归属：默认 Xj-engine（Python 包 xj_engine / CLI xj-engine）。
 # 端点/组件明细见 pm/SKILL.md「引擎归属」节（唯一权威，本文件不重复书写）；离线禁降级。
-# 2026-08-17 引擎替换（已裁定）：统一入口 POST /api/engine/et（ET Payload，禁带 expression）；
+# 统一入口为引擎 et 契约（ET Payload，禁带 expression）；
 # 状态推进两步——先 et 判定（state_intercept.allowed_pairs）→ success 后
-# POST /api/instances/{instance_id}/transition 落库；签发走 et 的 content_issue 块（引擎三元组签名）。
+# 落库状态（双写状态存储+审计）；签发走 et 的 content_issue 块（引擎三元组签名）。
+# 引擎为可插拔，通过环境变量切换（见 SKILL.md / scripts/engine_preflight.sh）。
 # ============================================================
-engine_name: backend/engine
-engine_api: http://127.0.0.1:8001/api
+engine_name: Xj-engine
+engine_api: xj_engine.kernel.et
 input_schema:
   type: object
   required:
@@ -20,7 +21,7 @@ input_schema:
       type: string
       description: 输入给PM工作流的项目需求或指令
 rules:
-# 软引导（无法 0/1 判定的部分）；硬规则全部由 backend/engine 执行
+# 软引导（无法 0/1 判定的部分）；硬规则全部由引擎执行
 - 需求不清 → 主动找用户沟通直到清晰；需求清晰 → 全程自动推进
 - 用户只参与两点：① 需求方向确认（停点1） ② 重构确认（影响>3文件时）
 - 项目收尾触发流程C，输出经验沉淀与配置变更
@@ -30,11 +31,11 @@ agents:
 # 步骤1 · PM 项目经理：宣布启动
 # ============================================================
 # ============================================================
-# 全局横切规则（2026-08-15 抽取，全节点生效，节点内不再重复书写）
+# 全局横切规则（全节点生效，节点内不再重复书写）
 # ① archmap 上下文：凡 pm_plan.json 含 archmap_analysis 字段，各角色开工前必读并按影响面调整产出（spm→PRD体现变更范围 / dpm→调整页面结构状态机接口契约 / fe→定位受影响页面组件 / be→覆盖受影响模块接口存储）
 # ② sv-supervisor 审批：凡交付物提交前须经 sv-supervisor 审批（sv_verdict=APPROVED），未审批禁止流转
 # ③ 角色权威定义：各节点角色能力以 invoked_skills 指向的技能 SKILL.md 为唯一权威，本文件 identity 只写节点特有契约，禁止复制角色 SKILL.md 内容
-# ④ engine 离线：门禁与签发不可用，必须先 bash ~/agent-harness/start.sh，禁止静默降级为软执行
+# ④ engine 离线：门禁与签发不可用，必须先启动引擎（默认 xj-engine），禁止静默降级为软执行
 # ============================================================
 - name: pm_bootstrap
   display_name: 项目经理·宣布启动
@@ -97,7 +98,7 @@ agents:
   - KANO+ROI 分析完成（每条需求标注分类+优先级）
   - 停点1：用户已确认方向
   - sv-supervisor 审批通过（sv_verdict=APPROVED）
-  - 复盘学习模式专属：新技能条目已落盘 learned-skills/entries/ 且登记入 registry.json，扳 gate-switch spec spm_skill_entry.json 判 A（判 B=未固化，禁止汇报"已入技能表"）
+  - 复盘学习模式专属：新技能条目已落盘经验库 entries/ 且登记入 registry.json，并经机械校验判 A（判 B=未固化，禁止汇报"已入技能表"）
   permissions:
     forbid:
     - skip_prd_six_elements
@@ -164,7 +165,7 @@ agents:
   - 第10节字段约束表已产出（UI测试边界来源）
   - api_contract.json 已定稿
   - sv-supervisor 审批通过
-  - 复盘学习模式专属：dpm 新技能条目已落盘 learned-skills/entries/ 且登记入 registry.json，扳 gate-switch spec dpm_skill_entry.json 判 A（判 B=未固化，禁止汇报"已入技能表"）
+  - 复盘学习模式专属：dpm 新技能条目已落盘经验库 entries/ 且登记入 registry.json，并经机械校验判 A（判 B=未固化，禁止汇报"已入技能表"）
   permissions:
     forbid:
     - skip_state
@@ -208,7 +209,7 @@ agents:
   identity: '# test_lead_design — 测试负责（设计阶段）
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
     输入：PRD/原型/源码就绪信号。三路前置逐路核验——白盒路=源码可测+coverage 基线可读；接口路=.api-schema.json 存在（唯一权威输入）；UI 路=.prd.md + .ui-proto.json + DPM 第10节字段约束表齐备。
-    节点特有契约：一条消息并行下发三路测试设计；缺一路门禁→该路不下发、其余路正常并行，收口标注缺口原因。用例语义审核通过 → POST /api/engine/et 机械校验（artifact_validate/gate_guard 块）→ et content_issue 块签发 global_batch_id + CROSS_VALIDATION_HASH 写入 batch_meta.json（引擎三元组签名）。
+    节点特有契约：一条消息并行下发三路测试设计；缺一路门禁→该路不下发、其余路正常并行，收口标注缺口原因。用例语义审核通过 → 引擎 et 契约机械校验（artifact_validate/gate_guard 块）→ et content_issue 块签发 global_batch_id + CROSS_VALIDATION_HASH 写入 batch_meta.json（引擎三元组签名）。
     禁止：自行签发/自行算签名（签发只能走引擎 content_issue 块）；执行用例（设计≠执行）；编造测试数据/边界值。'
   # harness_sync 说明：并行组同状态只同步一次——DEV_FRONTEND 由 ui_designer 节点同步（2026-08-15 B2 修复），本节点不重复回执
   parallel_group: design_and_test_design
@@ -227,13 +228,11 @@ agents:
   - smoke:true 标注 5-8 个 P0 核心场景
   - 引擎 et 机械校验（artifact_validate/gate_guard 块）通过
   - 引擎 et content_issue 签发回执已写入 batch_meta.json
-  # 四门禁已落地（2026-08-17）：Agent 调用 POST /api/test-gates/{case-format|evidence-chain|cross-isolation|sign-batch}
-  # （端点已挂载，URL 不变），或按 TestGatesET 同等 Payload 直调 POST /api/engine/et。
+  # 四门禁（用例格式 / 证据链 / 交叉隔离 / 批次签发）全部走引擎 et 契约（Xj-engine）。
   # 响应为新内核出参：code ∈ success/reject/block/timeout/error，细节看 validate_result/issue_meta/failure_info；
   # 非 success 一律不得推进。批次签发 issue_meta.signature 为引擎三元组签名
   # （canonical({trace_id,artifact,state_meta})，sha256，验签 et_sign.verify_issue）；
-  # 旧五元组签名一次性失效（预期行为）；Agent 禁止自算签名。
-  # 设计稿存档备查：agent-harness docs/test_gates_et_design.md。
+  # Agent 禁止自算签名。
   - sv-supervisor 审批测试就绪
   permissions:
     forbid:

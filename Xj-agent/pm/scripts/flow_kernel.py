@@ -221,8 +221,10 @@ def advance(
         sync_states.append(sync["state"])
         title = sync.get("title", sync["state"])
         sync_commands.append(
-            f'bash ~/agent-harness/scripts/harness-step-sync.sh "{project_name}" '
-            f'"{sync["state"]}" "{title}" "{operator}"'
+            SYNC_CMD_TPL.format(
+                project=project_name, state=sync["state"],
+                title=title, operator=operator,
+            )
         )
     if sync_states:
         current_state = state.get("current_state") or "PENDING"
