@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""attached_complete.py — 任务完成 hook 种入（[ATTACHED-COMPLETE] 声明 + 留痕）。
+"""attached_complete.py — 任务完成步骤追加（[ATTACHED-COMPLETE] 声明 + 留痕）。
 
-设计（2026-08-25 用户裁定）：新建任务时把完成 hook 种入任务——任务完成时，
-完成动作 = `todo_write` 将该任务 `status` 置为 `"completed"`，DSH 面板即显示完成；
-（如需引擎权威记录可另行 `xj-engine complete`，但面板完成直接由 todo_write 达成。）
+设计（2026-08-25 用户裁定）：不需要 hook——新建任务时，在任务末尾**追加一个执行步骤**：
+`todo_write` 将该任务 `status` 置为 `"completed"`，任务执行到该步即完成、DSH 面板显示完成。
 
 用法：
   python3 attached_complete.py --task "任务描述"
@@ -25,10 +24,10 @@ ATTACHED_LOG = os.environ.get(
 )
 
 DECLARATION = (
-    "[ATTACHED-COMPLETE] 本任务已种下完成 hook：任务完成时，"
+    "[ATTACHED-COMPLETE] 任务末尾已追加完成步骤：执行到该步时，"
     "用 `todo_write` 将该任务 `status` 置为 `\"completed\"`，DSH 面板即显示完成；"
-    "如需引擎权威记录可另行 `xj-engine complete`（pending→completed + TASK_COMPLETE 审计）。"
-    "完成即 `todo_write status:completed`，无额外附身闸、无需绕引擎面板更新"
+    "无需独立 hook、无需绕引擎（如需引擎权威记录可另行 `xj-engine complete`）。"
+    "完成 = 追加的执行步骤 todo_write status:completed"
 )
 
 
