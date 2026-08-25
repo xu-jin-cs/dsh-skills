@@ -48,3 +48,10 @@
 - 新增 `docs/bridge_contract.md`：桥接契约、adapter 接口、事件结构
 - 扩展 `et_contract.py` Payload Schema：新增 `task` 块
 - 扩展 Output Schema：新增 `task_result`
+
+### 任务完成埋点 hook（2026-08-25 追加）
+
+- 新增 `task_complete_hook.py`：完成埋点 hook——构造合法 ET payload 并调 `et()` 触发 `task.complete`，`task.complete` 追加权威完成记录（状态 pending→completed + TASK_COMPLETE 审计），该记录即完成标记。
+- 递归安全：hook 挂在执行侧完成埋点，非引擎 TASK_COMPLETE 审计输出，无自指循环。
+- 新增 CLI：`xj-engine complete --task-id <id> --evidence '<json>' [--trace-id <id>]`。
+- 验证：`task_complete_hook()` 与 CLI 均实测 success；审计事件按 trace_id 持久化可检索（task_complete_event / decision=pass）。

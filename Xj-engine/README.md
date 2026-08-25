@@ -50,6 +50,15 @@ from xj_engine.kernel import et
 ```bash
 xj-engine health
 xj-engine run --payload '{"op": ...}'
+xj-engine complete --task-id task-001 --evidence '{"output_file":"result.json"}'
+```
+
+任务完成埋点 hook（完成埋点触发 → hook 调 task.complete → 落权威完成记录）：
+
+```python
+from xj_engine.task_complete_hook import task_complete_hook
+result = task_complete_hook(task_id="task-001", evidence={"output_file": "result.json"})
+# result["task_result"]["to_state"] == "completed"，TASK_COMPLETE 审计已落库
 ```
 
 任务生命周期示例：
