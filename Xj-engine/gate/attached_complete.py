@@ -11,7 +11,7 @@
 用法：
   python3 attached_complete.py --task "任务描述"
 
-留痕：默认 ~/.agents/logs/attached_plan.jsonl，可用环境变量 ATTACHED_LOG 覆盖。
+留痕：默认 ~/.local/share/dsh-skills/logs/attached_plan.jsonl，可用环境变量 ATTACHED_LOG 覆盖。
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ import sys
 
 ATTACHED_LOG = os.environ.get(
     "ATTACHED_LOG",
-    os.path.expanduser("~/.agents/logs/attached_plan.jsonl"),
+    os.path.expanduser("~/.local/share/dsh-skills/logs/attached_plan.jsonl"),
 )
 
 COMPLETE_STEP = '完成步骤：todo_write 将该任务 status 置为 "completed"（DSH 面板打勾）'

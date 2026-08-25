@@ -27,7 +27,7 @@ import sys
 
 SEAL_DIR = os.environ.get(
     "TODO_SEAL_DIR",
-    os.path.expanduser("~/.agents/logs/todo_seal"),
+    os.path.expanduser("~/.local/share/dsh-skills/logs/todo_seal"),
 )
 ATTACH_SCRIPT = os.environ.get(
     "ATTACH_COMPLETE_SCRIPT",
