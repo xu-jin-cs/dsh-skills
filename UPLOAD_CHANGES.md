@@ -3,6 +3,26 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-08-25 · 任务完成 hook + 种入闸（Xj-engine）追加
+
+### 8. 任务完成埋点 hook（`Xj-engine/xj_engine/task_complete_hook.py` + CLI）
+
+- 新增 `task_complete_hook.py`：完成埋点 hook——构造合法 ET payload 调 `et()` 触发 `task.complete`，`task.complete` 追加权威完成记录（状态 pending→completed + TASK_COMPLETE 审计），该记录即完成标记。
+- 新增 CLI：`xj-engine complete --task-id <id> --evidence '<json>'`。
+- 递归安全：hook 挂在执行侧完成埋点，非引擎 TASK_COMPLETE 审计输出，无自指循环。
+- 实测：`code=success`、`to_state=completed`、审计事件持久化可检索。
+
+### 9. 任务完成种入闸（`Xj-engine/gate/`，新目录）
+
+- 新增 `Xj-engine/gate/`，承载任务完成 hook 的种入机制（todo_write 挂点）：
+  - `attached_complete.py` — 种入动作：把 `[ATTACHED-COMPLETE]` 完成 hook 埋进新任务（留痕可配置 `ATTACHED_LOG`）。
+  - `task_complete_attach_gate.py` — 触发钩子（todo_write 挂点，插件通道⑤）：**清单含新任务才种入、重发豁免**，按会话记账（`TODO_SEAL_DIR`）。
+  - `check_attached_complete.py` — 种入留痕核验。
+  - `task_complete_plant_gate.json` — 闸 spec（种入 + 核验两检查；`<gate_dir>` 替换为实际路径）。
+- 设计契约：新建任务 → 扳闸种入完成 hook → 任务完成天然触发 `xj-engine complete` → `task.complete` 追加完成记录（无完成附身闸）。
+- 已做兼容性清理：无 `/Users/xujin` 绝对路径、无 `~/.agents/skills/...` 私有依赖、日志路径全部环境变量可配置；`py_compile` 通过、端到端验证（新任务种入/重发豁免/核验）通过、私有残留零命中。
+- **修改事项备注**：本批次为 `task_complete_hook` + 任务完成种入闸机制新增，解决"任务完成标记由引擎权威落账、新建任务时埋点完成 hook 触发"；本地私有 `gate-switch`/`attached_plan.py` 的 `complete` 模式为运行侧实现，公开分发以 `Xj-engine/gate/` 干净版为准。
+
 ## 2026-08-25 · Xj-agent（PM 全流程工作流）新增
 
 ### 7. Xj-agent（公开分发骨架版）
