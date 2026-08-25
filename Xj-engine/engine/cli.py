@@ -3,7 +3,6 @@
 用法示例：
   xj-engine health
   xj-engine run --payload '{"op": ...}'
-  xj-engine complete --task-id xxx --evidence '{"output":"result.json"}'
 """
 from __future__ import annotations
 
@@ -50,19 +49,11 @@ def main(argv=None) -> int:
     run_p = sub.add_parser("run", help="执行引擎 payload")
     run_p.add_argument("--payload", required=True, help="JSON payload 字符串")
 
-    complete_p = sub.add_parser("complete", help="任务完成 hook：触发 task.complete")
-    complete_p.add_argument("--task-id", required=True, help="任务 ID")
-    complete_p.add_argument("--evidence", required=True, help="完成证据 JSON（非空）")
-    complete_p.add_argument("--trace-id", default="", help="可选，缺省自动生成")
-
     args = parser.parse_args(argv)
     if args.cmd == "health":
         return _cmd_health()
     if args.cmd == "run":
         return _cmd_run(args.payload)
-    if args.cmd == "complete":
-        from engine.task_complete_hook import main_cli
-        return main_cli(args.task_id, args.evidence, args.trace_id)
     parser.print_help()
     return 2
 
