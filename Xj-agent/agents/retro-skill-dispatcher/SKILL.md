@@ -228,7 +228,7 @@ MATCH 机制决定触发字段必须按通道分别设计，违反即出生即�
 
 > **分流/准入判定禁止手写（2026-08-15 裁定，门禁机制机械判定）：分流先跑 `scripts/dispatcher_gate.py route` 照抄 route；GENERATE 准入必须通过门禁机制（gate）判 A（准入规格：dispatcher_admission）才许生成。**
 >
-> **diff 留痕判定禁止手写（2026-08-15 裁定，gate-switch 机械门禁，复盘前固定卡点）：GENERATE 准入扳动 dispatcher_admission.json 之前，必须先扳 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/archmap_diff_freshness.json --set project=<项目根路径> --set work_start=<复盘工作期起点：标记文件路径/epoch秒/ISO8601>` 照抄结论——判 A（archmap/diff_history.jsonl 存在、非 0 字节空壳、新于工作期起点）才许继续准入流程；判 B = archmap diff 留痕空转，须先执行 archmap +diff 补留痕后重扳，violations 即违例。项目无 archmap/ 目录时本闸不适用，声明理由后跳过。**
+> **diff 留痕判定禁止手写（2026-08-15 裁定，门禁机制机械判定，复盘前固定卡点）：GENERATE 准入过 dispatcher_admission 门禁之前，必须先过「diff 留痕新鲜度」门禁（archmap_diff_freshness，参数 --set project=<项目根路径> --set work_start=<复盘工作期起点：标记文件路径/epoch秒/ISO8601>）判 A——archmap/diff_history.jsonl 存在、非 0 字节空壳、新于工作期起点——才许继续准入流程；判 B = archmap diff 留痕空转，须先执行 archmap +diff 补留痕后重判，violations 即违例。项目无 archmap/ 目录时本闸不适用，声明理由后跳过。**
 
 GENERATE 模式不再无条件执行。执行前先检查 `dispatcher_generate_config.json`：
 
@@ -318,7 +318,7 @@ def do_generate(project_name: str, retro_data: dict) -> dict:
                                     dataset_tag="佳脉")
     role_link_ok = update_role_retro_links(skills_generated)
     
-    # ── Step 4: Harness 审计 ──
+    # ── Step 4: 引擎审计（Xj-engine）──
     audit_ok = write_harness_audit(
         skills=skills_generated,
         chunks_written=chunks_written
@@ -344,7 +344,7 @@ def do_generate(project_name: str, retro_data: dict) -> dict:
 
 **存储顺序验证：** do_generate() 返回后，PM 必须确认 Step 1（向量入库）的 `chunks_written > 0` 且 Step 3（脉象索引）的 `registry_updated == true`。任一不满足 → 报告 GENERATE 未完成。
 
-> **注册完整性判定禁止手写（2026-08-16 裁定，gate-switch 机械门禁，本闸合并 p 系禁制/形态/NNN 撞号/chunk_id 四处条款为单焊点）：Step 3 注册脉象索引后、声称"已注册"前，必须扳 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/registry_integrity.json` 照抄结论——判 A（新增条目形态 retro-{role}-{NNN}-*、无手写 p 系、NNN 无撞号、chunk_id 可查时整数唯一）才允许声称注册完成；判 B 按 violations 修复索引后重扳。入库时序（向量库先于索引）由 do_generate() 写入路径保证，机械判据不存在，脚本注释标软层。**
+> **注册完整性判定禁止手写（2026-08-16 裁定，门禁机制机械判定，本闸合并 p 系禁制/形态/NNN 撞号/chunk_id 四处条款为单焊点）：Step 3 注册脉象索引后、声称"已注册"前，必须过门禁机制（gate，准入规格：registry_integrity）判 A——新增条目形态 retro-{role}-{NNN}-*、无手写 p 系、NNN 无撞号、chunk_id 可查时整数唯一——才允许声称注册完成；判 B 按 violations 修复索引后重判。入库时序（向量库先于索引）由 do_generate() 写入路径保证，机械判据不存在，脚本注释标软层。**
 
 ### 系统边界说明
 
@@ -380,12 +380,12 @@ def do_generate(project_name: str, retro_data: dict) -> dict:
 技能生成后，根据技能描述**判断是否需要修改对应 agent 的实际配置/规则文件**（经验文档/SKILL.md/规则文件/CLAUDE.md），如需变更则：
 
 1. 修改实际文件
-2. POST `CONFIG_AUTO_APPLY` 到 Harness 记录变更
+2. 通过引擎 et 契约（Xj-engine）投递 `CONFIG_AUTO_APPLY` 审计事件记录变更
 3. 将变更纳入复盘变更文件清单
 
 **判断标准：** 技能描述涉及流程/规则/配置缺陷，且修复方式可标准化 → 必须同步修改配置文件，不能只创建 SKILL.md。
 
-> **同步声称实证（2026-08-15 裁定，gate-switch 机械门禁）：声称"配置已同步"时，必须跑 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/dispatcher_config_sync.json --set config=<被改配置文件> --set doc=<应同步文档>` 照抄结论——判 A（文档新于配置变更）才允许声称"已同步"；判 B = 同步缺失，violations 即证据。**
+> **同步声称实证（2026-08-15 裁定，门禁机制机械判定）：声称"配置已同步"时，必须过门禁机制（gate，准入规格：dispatcher_config_sync，参数 --set config=<被改配置文件> --set doc=<应同步文档>）判 A——文档新于配置变更——才允许声称"已同步"；判 B = 同步缺失，violations 即证据。**
 
 ### 异常处理
 
@@ -398,10 +398,10 @@ def do_generate(project_name: str, retro_data: dict) -> dict:
 | 文件写入 SKILL.md 失败 | 输出警告，继续下一经验 |
 | registry-index.json 无法写入 | 输出警告，手动追加 entry |
 | 同名skill_id冲突 | SEQ递增处理，永不覆盖已有目录 |
-| Harness 服务不可达 | 日志告警不阻断流程（审计降级），**但必须把未投递的审计记录（action/operator/details/generated_skills/计划时间）落盘到 `~/.agents/retro-skills-registry/runtime/_audit_backfill_queue.json`；Harness 恢复后由下一执行方或人工按队列补录（每条技能独立 SKILL_AUTO_GENERATE，created_at 用真实生成时间），补录后清空队列。禁止只告警不留痕——2026-08-12 实证 5 条技能审计静默缺失** |
-| 无技能产出的事件入库（2026-08-16 用户裁定） | **禁止**——`SKILL_AUTO_GENERATE` 必须携带非空 `details.generated_skills`，无产出连入库步骤都不走（降级补录同样适用，details 禁止用 skill_id_prefix 等替代字段）；同理 `CONFIG_AUTO_APPLY` 必须携带非空 `details.changes`（禁止用 files 等替代字段，前端只消费 changes）。engine `/api/logs` POST 已焊死机械门禁：缺字段直接 400。实证违例 #1265-1269 已清除、#1249 已补字段修复 |
+| 引擎（Xj-engine）服务不可达 | 日志告警不阻断流程（审计降级），**但必须把未投递的审计记录（action/operator/details/generated_skills/计划时间）落盘到 `$RETRO_REGISTRY_DIR/runtime/_audit_backfill_queue.json`；引擎恢复后由下一执行方或人工按队列补录（每条技能独立 SKILL_AUTO_GENERATE，created_at 用真实生成时间），补录后清空队列。禁止只告警不留痕——2026-08-12 实证 5 条技能审计静默缺失** |
+| 无技能产出的事件入库（2026-08-16 用户裁定） | **禁止**——`SKILL_AUTO_GENERATE` 必须携带非空 `details.generated_skills`，无产出连入库步骤都不走（降级补录同样适用，details 禁止用 skill_id_prefix 等替代字段）；同理 `CONFIG_AUTO_APPLY` 必须携带非空 `details.changes`（禁止用 files 等替代字段，前端只消费 changes）。引擎 et 契约（Xj-engine）已焊死机械门禁：缺字段直接拒绝。实证违例 #1265-1269 已清除、#1249 已补字段修复 |
 | 技能误发为 CONFIG_AUTO_APPLY | 删除 audit_logs 中对应行，重新以 SKILL_AUTO_GENERATE 逐条 POST |
-| 生成即并入使用者技能表（2026-08-21 用户裁定改版：复利不赌运行时匹配自觉；**固化是核心目的，注入先于 registry 写盘；不再配置触发词**） | GENERATE 顺序：生成技能 → `inject_into_role_skills` 将技能描述并入对应使用者角色（affected_role 映射）的 `~/.agents/skills/<角色>/learned-skills/` 技能表（SPM 同款：registry.json + entries/*.md，幂等全量派生）+ 重写 `AUTO-RETRO-INJECT` 内联索引块（含「第零步：派任务时全量载入技能表」，无触发词列）。pm 仅在自身是使用者（affected_role 含 pm）时并入其技能表，不再全量合并各角色实现细节（2026-08-21 v2 用户裁定，避免 pm 表膨胀与无关载入）→ **单刀双掷开关 `inject_fuse.py` 增量熔断（每个新 skill_id 必须已固化进对应角色 learned-skills 技能表，0=A 放行 / 2=B 则 registry 不写盘、审计与向量不同步，修复后重跑幂等）** → 通过才写 registry → LanceDB/审计。存量回填/重注入用 `--inject-only`（末尾自动跑全量熔断）。角色别名映射见脚本 ROLE_SKILL_MAP。原触发词机制已备份至 `archive/trigger_mechanism_backup_20260821/`。全条目归档的角色在重注入时自动清空其 learned-skills 与内联块 |
+| 生成即并入使用者技能表（2026-08-21 用户裁定改版：复利不赌运行时匹配自觉；**固化是核心目的，注入先于 registry 写盘；不再配置触发词**） | GENERATE 顺序：生成技能 → `inject_into_role_skills` 将技能描述并入对应使用者角色（affected_role 映射）的使用者技能表（经验机制：registry.json + entries/*.md，幂等全量派生）+ 重写 `AUTO-RETRO-INJECT` 内联索引块（含「第零步：派任务时全量载入技能表」，无触发词列）。pm 仅在自身是使用者（affected_role 含 pm）时并入其技能表，不再全量合并各角色实现细节（2026-08-21 v2 用户裁定，避免 pm 表膨胀与无关载入）→ **单刀双掷开关 `inject_fuse.py` 增量熔断（每个新 skill_id 必须已固化进对应角色的使用者技能表，0=A 放行 / 2=B 则 registry 不写盘、审计与向量不同步，修复后重跑幂等）** → 通过才写 registry → LanceDB/审计。存量回填/重注入用 `--inject-only`（末尾自动跑全量熔断）。角色别名映射见脚本 ROLE_SKILL_MAP。原触发词机制已备份至 `archive/trigger_mechanism_backup_20260821/`。全条目归档的角色在重注入时自动清空其使用者技能表与内联块 |
 | 双轨定级（2026-08-16 REFORM-GATE 判 A：复用 expert-loop 领域/专项机制） | registry entry 带 `skill_level: domain|specialty`——生成时机械定级（命中针对性标记 generality=targeted 强制 specialty，经验条目可显式 `triggers.level` 覆盖）；注入块按双轨分区渲染：🧭 领域=检查维度融入式、🎯 专项=场景触发升格执行主线；`trigger_match_audit.py` ④按 角色×问题类型 聚类 specialty，≥3 张同类输出晋升回顾清单（机械计数，抽象动作走语义）。晋升通道：`promote_internalization.py` 消费 expert-loop 内化卡 |
 | 技能生命周期三操作（2026-08-16 用户裁定：防膨胀，不只追加） | **新增**=常规 GENERATE；**替换**=经验条目带 `supersedes: [旧skill_id...]`，生成成功即归档旧技能（领域晋升吸收专项走此路）；**删除**=`python3 dispatcher_generate.py --archive <skill_id> --reason "..."`。归档为墓碑式：entry 打 `status=archived`+目录移入 `archive/`；**归档传播全数据源同步删除（2026-08-16 裁定：agent 侧删了数据源必须同步删，否则前后不同步）**——注入块/MATCH/熔断/月度审计按 status 过滤，LanceDB 向量行由 `_purge_skill_from_datasources` 物理删除，role-retro-links 绑定剔除，engine retro_query（index_search/vector_search）读取层过滤归档事件 POST `EVOLUTION_AUTO_ARCHIVE` 审计留痕。搭配双轨晋升形成闭环：专项攒≥3 → 抽象领域技能（supersedes 吸收旧专项）→ 注入块自动收敛 |
-| 引擎生命周期契约（2026-08-16 用户裁定：入库/删除只调引擎，一条链路走完；v2 重写为自包含 RetroETLEngine） | **唯一入口 `~/.agents/retro-skills-registry/engine/kernel.py::retro_etl(payload)`**（参考 AgentEngine ET 契约架构：contract 校验 → resource_control 前检 → 固定步骤链 → outbox 记账 → delivery；code=success/reject/block/error）。三操作复用同一引擎：`op=write`（稳定内容哈希 chunk_id→BGE-M3 嵌入→LanceDB 幂等覆写→BM25 三重索引→outbox ready，doc_unique_id=skill_id）、`op=delete`（doc_unique_id 精确定位→LanceDB 删行→legacy harness.db SQL 清理→BM25 重建→outbox deleted）、`op=batch`（**晋升合并事务：同一边界内删旧增新+BM25 单次重建，逐项记账，失败项落积压幂等重试**——GENERATE 带 supersedes 时走此路，且引擎事务排在注入熔断之后，防"判 B 回滚 registry 而物理删除已执行"的前后不同步）、`op=reconcile`（registry↔LanceDB↔outbox 三向对账）。store/embed/bm25 全本地实现，零 agent-harness 代码/服务依赖——引擎改造或离线期间本链路自治。写入积压 `_lancedb_backlog`、删除积压 `_purge_backlog.jsonl` 均本地回血，仅审计投递需 agent-harness 在线。注意：BM25 全量重建分钟级，调用方耐心等勿中断（实证 2026-08-16 中断致 journal 死锁）。agent-harness 侧的 /api/retro/skill/* 端点为 v1 残留，待其引擎稳定后清理 |
+| 引擎生命周期契约（2026-08-16 用户裁定：入库/删除只调引擎，一条链路走完；v2 重写为自包含 RetroETLEngine） | **唯一入口 `$RETRO_REGISTRY_DIR/engine/kernel.py::retro_etl(payload)`**（参考引擎 et 契约架构（Xj-engine）：contract 校验 → resource_control 前检 → 固定步骤链 → outbox 记账 → delivery；code=success/reject/block/error）。三操作复用同一引擎：`op=write`（稳定内容哈希 chunk_id→BGE-M3 嵌入→LanceDB 幂等覆写→BM25 三重索引→outbox ready，doc_unique_id=skill_id）、`op=delete`（doc_unique_id 精确定位→LanceDB 删行→旧版引擎库 SQL 清理→BM25 重建→outbox deleted）、`op=batch`（**晋升合并事务：同一边界内删旧增新+BM25 单次重建，逐项记账，失败项落积压幂等重试**——GENERATE 带 supersedes 时走此路，且引擎事务排在注入熔断之后，防"判 B 回滚 registry 而物理删除已执行"的前后不同步）、`op=reconcile`（registry↔LanceDB↔outbox 三向对账）。store/embed/bm25 全本地实现，零引擎代码/服务依赖——引擎改造或离线期间本链路自治。写入积压 `_lancedb_backlog`、删除积压 `_purge_backlog.jsonl` 均本地回血，仅审计投递需引擎（Xj-engine）在线。注意：BM25 全量重建分钟级，调用方耐心等勿中断（实证 2026-08-16 中断致 journal 死锁）。引擎旧版 REST 契约端点属 v1 残留，以 et 契约（Xj-engine）为准，待其引擎稳定后清理 |
