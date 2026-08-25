@@ -49,7 +49,9 @@
 - 扩展 `et_contract.py` Payload Schema：新增 `task` 块
 - 扩展 Output Schema：新增 `task_result`
 
-> 2026-08-25 终裁（用户裁定）：任务完成 = `todo_write` 将该任务 `status` 置为 `"completed"`，
-> DSH 面板即显示完成。不引入独立 hook / 任务完成闸 / CLI complete 机制；引擎 `task.complete`
-> 仅作为可选的权威记录，非完成必需路径。相关 `task_complete_hook.py`、`xj-engine complete`、
-> `Xj-engine/gate/` 已撤除。
+> 2026-08-25 终裁（用户裁定）：任务完成需要【附身闸】——新建任务时，附身闸
+> `task_complete_attach_gate` 往任务末尾追加"完成步骤"：`todo_write` 将该任务
+> `status` 置为 `"completed"`，DSH 面板即打勾。没有此附身闸，新任务不会被追加完成步骤 → 无法完成。
+> 完成是"追加步骤"不是 hook；不引入 `task_complete_hook.py`、`xj-engine complete` 机制
+> （引擎 `task.complete` 仅可选权威记录，非必需）。`Xj-engine/gate/task_complete_attach_gate.py`
+> + `attached_complete.py` 保留。
