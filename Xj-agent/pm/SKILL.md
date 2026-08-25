@@ -8,8 +8,15 @@ allowed-tools: ["Read","Write","Bash"]
 # pm
 
 > 公开分发骨架版。本 SKILL.md 描述 13 节点 PM 全流程调度、节点流转内核与引擎接线。
-> 角色具体执行能力由各 `invoked_skills` 指向的技能 SKILL.md 定义（适配方按自身生态替换）。
+> 角色具体执行能力由适配方按节点角色自行接线对应技能/Agent（本骨架不捆绑具体角色技能）。
 > 私有/宿主相关能力（如审计看板、复盘经验库、审批体系）此处仅保留通用形态，不做硬绑定。
+
+## 安装依赖
+
+```bash
+pip install -r requirements.txt   # PyYAML + jsonschema（flow_kernel.py 运行所需）
+```
+
 
 ## 入参
 
@@ -80,6 +87,7 @@ bash scripts/verify_experience_writeback.sh <本次产出物> <经验/索引文�
 pm/
 ├── SKILL.md            # 入口（本文件）
 ├── flow.yml            # 13节点编排（节点拓扑 / 分支 / 状态机 / 交付物模板）
+├── requirements.txt    # 脚本运行依赖（PyYAML / jsonschema）
 ├── readme.md           # 架构说明
 └── scripts/
     ├── flow_kernel.py                 # 节点流转内核（规则全入参）

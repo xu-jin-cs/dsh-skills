@@ -75,15 +75,17 @@ python3 -m py_compile $(find . -name '*.py' -not -path './.git/*')
 
 ## Xj-agent（PM 全流程工作流）
 
-通用、自包含的 **PM 全流程研发调度骨架**（13 节点：pm_bootstrap→spm→pm_prd_confirm→dpm→[ui_designer ∥ test_lead_design]→fe→be→pm_quality_gate→test_lead_full→ops→qa→process_audit→retro），默认引擎接线为同仓库 [`Xj-engine`](./Xj-engine/)（`xj_engine.kernel.et` / `xj-engine` CLI），引擎可插拔。含：
+通用、自包含的 **PM 全流程研发调度骨架**（13 节点：pm_bootstrap→spm→pm_prd_confirm→dpm→[ui_designer ∥ test_lead_design]→fe→be→pm_quality_gate→test_lead_full→ops→qa→process_audit→retro），默认引擎接线为同仓库 [`Xj-engine`](./Xj-engine/)（`xj_engine.kernel.et` / `xj-engine` CLI），引擎可插拔。**不捆绑具体角色技能**：各节点角色执行能力由适配方自行接线对应技能/Agent。含：
 
 - `pm/SKILL.md` — 流程入口与引擎接线说明
 - `pm/flow.yml` — 13 节点编排（节点拓扑 / 分支 / 状态机 / 交付物模板）
+- `pm/requirements.txt` — 脚本运行依赖（PyYAML / jsonschema）
 - `pm/scripts/flow_kernel.py` — 节点流转内核（规则全入参，success 回执才流转）
 - `pm/scripts/engine_preflight.sh` — 引擎健康检查（默认 `xj-engine health`）
 - `pm/scripts/verify_experience_writeback.sh` — 经验固化机械校验
 
 ```bash
+pip install -r Xj-agent/pm/requirements.txt
 # 查看节点出口
 python3 Xj-agent/pm/scripts/flow_kernel.py routes --rules Xj-agent/pm/flow.yml --node be
 ```

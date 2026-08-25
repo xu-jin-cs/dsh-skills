@@ -34,13 +34,13 @@ agents:
 # 全局横切规则（全节点生效，节点内不再重复书写）
 # ① archmap 上下文：凡 pm_plan.json 含 archmap_analysis 字段，各角色开工前必读并按影响面调整产出（spm→PRD体现变更范围 / dpm→调整页面结构状态机接口契约 / fe→定位受影响页面组件 / be→覆盖受影响模块接口存储）
 # ② sv-supervisor 审批：凡交付物提交前须经 sv-supervisor 审批（sv_verdict=APPROVED），未审批禁止流转
-# ③ 角色权威定义：各节点角色能力以 invoked_skills 指向的技能 SKILL.md 为唯一权威，本文件 identity 只写节点特有契约，禁止复制角色 SKILL.md 内容
+# ③ 角色权威定义：各节点角色能力由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能），本文件 identity 只写节点特有契约，禁止复制角色 SKILL.md 内容
 # ④ engine 离线：门禁与签发不可用，必须先启动引擎（默认 xj-engine），禁止静默降级为软执行
 # ============================================================
 - name: pm_bootstrap
   display_name: 项目经理·宣布启动
   identity: '# pm_bootstrap — 项目经理（宣布启动）
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：项目路径/压缩包。前置硬性加载（缺任意一项→禁止进入步骤1）：创建/恢复 .flow_state.json 断点（status=PENDING/step=STEP-01）、输出 `[sv-supervisor rules loaded]` 声明。
     输入校验：项目根必须存在 .prd.md + .ui-proto.json，缺失任一→流程冻结，要求补齐。
     archmap 三路分流（本节点专属契约）：已有基线→/archmap 影响面分析结果写入 pm_plan.json；存量项目无基线→先 /archmap 全量建基线再做分析；全新空白项目→置 null 并注明。调用失败→暂停流程（pm 节点唯一 Bash 例外）。
@@ -76,7 +76,7 @@ agents:
 - name: spm
   display_name: 大产品经理·需求分析
   identity: '# spm — 大产品经理
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：.prd.md（全项目概览+技术栈+需求清单），按需读 .ui-proto.json；输出《总需求PRD》（六要素齐全）。
     ⛔ 停点1（用户确认）：先输出方向摘要 → 等用户确认 → 再输出完整 PRD。
     禁止：跳过六要素任一项；在用户确认方向前输出完整 PRD；输出可执行代码/数据库DDL/API定义。'
@@ -106,7 +106,7 @@ agents:
 - name: pm_prd_confirm
   display_name: PM确认PRD·任务分片
   identity: '# pm_prd_confirm — PM 确认PRD + task_breakdown
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：spm 产出的 prd.md。审核 PRD 完整性通过后调用 task-breakdown：按 S/M/L 拆解任务，标注技术栈/估时/验收标准/依赖，无依赖任务标记并行，输出拆解表。
     禁止：跳过审批直接下发；修改已确认的 PRD 内容。'
   harness_sync:
@@ -133,7 +133,7 @@ agents:
 - name: dpm
   display_name: 细节产品经理·交互设计
   identity: '# dpm — 细节产品经理
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：已确认 PRD；先质疑闭环，再输出《详细交互设计文档》（9章节+状态机100%完整）。
     节点特有契约：第10节字段约束表（field/testid/min/max/校验提示）为 UI 测试边界取值唯一来源；同步产出 api_contract.json 作前后端接口契约基线。
     禁止：跳过状态机任一种状态；缺第10节字段约束表；输出生产代码/数据库迁移/API实现。'
@@ -168,7 +168,7 @@ agents:
 - name: ui_designer
   display_name: 界面设计师·视觉规范
   identity: '# ui_designer — 界面设计师
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：DPM 交互设计文档；输出 ui_spec.md（颜色/字体/间距/圆角/阴影 5 系统 + 每组件7种状态，全部数值化描述），前端验收后流转。
     禁止：生成图片/设计稿文件；非数值化描述；修改前端代码。'
   harness_sync:
@@ -195,7 +195,7 @@ agents:
 - name: test_lead_design
   display_name: test-lead·三路测试设计下发
   identity: '# test_lead_design — 测试负责（设计阶段）
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：PRD/原型/源码就绪信号。三路前置逐路核验——白盒路=源码可测+coverage 基线可读；接口路=.api-schema.json 存在（唯一权威输入）；UI 路=.prd.md + .ui-proto.json + DPM 第10节字段约束表齐备。
     节点特有契约：一条消息并行下发三路测试设计；缺一路门禁→该路不下发、其余路正常并行，收口标注缺口原因。用例语义审核通过 → 引擎 et 契约机械校验（artifact_validate/gate_guard 块）→ et content_issue 块签发 global_batch_id + CROSS_VALIDATION_HASH 写入 batch_meta.json（引擎三元组签名）。
     禁止：自行签发/自行算签名（签发只能走引擎 content_issue 块）；执行用例（设计≠执行）；编造测试数据/边界值。'
@@ -233,7 +233,7 @@ agents:
 - name: fe
   display_name: 前端工程师·组件实现
   identity: '# fe — 前端工程师
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：ui_spec.md + interaction_design.md（含第10节字段约束表）。
     节点特有契约：必须注入 data-testid 锚点，取值与 .ui-proto.json 组件 id 一一对应（UI 测试 element_description 按 data-testid > id > name > xpath 优先级取值）；自测通过后执行导入验证门禁。
     禁止：修改后端接口契约；跳过 npm run build 验证；漏注 data-testid 锚点；超范围开发。'
@@ -263,7 +263,7 @@ agents:
 - name: be
   display_name: 后端工程师·接口实现
   identity: '# be — 后端工程师
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：api_contract.json（接口契约先定再实现，自测通过才提测）。
     节点特有契约：产出 .api-schema.json（schema 2.0：接口全集+场景分母+fields 约束），作为接口测试路唯一权威输入。
     禁止：跳过接口契约定义；凭记忆调用第三方库 API；静默吞异常；使用 Tkinter/PyQt/PySide（技术黑名单）。'
@@ -294,7 +294,7 @@ agents:
 - name: pm_quality_gate
   display_name: PM·代码审查+自测确认+冒烟门禁
   identity: '# pm_quality_gate — PM 质量门禁（提测前）
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：前后端自测报告与交付物。三段门禁：①代码审查（五维+新增4项：导入验证/跨文件审计/依赖同步/配置文档同步），不通过打回开发修复；②自测确认；③冒烟门禁（test-executor 仅执行 smoke:true 的 5-8 个 P0 核心场景）。
     冒烟分流：全部通过→全量测试；有失败→直接触发流程B，不进入全量测试。冒烟报告必须携带 round 字段；首轮失败触发轮内回归时保留 smoke_test_report.r1.json 快照。
     禁止：审查/自测未通过时放行冒烟；冒烟失败仍进入全量测试。'
@@ -329,7 +329,7 @@ agents:
 - name: test_lead_full
   display_name: test-lead·全量测试三路收口
   identity: '# test_lead_full — 测试负责（全量阶段）
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：冒烟通过的交付物 + batch_meta.json；一条消息并行下发三路全量测试，逐路串行走引擎门禁。
     白盒路双基线分流（本节点专属契约，2026-08-14 新增）：archmap/full_index.json + test-master-report.json（R0→R3 完成）均存在且本次为版本更新回归→下发 diff 增量模式（执行范围唯一依据 archmap/diff_impact.json，禁止下令全量）；无测试基线→全量 R0 基线→R1-R3 分层轮次→终判报告（首版唯一例外）。
     收口：三路结果聚合 → Q5 语义抽审 → 引擎 et 契约（artifact_validate 证据链 + gate_guard 交叉隔离校验块）→ test-master-report.json + defect-auto-grade.json；POST_GATE_AUDIT 抽样复核。
@@ -366,7 +366,7 @@ agents:
 - name: ops
   display_name: 运维部署·本地打包
   identity: '# ops — 运维部署
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：前后端交付物与测试报告均齐备。
     节点特有契约：ZIP 前强制预交付验证六项（文件同步diff比对/语法检查/导入检查/bat编码无中文/文件清单核验/页面渲染检查）；ZIP 仅源码+工程配置、文件名含版本号 v{主}.{次}.{修订}[-标签]，bat 脚本全英文（@echo off + chcp 65001）。
     禁止：测试报告不齐备时部署；ZIP 含非源码文件（PRD/原型/测试报告）。'
@@ -393,7 +393,7 @@ agents:
 - name: qa
   display_name: 验收经理·最终判定
   identity: '# qa — 验收经理
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：test-master-report.json + acceptance_report.json + PRD；通过/打回二值判定（只判定，不排查Bug），P0/P1 未解决→强制不通过。
     节点特有契约：P0 验收标准 100% 逐项核查 + P1/P2 随机抽样 ≥20%；必须记录 checked_items/total_items 写入验收报告（qa_coverage 由引擎机械校验，<0.8 拒签）。
     分流：通过→触发流程C；不通过→打回触发流程B。
@@ -424,7 +424,7 @@ agents:
 - name: process_audit
   display_name: 流程审计·合规后置审计
   identity: '# process_audit — 独立流程审计
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：验收通过后的全流程数据（Harness 实例状态/签名链/violations/逐步骤交付物）。
     节点特有契约：七维审计 A-G（状态一致性/交付物完整性/违规范/同步日志/第5层固化/技能产出完整性/经验复用率）；F/G 维度机械闸（process_audit_f/process_audit_g）已于 2026-08-20 问题闸全量复审裁定撤除（结构性失效：阈值永久判B/检查已废止字段，且由写入端活闸兜底），F/G 维度留软层语义审查；综合结论二值（通过/不通过），不通过→风险项全量写入报告。
     禁止：参与任何代码/UI/测试判断；修改或淡化审计结果；跳过任一维度；PM 无权跳过本节点。'
@@ -454,7 +454,7 @@ agents:
 - name: retro
   display_name: 流程C收尾·复盘归档
   identity: '# retro — 流程C 项目收尾
-    角色能力权威定义见 invoked_skills 指向的 SKILL.md。
+    角色能力权威定义由适配方接线对应技能/Agent（本骨架不捆绑具体角色技能）。
     输入：验收通过的交付物 + 各角色最短路径记录（问题/方案/预防/适用场景）。
     变更台账卡点（本节点专属契约）：项目根存在 archmap/full_index.json 且本次有代码变更→复盘前必须先 /archmap <项目路径> diff 留痕（diff_history.jsonl + 10_变更历史.md）；归档前 /archmap sync 刷新基线并回补 01~09 分析文档。无基线或纯文档流程豁免，须在 retro_report.json 注明豁免原因。
     收尾程序：5问法三层穿透复盘 → retro-skill-dispatcher GENERATE 经验入库 → 补丁分发前置门禁（规则/机制/流程类补丁逐条过 REFORM-GATE 判 A 才允许分发，纯经验沉淀类豁免）→ sv-supervisor 复核 APPROVED 才归档 CLOSED。

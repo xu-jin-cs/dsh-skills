@@ -1,7 +1,8 @@
 # pm — PM 全流程研发调度中枢（13 节点流程 · 公开骨架版）
 
 > 公开分发骨架版。本目录为通用、自包含的 PM 全流程调度骨架，默认引擎接线为同仓库 `Xj-engine`。
-> 角色执行能力、审计看板、复盘经验库等宿主/生态能力按适配方自身环境替换，不做硬绑定。
+> **不捆绑具体角色技能**：各节点角色执行能力由适配方自行接线对应技能/Agent；
+> 审计看板、复盘经验库等宿主/生态能力按适配方自身环境替换，不做硬绑定。
 
 ## 引擎
 
@@ -38,12 +39,20 @@ pm_bootstrap → spm → pm_prd_confirm → dpm
 4. 每步状态同步 + 审批贯穿全程
 5. 固化证据铁律：凡声称"已沉淀/已入库"必须过 `scripts/verify_experience_writeback.sh` 机械校验
 
+## 安装与运行
+
+```bash
+pip install -r requirements.txt   # PyYAML + jsonschema（flow_kernel.py 运行依赖）
+python3 scripts/flow_kernel.py routes --rules flow.yml --node be   # 试跑：查询节点出口
+```
+
 ## 目录结构
 
 ```
 pm/
 ├── SKILL.md                  # 入口（本架构说明）
 ├── flow.yml                  # 13节点编排（节点拓扑 / 分支 / 状态机 / 交付物模板）
+├── requirements.txt          # 脚本运行依赖（PyYAML / jsonschema）
 ├── readme.md                 # 本文件
 └── scripts/
     ├── flow_kernel.py                 # 节点流转内核（规则全入参）

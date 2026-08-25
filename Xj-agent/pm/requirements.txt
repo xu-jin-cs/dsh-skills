@@ -1,0 +1,4 @@
+# Xj-agent/pm 脚本运行时依赖（flow_kernel.py / 相关工具）
+# 安装：pip install -r requirements.txt
+PyYAML>=6.0
+jsonschema>=4.0
