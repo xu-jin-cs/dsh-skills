@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-testid_diff.py — frontend data-testid 锚点集合差机械检查器（2026-08-15 裁定，gate-switch 实证族配套）
+testid_diff.py — frontend data-testid 锚点集合差机械检查器（2026-08-15 裁定，门禁机制实证族配套）
 
 拆解"声称全注入实际漏组件"事故：把 .ui-proto.json 可交互组件 id 集合与源码中
 实际注入的 data-testid 值集合做差集，proto 有而源码无 → 未交付。
@@ -126,7 +126,7 @@ def finish(checks, violations, missing, counts):
                "missing": missing, "counts": counts},
               sys.stdout, ensure_ascii=False, indent=2)
     sys.stdout.write("\n")
-    # 末行单行摘要：gate_switch script_exit 原语取末行作 B 档违例详情
+    # 末行单行摘要：门禁机制 script_exit 原语取末行作 B 档违例详情
     summary = {"pass": ok, "violations": violations, "missing": missing} if not ok else {"pass": ok}
     sys.stdout.write(json.dumps(summary, ensure_ascii=False, separators=(",", ":")) + "\n")
     sys.exit(0 if ok else 1)

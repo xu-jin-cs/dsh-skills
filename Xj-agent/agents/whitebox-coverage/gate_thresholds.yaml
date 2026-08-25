@@ -1,0 +1,13 @@
+# gate_thresholds.yaml — 白盒门禁阈值唯一权威源
+#
+# 本文件为白盒门禁阈值（whitebox_gate_thresholds）的唯一权威源，技能层持有，
+# 引擎层（agent-harness/backend/rules）不再承载（引擎轻量化：业务规则禁下沉引擎规则层）。
+# 消费方：~/.agents/skills/test-driven-development/scripts/normalize_coverage.py
+# 历史迁移：原声明权威源位于引擎规则层（2026-08 体检认定为死链），
+#           2026-08-22 真源落地至本文件，技能层自持有。
+
+# 各 tier 分支覆盖率达标线（单位 %）
+whitebox_gate_thresholds:
+  P0: 100
+  P1: 85
+  P2: 75
