@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """attached_complete.py — 任务完成 hook 种入（[ATTACHED-COMPLETE] 声明 + 留痕）。
 
-设计（2026-08-25 用户裁定）：新建任务时把完成 hook 种入任务——任务完成时天然触发
-task_complete_hook（`xj-engine complete`）→ task.complete 追加权威完成记录
-（pending→completed + TASK_COMPLETE 审计），该记录即完成标记；无需完成附身闸。
+设计（2026-08-25 用户裁定）：新建任务时把完成 hook 种入任务——任务完成时，
+完成动作 = `todo_write` 将该任务 `status` 置为 `"completed"`，DSH 面板即显示完成；
+（如需引擎权威记录可另行 `xj-engine complete`，但面板完成直接由 todo_write 达成。）
 
 用法：
   python3 attached_complete.py --task "任务描述"
@@ -25,10 +25,10 @@ ATTACHED_LOG = os.environ.get(
 )
 
 DECLARATION = (
-    "[ATTACHED-COMPLETE] 本任务已种下完成 hook：任务完成时天然触发 "
-    "`xj-engine complete --task-id <id> --evidence '<完成证据>'` → task.complete "
-    "追加权威完成记录（pending→completed + TASK_COMPLETE 审计），该记录即完成标记；"
-    "完成无需额外附身闸，hook 天然触发（不追加额外标记、无完成附身闸）"
+    "[ATTACHED-COMPLETE] 本任务已种下完成 hook：任务完成时，"
+    "用 `todo_write` 将该任务 `status` 置为 `\"completed\"`，DSH 面板即显示完成；"
+    "如需引擎权威记录可另行 `xj-engine complete`（pending→completed + TASK_COMPLETE 审计）。"
+    "完成即 `todo_write status:completed`，无额外附身闸、无需绕引擎面板更新"
 )
 
 
