@@ -90,6 +90,26 @@ pip install -r Xj-agent/pm/requirements.txt
 python3 Xj-agent/pm/scripts/flow_kernel.py routes --rules Xj-agent/pm/flow.yml --node be
 ```
 
+### 角色 agent 集（11 个，`Xj-agent/agents/`）
+
+pm 工作流 11 个角色技能随包分发，下载即拥有完整 pm 工作流：
+
+| 角色技能 | 承接节点 |
+|---|---|
+| `senior-pm-agent` | spm / pm_prd_confirm（需求分析+PRD确认+任务拆解）|
+| `detail-product-manager` | dpm 交互设计 |
+| `ui-designer` | ui_designer |
+| `frontend-development` | fe |
+| `backend-engineer` | be |
+| `operation-deployment` | ops |
+| `test-lead` | 测试设计/冒烟/全量/验收/合规 |
+| `whitebox-coverage` | 白盒路 |
+| `api-test-engineer` | 接口路 |
+| `ui-test-engineer` | UI 路 |
+| `retro-skill-dispatcher` | retro 收尾复盘 |
+
+均做了私有依赖剥离（无 agent-harness / retro-skills-registry / 绝对路径），可独立安装复用。
+
 
 ## 安装 / Install
 

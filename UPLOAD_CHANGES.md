@@ -19,6 +19,7 @@
 - 引擎接线：默认指向同仓库 `Xj-engine`（`xj_engine.kernel.et` / CLI `xj-engine`），通过环境变量可插拔（`ENGINE_HEALTH_CMD` / `ENGINE_START_CMD` / `PM_HARNESS_SYNC_CMD`）。
 - **角色集收敛为 11 个（2026-08-25 用户裁定）**：`flow.yml` 的 `invoked_skills` 由 18 收敛到 **11 个去重角色**——`senior-pm-agent` / `detail-product-manager` / `ui-designer` / `frontend-development` / `backend-engineer` / `operation-deployment` / `test-lead` / `whitebox-coverage` / `api-test-engineer` / `ui-test-engineer` / `retro-skill-dispatcher`。剔除并入：archmap（非 pm 角色）、acceptance-manager（验收→test-lead）、sv-supervisor（审批→PM/引擎）、task-breakdown（拆解→spm）、test-executor（执行→test-lead）、process-audit（合规→test-lead）、retro-subagent（复盘→retro-skill-dispatcher）。
 - 新增 `pm/requirements.txt`（PyYAML / jsonschema）声明脚本运行依赖，使 `flow_kernel.py` 可开箱运行。
+- **角色 agent 集分发（2026-08-25 用户裁定）**：`Xj-agent/agents/` 随包分发 pm 的 **11 个角色技能**，下载即拥有完整 pm 工作流——`senior-pm-agent` / `detail-product-manager` / `ui-designer` / `frontend-development` / `backend-engineer` / `operation-deployment` / `test-lead` / `whitebox-coverage` / `api-test-engineer` / `ui-test-engineer` / `retro-skill-dispatcher`。每个均已去敏（无 agent-harness / retro-skills-registry / gate-switch / /Users/xujin 绝对路径），剥离 `learned-skills/` 内部复盘与经验文档；python 脚本语法校验通过、全量私有残留扫描零命中。
 - 已做兼容性清理（对齐 Xj-rules/Xj-engine 标准）：
   - 无 `/Users/xujin` 绝对路径
   - 无 `agent-harness` / `retro-skills-registry` / `learned-skills` / `gate-switch` 私有依赖与私有技能引用
