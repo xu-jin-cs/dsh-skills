@@ -3,6 +3,26 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-08-25 · Xj-agent（PM 全流程工作流）新增
+
+### 7. Xj-agent（公开分发骨架版）
+
+- 新增 `Xj-agent/` 资源目录，与 `Xj-engine` / `Xj-rules` 同级，承载通用 PM 全流程工作流。
+- 内容：
+  - `pm/SKILL.md` — 流程入口与引擎接线说明
+  - `pm/flow.yml` — 13 节点编排（节点拓扑 / 分支 / 状态机 / 交付物模板）
+  - `pm/readme.md` — 架构说明
+  - `pm/scripts/flow_kernel.py` — 节点流转内核（规则全入参）
+  - `pm/scripts/engine_preflight.sh` — 引擎健康检查（默认 `xj-engine health`）
+  - `pm/scripts/verify_experience_writeback.sh` — 经验固化机械校验
+- 引擎接线：默认指向同仓库 `Xj-engine`（`xj_engine.kernel.et` / CLI `xj-engine`），通过环境变量可插拔（`ENGINE_HEALTH_CMD` / `ENGINE_START_CMD` / `PM_HARNESS_SYNC_CMD`）。
+- 已做兼容性清理（对齐 Xj-rules/Xj-engine 标准）：
+  - 无 `/Users/xujin` 绝对路径
+  - 无 `agent-harness` / `retro-skills-registry` / `learned-skills` / `gate-switch` 私有依赖与私有技能引用
+  - 无 `output_delivery/` 真实项目产物、无 `archive_*` 历史归档
+  - 无 `__pycache__` / `*.pyc` / `.DS_Store`
+- 校验：`flow.yml` YAML 解析通过（14 agents / 17 状态跃迁），`flow_kernel.py` `py_compile` 通过。
+
 ## 2026-08-25
 
 ### 1. README 定位调整

@@ -73,6 +73,22 @@ python3 -m py_compile $(find . -name '*.py' -not -path './.git/*')
 | [`archmap`](./archmap/SKILL.md) | 架构测绘 Agent（含 Python 引擎，自包含分发）。零参自动分流 full/lite；需求文本→精准影响面（文件/函数/路由级）；`diff` 零 LLM 行级影响面 + 导入闭包 + 测试选择 + 变更台账；`sync` 增量同步基线并刷新 01~09 报告；ETL 规则注册表项目级可覆盖。以确定性计算替代全库通读，显著节约 tokens。 |
 | [`gate-switch`](./gate-switch/SKILL.md) | 通用概率执行门禁骨架（实证族 L2 引擎，零依赖）。治 LLM 三类顽疾：该做的没做 / 缺斤短两 / 伪造声称——把"声称 X 已满足"写成 spec JSON，引擎逐项机械核验，A 放行 / B 阻断列违例，判定权从模型移交脚本。7 检查原语（file_exists/json_field/glob_count/grep_count/mtime_after/script_exit 等），自带 8 个通用门禁实例（验收 verdict、测试证据、部署准入、模式分流等）+ L3 框架闸模板。新场景 = 写新 spec，引擎零改动。与 parallel-dispatch 的 dispatch_switch（路由族）互补。 |
 
+## Xj-agent（PM 全流程工作流）
+
+通用、自包含的 **PM 全流程研发调度骨架**（13 节点：pm_bootstrap→spm→pm_prd_confirm→dpm→[ui_designer ∥ test_lead_design]→fe→be→pm_quality_gate→test_lead_full→ops→qa→process_audit→retro），默认引擎接线为同仓库 [`Xj-engine`](./Xj-engine/)（`xj_engine.kernel.et` / `xj-engine` CLI），引擎可插拔。含：
+
+- `pm/SKILL.md` — 流程入口与引擎接线说明
+- `pm/flow.yml` — 13 节点编排（节点拓扑 / 分支 / 状态机 / 交付物模板）
+- `pm/scripts/flow_kernel.py` — 节点流转内核（规则全入参，success 回执才流转）
+- `pm/scripts/engine_preflight.sh` — 引擎健康检查（默认 `xj-engine health`）
+- `pm/scripts/verify_experience_writeback.sh` — 经验固化机械校验
+
+```bash
+# 查看节点出口
+python3 Xj-agent/pm/scripts/flow_kernel.py routes --rules Xj-agent/pm/flow.yml --node be
+```
+
+
 ## 安装 / Install
 
 **一键安装（推荐，无需先 clone）/ One-liner**
