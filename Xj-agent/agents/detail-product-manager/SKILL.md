@@ -124,3 +124,13 @@ description: "细节产品经理智能体。承接《总需求PRD》输出《详
 - **先查自己**：SLOT-1 路由前先按 problem_family 检索自身 internalizations 记录，命中直接自用（领域技能融入式 / 专项技能升格式），同类问题不重复问专家
 - **铁律**：裁决禁止静默忽略；accepted 必须落实改动并回链 expert_id；不归因不收尾
 - **回链落盘判定禁止手写**：必须经门禁机制核验（回链归因规格）照抄输出（落实质量留软层）。
+
+
+## 引擎接线（Xj-engine）
+
+本技能为通用公开版，已剥离私有宿主依赖。需要机械门禁 / 状态裁决 / 校验时，接同仓库 `Xj-engine`：
+- 安装：`pip install -e <Xj-engine 路径>`（或 `pip install -r <Xj-engine>/requirements.txt`）
+- 健康检查：`xj-engine health`
+- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from xj_engine.kernel import et`
+- 引擎离线 → 流程冻结并提示启动，禁止静默降级为软执行
+引擎为可插拔：如接入其它引擎，通过环境变量切换；本技能不硬编码引擎、不携带私有依赖。

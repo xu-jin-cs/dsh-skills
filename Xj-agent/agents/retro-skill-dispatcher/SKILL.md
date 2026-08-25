@@ -405,3 +405,13 @@ def do_generate(project_name: str, retro_data: dict) -> dict:
 | 双轨定级（2026-08-16 REFORM-GATE 判 A：复用 expert-loop 领域/专项机制） | registry entry 带 `skill_level: domain|specialty`——生成时机械定级（命中针对性标记 generality=targeted 强制 specialty，经验条目可显式 `triggers.level` 覆盖）；注入块按双轨分区渲染：🧭 领域=检查维度融入式、🎯 专项=场景触发升格执行主线；`trigger_match_audit.py` ④按 角色×问题类型 聚类 specialty，≥3 张同类输出晋升回顾清单（机械计数，抽象动作走语义）。晋升通道：`promote_internalization.py` 消费 expert-loop 内化卡 |
 | 技能生命周期三操作（2026-08-16 用户裁定：防膨胀，不只追加） | **新增**=常规 GENERATE；**替换**=经验条目带 `supersedes: [旧skill_id...]`，生成成功即归档旧技能（领域晋升吸收专项走此路）；**删除**=`python3 dispatcher_generate.py --archive <skill_id> --reason "..."`。归档为墓碑式：entry 打 `status=archived`+目录移入 `archive/`；**归档传播全数据源同步删除（2026-08-16 裁定：agent 侧删了数据源必须同步删，否则前后不同步）**——注入块/MATCH/熔断/月度审计按 status 过滤，LanceDB 向量行由 `_purge_skill_from_datasources` 物理删除，role-retro-links 绑定剔除，engine retro_query（index_search/vector_search）读取层过滤归档事件 POST `EVOLUTION_AUTO_ARCHIVE` 审计留痕。搭配双轨晋升形成闭环：专项攒≥3 → 抽象领域技能（supersedes 吸收旧专项）→ 注入块自动收敛 |
 | 引擎生命周期契约（2026-08-16 用户裁定：入库/删除只调引擎，一条链路走完；v2 重写为自包含 RetroETLEngine） | **唯一入口 `$RETRO_REGISTRY_DIR/engine/kernel.py::retro_etl(payload)`**（参考引擎 et 契约架构（Xj-engine）：contract 校验 → resource_control 前检 → 固定步骤链 → outbox 记账 → delivery；code=success/reject/block/error）。三操作复用同一引擎：`op=write`（稳定内容哈希 chunk_id→BGE-M3 嵌入→LanceDB 幂等覆写→BM25 三重索引→outbox ready，doc_unique_id=skill_id）、`op=delete`（doc_unique_id 精确定位→LanceDB 删行→旧版引擎库 SQL 清理→BM25 重建→outbox deleted）、`op=batch`（**晋升合并事务：同一边界内删旧增新+BM25 单次重建，逐项记账，失败项落积压幂等重试**——GENERATE 带 supersedes 时走此路，且引擎事务排在注入熔断之后，防"判 B 回滚 registry 而物理删除已执行"的前后不同步）、`op=reconcile`（registry↔LanceDB↔outbox 三向对账）。store/embed/bm25 全本地实现，零引擎代码/服务依赖——引擎改造或离线期间本链路自治。写入积压 `_lancedb_backlog`、删除积压 `_purge_backlog.jsonl` 均本地回血，仅审计投递需引擎（Xj-engine）在线。注意：BM25 全量重建分钟级，调用方耐心等勿中断（实证 2026-08-16 中断致 journal 死锁）。引擎旧版 REST 契约端点属 v1 残留，以 et 契约（Xj-engine）为准，待其引擎稳定后清理 |
+
+
+## 引擎接线（Xj-engine）
+
+本技能为通用公开版，已剥离私有宿主依赖。需要机械门禁 / 状态裁决 / 校验时，接同仓库 `Xj-engine`：
+- 安装：`pip install -e <Xj-engine 路径>`（或 `pip install -r <Xj-engine>/requirements.txt`）
+- 健康检查：`xj-engine health`
+- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from xj_engine.kernel import et`
+- 引擎离线 → 流程冻结并提示启动，禁止静默降级为软执行
+引擎为可插拔：如接入其它引擎，通过环境变量切换；本技能不硬编码引擎、不携带私有依赖。

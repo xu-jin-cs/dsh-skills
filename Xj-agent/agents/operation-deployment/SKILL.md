@@ -63,3 +63,13 @@ Step1确认交付物 → Step2备份 → Step3部署 → Step4配置检查 → S
   - 钩子脚本 `>/dev/null 2>&1` 会吞掉全部错误——必须保留日志输出便于追踪（见上节）。
   - CLI/二进制入口缺失或损坏时，必须先审计安装来源、包管理器、PATH 与多版本，再决定修复方式，禁止只补符号链接。
   - 引擎重启后必须实证旧进程已死亡（kill 后验证端口释放），否则旧进程仍持端口导致新进程启动失败。
+
+
+## 引擎接线（Xj-engine）
+
+本技能为通用公开版，已剥离私有宿主依赖。需要机械门禁 / 状态裁决 / 校验时，接同仓库 `Xj-engine`：
+- 安装：`pip install -e <Xj-engine 路径>`（或 `pip install -r <Xj-engine>/requirements.txt`）
+- 健康检查：`xj-engine health`
+- 按 ET 契约调用：`xj-engine run --payload '<ET Payload>'`，或 `from xj_engine.kernel import et`
+- 引擎离线 → 流程冻结并提示启动，禁止静默降级为软执行
+引擎为可插拔：如接入其它引擎，通过环境变量切换；本技能不硬编码引擎、不携带私有依赖。
