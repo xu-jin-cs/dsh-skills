@@ -11,7 +11,7 @@ archmap diff 直接凭 git status 圈范围，跨文件影响闭包全丢。本�
 
 新鲜度判据：diff_impact.computed_at >= 项目内最新源码文件 mtime
 （源码=白名单扩展名；排除 .git/node_modules/archmap/evidence 等噪声目录）。
-由 gate_switch.py 以 script_exit 原语包装（spec: whitebox_scope.json，expect 0）。
+由门禁机制以 script_exit 原语包装（spec: whitebox_scope.json，expect 0）。
 """
 import argparse
 import datetime
@@ -65,8 +65,8 @@ def main():
 
     if not os.path.isfile(target):
         violations.append(
-            f"diff_impact.json 不存在: {target}——必须先执行 "
-            f"`python3 ~/.agents/skills/archmap/archmap {args.project} diff [修改备注]` 产出影响面，"
+            f"diff_impact.json 不存在: {target}——必须先执行 archmap 技能 "
+            f"（`/archmap {args.project} diff [修改备注]`）产出影响面，"
             "禁止凭 git status/人工判断圈定范围")
     else:
         try:

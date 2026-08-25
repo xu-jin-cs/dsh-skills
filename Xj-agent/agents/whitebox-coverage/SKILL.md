@@ -9,16 +9,16 @@ description: "白盒覆盖率端到端执行技能。单 Agent 在指定工程�
 
 ## 模式声明
 
-本技能为**端到端验证 / 独立执行模式**：设计、执行、审计由同一 Agent 完成，G31 交叉执行与引擎门禁在此模式下由 Agent 自检代替；正式项目测试必须切回 G31 多角色链（tcd/TDD → test-lead + backend/engine 门禁 → executor → acceptance）。
+本技能为**端到端验证 / 独立执行模式**：设计、执行、审计由同一 Agent 完成，交叉执行与引擎门禁在此模式下由 Agent 自检代替；正式项目测试必须切回多角色链（tcd/TDD → test-lead + 引擎门禁 → executor → acceptance）。
 
-**模式标记硬约束（2026-08-15 用户裁定 A 案 · 入口分流）**：本模式产出的 `test-master-report.json` 顶层 `execution_mode` 字段**必须写 `"whitebox-verification"`**，禁止冒充 G31 链模式值（func-only / api-only / tdd-only / api-tdd / all-full）。该报告仅作验证/彩排/引擎不可用环境的参考依据；正式验收由 acceptance_verdict 门禁机械拒收 whitebox-verification 报告——自检顶替门禁的通道已从规则层焊死。
+**模式标记硬约束（2026-08-15 用户裁定 A 案 · 入口分流）**：本模式产出的 `test-master-report.json` 顶层 `execution_mode` 字段**必须写 `"whitebox-verification"`**，禁止冒充多角色链模式值（func-only / api-only / tdd-only / api-tdd / all-full）。该报告仅作验证/彩排/引擎不可用环境的参考依据；正式验收由 acceptance_verdict 门禁机械拒收 whitebox-verification 报告——自检顶替门禁的通道已从规则层焊死。
 
 规则权威源（本文件只给执行骨架，细节冲突以它们为准，禁止双写）：
-- `~/.agents/skills/test-driven-development/SKILL.md` — Step 0（基线/Schema/豁免生命周期/术语字典）+ Step 1（分层轮次闭环执行规范）
-- `~/.agents/skills/test-lead/SKILL.md` — 语义审核/收口；机械门禁（格式/证据链）归 AgentEngine `POST /api/engine/et`（artifact_validate/gate_guard 校验块；2026-08-17 引擎替换：旧 test_gates 实现已退役，`/api/test-gates/*` 四端点 URL 保留、内部改接新内核。四门禁已落地（2026-08-17）：Agent 调用 `POST /api/test-gates/{case-format|evidence-chain|cross-isolation|sign-batch}`（端点已挂载，URL 不变），或按 TestGatesET 同等 Payload 直调 `POST /api/engine/et`；响应为新内核出参（code ∈ success/reject/block/timeout/error，细节看 validate_result/issue_meta/failure_info，非 success 一律不得推进）；批次签发 `issue_meta.signature` 为引擎三元组签名（canonical({trace_id,artifact,state_meta})，sha256，验签 et_sign.verify_issue；旧五元组签名一次性失效为预期行为；Agent 禁止自算签名）；设计稿存档备查 agent-harness docs/test_gates_et_design.md）
-- `~/.agents/skills/acceptance-manager/SKILL.md` — tdd 抽查要点与 P0 硬拦截
-- 模板：`~/.agents/skills/test-driven-development/templates/`（coverage-tiers.json / coverage-exemptions.json / test-master-report.sample.json）
-- 脚本：`~/.agents/skills/test-driven-development/scripts/normalize_coverage.py`
+- `../test-driven-development/SKILL.md` — Step 0（基线/Schema/豁免生命周期/术语字典）+ Step 1（分层轮次闭环执行规范）
+- `../test-lead/SKILL.md` — 语义审核/收口；机械门禁（格式/证据链）归引擎 et 契约执行（Xj-engine：`xj_engine.kernel.et`）。四门禁已落地（case-format / evidence-chain / cross-isolation / sign-batch）：Agent 直调引擎 et 契约，响应 code ∈ success/reject/block/timeout/error（非 success 一律不得推进）；批次签发 signature 为引擎三元组签名（sha256），Agent 禁止自算签名
+- `../acceptance-manager/SKILL.md` — tdd 抽查要点与 P0 硬拦截
+- 模板：`../test-driven-development/templates/`（coverage-tiers.json / coverage-exemptions.json / test-master-report.sample.json）
+- 脚本：`../test-driven-development/scripts/normalize_coverage.py`
 
 ## 输入
 
@@ -27,7 +27,7 @@ description: "白盒覆盖率端到端执行技能。单 Agent 在指定工程�
 
 ## 模式门禁（2026-08-14 新增 · 机械分流，禁止闭眼全量）
 
-进入 Phase 0 之前必须先做模式判定，判定依据仅为文件存在性，禁止凭感觉选择。**（2026-08-15 升级：判定禁止手写，必须扳动 gate-switch 门禁照抄输出：`python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/whitebox_mode.json --set project=<项目路径>`——退出码 0=A 进 diff 增量模式；2=B 走 full 全量且 violations 即缺失基线清单，必须原文写入报告⑥段。）**
+进入 Phase 0 之前必须先做模式判定，判定依据仅为文件存在性，禁止凭感觉选择。**（2026-08-15 升级：判定禁止手写，必须经门禁机制机械判定照抄输出（whitebox_mode spec）：退出码 0=A 进 diff 增量模式；2=B 走 full 全量且 violations 即缺失基线清单，必须原文写入报告⑥段。）**
 
 1. **增量回归（有基线时强制）**：`<project>/archmap/full_index.json` 存在 **且** `<project>/test-master-report.json` 存在已完成 R0→R3 基线 → **强制进入「版本更新增量模式（diff）」**，执行范围唯一依据 `archmap/diff_impact.json`（先跑 `/archmap <project> diff` 产出）；**禁止从 Phase R0 起跑全量**
 2. **首版全量（唯一例外入口）**：无测试基线（`test-master-report.json` 不存在或 R0→R3 未完成）→ 走 Phase R0→R3 全量；若 archmap 基线也不存在，先 `/archmap <project>` 全量建基线，为下一工作期 diff 增量做准备
@@ -50,7 +50,7 @@ description: "白盒覆盖率端到端执行技能。单 Agent 在指定工程�
 cd <project>
 # Python（JS/TS：npx jest --coverage --coverageReporters=json → coverage/coverage-final.json，归一化自动识别 istanbul）
 python3 -m pytest tests/ --cov=<src> --cov-branch --cov-report=json:evidence/baseline/coverage_raw.json --cov-report=
-python3 ~/.agents/skills/test-driven-development/scripts/normalize_coverage.py \
+python3 ../test-driven-development/scripts/normalize_coverage.py \
   evidence/baseline/coverage_raw.json --tiers coverage-tiers.json \
   --exemptions coverage-exemptions.json --baseline \
   --batch-id <batch_id> --env-label test --root . \
@@ -75,18 +75,18 @@ python3 ~/.agents/skills/test-driven-development/scripts/normalize_coverage.py \
 
 ```bash
 python3 -m pytest tests/ --cov=<src> --cov-branch --cov-report=json:evidence/tdd/coverage_raw_r<N>.json --cov-report=
-python3 ~/.agents/skills/test-driven-development/scripts/normalize_coverage.py \
+python3 ../test-driven-development/scripts/normalize_coverage.py \
   evidence/tdd/coverage_raw_r<N>.json --tiers coverage-tiers.json \
   --exemptions coverage-exemptions.json --batch-id <batch_id> --round <N> \
   --prev <上一轮coverage.json（第1轮用基线）> --new-cases <本轮新增用例数> \
   --root . --out evidence/tdd/coverage_round<N>.json
-python3 ~/.agents/skills/test-driven-development/scripts/normalize_coverage.py \
+python3 ../test-driven-development/scripts/normalize_coverage.py \
   --diff <上一轮coverage.json> evidence/tdd/coverage_round<N>.json \
   --out evidence/tdd/diff_round<N>.json
 ```
 
 4. **回填 rounds[]**：从 diff 顶层 `summary{fixed_arcs,new_missing_arcs,remaining_arcs}` + 本轮实测 `tiers` 取数，追加到 `test-master-report.json.coverage.rounds[]`（结构照 test-master-report.sample.json）
-5. **门禁判定**（阈值引用声明：各 tier 达标线以技能层权威源 `/Users/xujin/.agents/skills/whitebox-coverage/gate_thresholds.yaml` 的 `whitebox_gate_thresholds` 键为准（P0=100 / P1=85 / P2=75，单位 %；技能层持有，引擎层不再承载），由 normalize_coverage.py 读取并判定；本技能文本不持有裸数值判定逻辑；回退默认值时产物 `meta.gate_threshold_source` 必留痕 `default_fallback`）：
+5. **门禁判定**（阈值引用声明：各 tier 达标线以技能层权威源 `gate_thresholds.yaml`（本技能目录，键 `whitebox_gate_thresholds`）为准（P0=100 / P1=85 / P2=75，单位 %；技能层持有，引擎层不再承载），由 normalize_coverage.py 读取并判定；本技能文本不持有裸数值判定逻辑；回退默认值时产物 `meta.gate_threshold_source` 必留痕 `default_fallback`）：
    - R1：`P0 branch_pct 达到 whitebox_gate_thresholds.P0` 才进 R2；不达标回流（死代码/平台分支走豁免流程，禁止无理由批量豁免）
    - R2：`P1 branch_pct ≥ whitebox_gate_thresholds.P1`；实测 `meta.coverage_efficiency_risk=true` → 停止加用例，转豁免评审，每条效率豁免弧记录 audit_log
    - R3：`P2 branch_pct ≥ whitebox_gate_thresholds.P2`，最多回流 1 轮，余量走豁免审批
@@ -107,19 +107,20 @@ python3 ~/.agents/skills/test-driven-development/scripts/normalize_coverage.py \
    - **⑥ 环境适配备注**：采集方式变更、基线重建等溯源说明
    - 数据来源：全部数字取自 `test-master-report.json` 与 `evidence/tdd/coverage.json`（遗留弧明细取 raw coverage 的 missing_branches），禁止凭记忆填数
 
-> **报告数字一致性判定禁止手写（2026-08-16 裁定，gate-switch 机械门禁）：Markdown 报告交付前必须扳 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/whitebox_report_consistency.json --set project=<项目路径>` 照抄结论——判 A（用例总数/通过率/缺陷数/行分支覆盖率与 test-master-report.json、coverage.json 机械比对一致）才允许交付报告；判 B 按 violations 改报告或补证据后重扳。**
+> **报告数字一致性判定禁止手写（2026-08-16 裁定，机械门禁）：Markdown 报告交付前必须经门禁机制照抄结论（whitebox_report_consistency spec，脚本 `scripts/whitebox_report_check.py`）——判 A（用例总数/通过率/缺陷数/行分支覆盖率与 test-master-report.json、coverage.json 机械比对一致）才允许交付报告；判 B 按 violations 改报告或补证据后重扳。**
+
 5. **HTML 报告必备（2026-08-12 新增，与 Markdown 并列强制）**：输出 `<项目名>_白盒测试报告_<批次>.html`，Appium 报告同款暗色可折叠页面，由渲染器生成：
 
 ```bash
-python3 ~/.agents/skills/test-driven-development/scripts/render_whitebox_html.py \
+python3 ../test-driven-development/scripts/render_whitebox_html.py \
   --report test-master-report.json --coverage evidence/tdd/coverage.json \
   --project <项目名> --out evidence/tdd/<项目名>_白盒测试报告_<批次>.html
 cp evidence/tdd/<项目名>_白盒测试报告_<批次>.html ~/Desktop/
 ```
 
-   **输出位置（固定）**：渲染原件存项目 `evidence/tdd/` 归档，渲染成功后立即 `cp` 到 `~/Desktop/<项目名>_白盒测试报告_<批次>.html` 作为交付副本（与 PPT 成品输出桌面同惯例），桌面副本缺失视为终判步骤未完成。
+   **输出位置（固定）**：渲染原件存项目 `evidence/tdd/` 归档，渲染成功后立即 `cp` 到 `~/Desktop/<项目名>_白盒测试报告_<批次>.html` 作为交付副本（成品输出桌面同惯例），桌面副本缺失视为终判步骤未完成。
 
-> **HTML 桌面交付判定禁止手写（2026-08-17 扳手改造，gate-switch 机械门禁，retro-pm-129 同类）：cp Desktop 完成后、输出终判汇报回执前，必须扳 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/whitebox_html_delivery.json --set project=<项目名> --set batch=<批次> --set project_path=<项目路径>` 照抄输出——判 A（桌面副本存在 + 非空壳 + 新于 evidence 归档原件）才允许声称终判报告已交付；判 B 即终判步骤未完成，按 violations 补 cp 后重扳，禁止用文字提及路径冒充交付。**
+> **HTML 桌面交付判定禁止手写（2026-08-17 扳手改造，机械门禁）：cp Desktop 完成后、输出终判汇报回执前，必须经门禁机制照抄输出（whitebox_html_delivery spec）——判 A（桌面副本存在 + 非空壳 + 新于 evidence 归档原件）才允许声称终判报告已交付；判 B 即终判步骤未完成，按 violations 补 cp 后重扳，禁止用文字提及路径冒充交付。**
 
    必备区块（缺一视为报告不完整）：
    - **统计卡片条**：总用例 / 通过 / 失败 / 阻塞跳过 / 通过率 / Bug 总数 / 总行覆盖 / 总分支覆盖 / 总耗时
@@ -154,11 +155,11 @@ Bug：发现 x 个（P0×a P1×b P2×c），已修复 x，遗留 x
 
 **核心原则**：diff 差异来源唯一权威 = **archmap diff_impact.json**（行级快照比对 + AST 导入图影响闭包），禁止凭 git status / 人工判断圈定范围。未变更且不在影响闭包内的代码与用例**不重跑、不重设计**。
 
-**范围圈定单刀双掷开关（2026-08-16 用户裁定「加扳手进去」· 判定禁止手写）：** 进入下方执行链路前，必须先扳动 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/whitebox_scope.json --set project=<项目路径>` 照抄输出——掷点 A：脚本机械核验 diff_impact.json 存在/合法/不陈旧（computed_at 晚于最新源码变更）并输出「范围圈定照抄块」（AFFECTED_CLOSURE/SCOPE_SELECTED/SCOPE_UNTESTED_CHANGES/SCOPE_CMD），测试范围只能照抄该块，禁止手写增删；掷点 B：violations 即修复指令（先跑 archmap diff 再重扳），判 B 禁止进入执行链路；「无代码变更免测」由脚本判定输出，禁止自行宣布。背景：文本禁令（上行核心原则）长期无牙，Agent 凭 git status 圈范围导致跨文件影响闭包丢失，故判定权收归脚本（G3 软点机械化，本维度评分依据）。
+**范围圈定单刀双掷开关（2026-08-16 用户裁定「加扳手进去」· 判定禁止手写）：** 进入下方执行链路前，必须先经门禁机制机械判定照抄输出（whitebox_scope spec，脚本 `scripts/whitebox_scope_switch.py`）——掷点 A：脚本机械核验 diff_impact.json 存在/合法/不陈旧（computed_at 晚于最新源码变更）并输出「范围圈定照抄块」（AFFECTED_CLOSURE/SCOPE_SELECTED/SCOPE_UNTESTED_CHANGES/SCOPE_CMD），测试范围只能照抄该块，禁止手写增删；掷点 B：violations 即修复指令（先跑 archmap diff 再重扳），判 B 禁止进入执行链路；「无代码变更免测」由脚本判定输出，禁止自行宣布。背景：文本禁令（上行核心原则）长期无牙，Agent 凭 git status 圈范围导致跨文件影响闭包丢失，故判定权收归脚本（软点机械化）。
 
 执行链路：
 
-1. **产出 diff 影响面**：`python3 ~/.agents/skills/archmap/archmap <project> diff [修改内容备注]` → `<project>/archmap/diff_impact.json`（无基线时先跑全量 `/archmap <project>` 建立基线+快照；有变更时同步追加 `diff_history.jsonl` 并重渲染 `10_变更历史.md`）
+1. **产出 diff 影响面**：`/archmap <project> diff [修改内容备注]` → `<project>/archmap/diff_impact.json`（无基线时先跑全量 `/archmap <project>` 建立基线+快照；有变更时同步追加 `diff_history.jsonl` 并重渲染 `10_变更历史.md`）
 2. **分流判定**：
    - `stats.changed_files == 0` → 汇报「无代码变更，免测」直接结束
    - `deleted_files` 非空 → 增量可继续（归一化自动从分母剔除已删文件），验收后 sync/full 重建基线；**变更量不设阈值回退**（2026-08-12 起废弃变更占比统计），安全网由 diff_gate 兜底
@@ -182,11 +183,11 @@ Bug：发现 x 个（P0×a P1×b P2×c），已修复 x，遗留 x
 
 ## 专家槽位（expert-loop级联开槽 · 契约权威 expert-router/docs/slots-protocol.md）
 
-- **框架**：`~/.agents/skills/expert-loop/SKILL.md`（L0执行→L1问诊→L2改进→L3内化；字段契约/入库闸门/内化铁律以 slots-protocol.md 为准，此处不重复）
+- **框架**：`../expert-loop/SKILL.md`（L0执行→L1问诊→L2改进→L3内化；字段契约/入库闸门/内化铁律以 slots-protocol.md 为准，此处不重复）
 - **槽位类型**：完整槽 L1→L3
 - **挂载点**：SLOT-1: R0 基线完成、R1-R3 分层策略定稿时；SLOT-2: test-master-report.json 终判交付后
 - **落盘**：`<项目根>/.expert-loop/whitebox-coverage-expert_advice.jsonl` + `whitebox-coverage-internalizations.jsonl`（本 Agent 另有产物目录约定的从其约定）
 - **优先领域**（route.py 路由不佳时手动指定方向）：B02 自动化测试、B01 测试策略
 - **先查自己**：SLOT-1 路由前先按 problem_family 检索自身 internalizations.jsonl，命中直接自用（领域技能融入式 / 专项技能升格式），同类问题不重复问专家
 - **铁律**：裁决禁止静默忽略；accepted 必须落实改动并回链 expert_id；不归因不收尾
-- **回链落盘判定禁止手写**：必须扳 `python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/slot_attribution.json --set project=<> --set expert_id=<>` 照抄输出（落实质量留软层）。
+- **回链落盘判定禁止手写**：必须经门禁机制照抄输出（slot_attribution spec：project / expert_id 入参）（落实质量留软层）。

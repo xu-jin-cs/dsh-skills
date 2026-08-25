@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 whitebox_report_check.py — 白盒 Markdown 报告核心数字 ↔ JSON 证据一致性机械校验
-（gate-switch spec: whitebox_report_consistency.json 的 script_exit 被包装脚本，2026-08-16 D 域批量开关化）
+（门禁机制 spec: whitebox_report_consistency.json 的 script_exit 被包装脚本，2026-08-16 D 域批量开关化）
 
 对齐 whitebox-coverage/SKILL.md「终判与报告」L108：
   数据来源全部数字取自 test-master-report.json 与 evidence/tdd/coverage.json，禁止凭记忆填数。
