@@ -1,8 +1,27 @@
 # pm — PM 全流程研发调度中枢（13 节点流程 · 公开骨架版）
 
 > 公开分发骨架版。本目录为通用、自包含的 PM 全流程调度骨架，默认引擎接线为同仓库 `Xj-engine`。
-> 各节点角色能力由 `flow.yml` 中 `invoked_skills` 指向的技能 SKILL.md 定义（适配方按自身生态替换对应技能）；
+> 各节点角色由 `flow.yml` 中 `invoked_skills` 指向的技能 SKILL.md 定义（适配方按自身生态替换对应技能）；
 > 审计看板、复盘经验库等宿主/生态能力按适配方自身环境替换，不做硬绑定。
+
+## 角色集（11 个，去重后）
+
+| 角色技能 | 承接节点 |
+|---|---|
+| `senior-pm-agent` | spm / pm_prd_confirm（需求分析+PRD确认+任务拆解）|
+| `detail-product-manager` | dpm 交互设计 |
+| `ui-designer` | ui_designer |
+| `frontend-development` | fe |
+| `backend-engineer` | be |
+| `operation-deployment` | ops |
+| `test-lead` | test_lead_design / pm_quality_gate冒烟 / test_lead_full / qa验收 / process_audit合规 |
+| `whitebox-coverage` | 白盒路 |
+| `api-test-engineer` | 接口路 |
+| `ui-test-engineer` | UI 路 |
+| `retro-skill-dispatcher` | retro 收尾复盘 |
+
+> PM 自身节点（pm_bootstrap / pm_prd_confirm / pm_quality_gate）由 pm 本体执行，不占用外部角色；审批/审计/复盘辅助能力并入上述主角色。
+
 
 ## 引擎
 

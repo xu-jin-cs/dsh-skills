@@ -38,9 +38,6 @@ agents:
 # ④ engine 离线：门禁与签发不可用，必须先启动引擎（默认 xj-engine），禁止静默降级为软执行
 # ============================================================
 - name: pm_bootstrap
-  invoked_skills:
-  - sv-supervisor
-  - archmap
   display_name: 项目经理·宣布启动
   identity: '# pm_bootstrap — 项目经理（宣布启动）
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
@@ -110,8 +107,7 @@ agents:
 # ============================================================
 - name: pm_prd_confirm
   invoked_skills:
-  - task-breakdown
-  - sv-supervisor
+  - senior-pm-agent
   display_name: PM确认PRD·任务分片
   identity: '# pm_prd_confirm — PM 确认PRD + task_breakdown
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
@@ -314,8 +310,7 @@ agents:
 # ============================================================
 - name: pm_quality_gate
   invoked_skills:
-  - test-executor
-  - sv-supervisor
+  - test-lead
   display_name: PM·代码审查+自测确认+冒烟门禁
   identity: '# pm_quality_gate — PM 质量门禁（提测前）
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
@@ -423,7 +418,7 @@ agents:
 # ============================================================
 - name: qa
   invoked_skills:
-  - acceptance-manager
+  - test-lead
   display_name: 验收经理·最终判定
   identity: '# qa — 验收经理
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
@@ -456,7 +451,7 @@ agents:
 # ============================================================
 - name: process_audit
   invoked_skills:
-  - process-audit
+  - test-lead
   display_name: 流程审计·合规后置审计
   identity: '# process_audit — 独立流程审计
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
@@ -489,8 +484,6 @@ agents:
 - name: retro
   invoked_skills:
   - retro-skill-dispatcher
-  - retro-subagent
-  - sv-supervisor
   display_name: 流程C收尾·复盘归档
   identity: '# retro — 流程C 项目收尾
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
