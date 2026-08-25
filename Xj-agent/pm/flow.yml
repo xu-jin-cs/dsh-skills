@@ -356,7 +356,7 @@ agents:
     角色能力权威定义见 invoked_skills 指向的 SKILL.md。
     输入：冒烟通过的交付物 + batch_meta.json；一条消息并行下发三路全量测试，逐路串行走引擎门禁。
     白盒路双基线分流（本节点专属契约，2026-08-14 新增）：archmap/full_index.json + test-master-report.json（R0→R3 完成）均存在且本次为版本更新回归→下发 diff 增量模式（执行范围唯一依据 archmap/diff_impact.json，禁止下令全量）；无测试基线→全量 R0 基线→R1-R3 分层轮次→终判报告（首版唯一例外）。
-    收口：三路结果聚合 → Q5 语义抽审 → 引擎 POST /api/engine/et（artifact_validate 证据链 + gate_guard 交叉隔离校验块）→ test-master-report.json + defect-auto-grade.json；POST_GATE_AUDIT 抽样复核。
+    收口：三路结果聚合 → Q5 语义抽审 → 引擎 et 契约（artifact_validate 证据链 + gate_guard 交叉隔离校验块）→ test-master-report.json + defect-auto-grade.json；POST_GATE_AUDIT 抽样复核。
     轮次规则：报告必须携带 round 字段（首轮=1，回归每轮+1）；r1 快照保留，retro 前禁止覆写。
     分流：全部通过→部署；有失败→流程B（缺陷回流，失败回流不进入下游）。
     禁止：自行签发/改判引擎门禁结果；替下游写用例/执行/改代码。'
@@ -510,9 +510,9 @@ agents:
   - 变更台账已留痕（archmap/diff_history.jsonl 存在本次记录，或已注明豁免原因）
   - 验收通过后已执行 /archmap sync 回补 01~09 分析文档（豁免同上）
   - 5问法三层穿透独立输出
-  - 经验已入库（retro-skills-registry 索引+角色绑定已更新），且机械校验通过：bash ~/.agents/skills/pm/scripts/verify_experience_writeback.sh <retro_report.json路径> ~/.agents/retro-skills-registry/registry-index.json（mtime 双验证，不通过=未入库，禁止声称已沉淀）
+  - 经验已入库（经验库索引+角色绑定已更新），且机械校验通过：bash scripts/verify_experience_writeback.sh <retro_report.json路径> <经验库索引文件>（mtime 双验证，不通过=未入库，禁止声称已沉淀）
   - 补丁已分发（规则/机制/流程类补丁逐条附 reform_gate 判A留痕，纯经验沉淀类豁免）
-  - 经验空壳审计（P3 · 2026-08-15）：本次流程涉及角色的经验文档逐一过 python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/exp_doc_shell.json --set expfile=<角色经验文档路径>，判B（<200B 空壳）角色须在 retro_report.json 中点名（补齐或标注"无经验"）
+  - 经验空壳审计：本次流程涉及角色的经验文档逐一机械校验非空壳（<200B 视为空壳），空壳角色须在 retro_report.json 中点名（补齐或标注"无经验"）
   - process_audit 综合结论=通过（不通过则风险项已全部处置并在 retro_report.json 注明处置方式，2026-08-15 R4 接线）
   - sv-supervisor 复核结论=APPROVED
   permissions:
@@ -545,7 +545,7 @@ state_model:
   deliverable_reg:
     meta:
       version: 4.0.0
-    note: 交付物逐个经 POST /api/engine/et 判定（content_issue 引擎三元组签名），code==success 后再 POST /api/instances/{instance_id}/transition 落库才算状态推进；非 success 时 new_task_state=null，无 success 回执视为未推进
+    note: 交付物逐个经引擎 et 契约判定（content_issue 引擎三元组签名），code==success 后再落库状态才算状态推进；非 success 时 new_task_state=null，无 success 回执视为未推进
     security_id_format: SEC-{flow_id}-{node_id}-{sha256[:16]}
   # 状态机跃迁表（2026-08-16 盘活为规则入参，flow_kernel.py 机械校验唯一依据；
   # 16 态全表即 state_intercept.allowed_pairs 的跃迁来源，改流程改这里，不改内核）
