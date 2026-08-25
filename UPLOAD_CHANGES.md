@@ -17,7 +17,7 @@
   - `pm/scripts/engine_preflight.sh` — 引擎健康检查（默认 `xj-engine health`）
   - `pm/scripts/verify_experience_writeback.sh` — 经验固化机械校验
 - 引擎接线：默认指向同仓库 `Xj-engine`（`xj_engine.kernel.et` / CLI `xj-engine`），通过环境变量可插拔（`ENGINE_HEALTH_CMD` / `ENGINE_START_CMD` / `PM_HARNESS_SYNC_CMD`）。
-- **自包含骨架（2026-08-25 用户裁定）**：`flow.yml` 不再引用任何 `invoked_skills` 角色技能（原 18 个角色技能引用已剥离），各节点角色执行由适配方自行接线；新增 `pm/requirements.txt`（PyYAML / jsonschema）声明脚本运行依赖，使 `flow_kernel.py` 可开箱运行。
+- **保留全部角色技能引用（2026-08-25 用户裁定）**：`flow.yml` 14 节点 `invoked_skills` 角色技能引用完整保留（与真源一致），供适配按角色接线执行；新增 `pm/requirements.txt`（PyYAML / jsonschema）声明脚本运行依赖，使 `flow_kernel.py` 可开箱运行。
 - 已做兼容性清理（对齐 Xj-rules/Xj-engine 标准）：
   - 无 `/Users/xujin` 绝对路径
   - 无 `agent-harness` / `retro-skills-registry` / `learned-skills` / `gate-switch` 私有依赖与私有技能引用

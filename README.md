@@ -75,7 +75,7 @@ python3 -m py_compile $(find . -name '*.py' -not -path './.git/*')
 
 ## Xj-agent（PM 全流程工作流）
 
-通用、自包含的 **PM 全流程研发调度骨架**（13 节点：pm_bootstrap→spm→pm_prd_confirm→dpm→[ui_designer ∥ test_lead_design]→fe→be→pm_quality_gate→test_lead_full→ops→qa→process_audit→retro），默认引擎接线为同仓库 [`Xj-engine`](./Xj-engine/)（`xj_engine.kernel.et` / `xj-engine` CLI），引擎可插拔。**不捆绑具体角色技能**：各节点角色执行能力由适配方自行接线对应技能/Agent。含：
+通用、自包含的 **PM 全流程研发调度骨架**（13 节点：pm_bootstrap→spm→pm_prd_confirm→dpm→[ui_designer ∥ test_lead_design]→fe→be→pm_quality_gate→test_lead_full→ops→qa→process_audit→retro），默认引擎接线为同仓库 [`Xj-engine`](./Xj-engine/)（`xj_engine.kernel.et` / `xj-engine` CLI），引擎可插拔。各节点角色由 `flow.yml` 的 `invoked_skills` 指向对应技能（适配方按自身生态替换）。含：
 
 - `pm/SKILL.md` — 流程入口与引擎接线说明
 - `pm/flow.yml` — 13 节点编排（节点拓扑 / 分支 / 状态机 / 交付物模板）
