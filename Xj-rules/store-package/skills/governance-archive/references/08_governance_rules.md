@@ -28,7 +28,7 @@ paths: ["**/*"]
 **适用：** 所有可分发配置、Skill 文件、规则文件、文档。
 
 1. **公共包（GitHub 可分发）**：
-   - 路径范围：`~/.agents/skills/`（唯一真源，2026-08-17 声明，见 00）、`~/.agents/rules/`。
+   - 路径范围：`~/.agents/skills/`（唯一真源，2026-08-17 声明，见 00）、`~/.agents/rules/`、`~/.agents/AGENTS.md`（2026-08-29 起取代 `~/.dsh/AGENTS.md`）。
    - 禁止包含 `ctx-reader` Skill、配置、调用示例、文档、依赖声明。 【建议】
    - 默认输入必须为 `.prd.md`（需求文档），涉及 UI 自动化的项目还必须提供 `.ui-proto.json`。 【规范】
 2. **私有本地包（不上传）**：
