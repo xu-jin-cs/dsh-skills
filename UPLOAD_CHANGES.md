@@ -3,6 +3,14 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-08-29 · 治理规则同步（公共包路径范围补 `~/.agents/AGENTS.md`）
+
+### 9. 08_governance_rules.md 增量同步
+
+- 来源：本地 IDE 配置 `~/.agents/rules/08_governance_rules.md` 变更，副本同步至 `Xj-rules/store-package/skills/governance-archive/references/08_governance_rules.md`，本地文件未改动、不影响当前使用。
+- 变更内容：公共包（GitHub 可分发）路径范围新增 `~/.agents/AGENTS.md`（2026-08-29 起取代 `~/.dsh/AGENTS.md`）。
+- 兼容性剥离：保留仓库中性命名（`retro-registry` / `_retro_experiences_example.json` 示例名），未带入本地环境私有命名；私有残留扫描（`/Users/xujin`、`retro-skills-registry`、`CLAUDE.md` 等）零命中。
+
 ## 2026-08-25 · 任务完成方式定稿（撤除 hook/种入闸，仅 `todo_write status:completed`）
 
 ### 8. 任务完成 hook + 种入闸（已撤除）
