@@ -3,6 +3,22 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-08-30 · archmap 发布刷新 + 上架运营物料移出公开仓
+
+### 1. archmap 技能与真源全量同步
+
+- 来源：`~/.agents/skills/archmap`（真源）rsync 全量同步至 `archmap/`（排除 `.pytest_cache`/`__pycache__`），两目录内容一致。
+
+### 2. archmap/README.md 重写
+
+- 新版补齐：作用范围（适用/不适用边界）、五模式能力矩阵、一条命令远程安装（`curl -fsSL .../scripts/dsh-skill.sh | bash -s -- install archmap --with-deps`）、使用方式、产物清单、依赖与离线说明、下游生态对接。
+- 移除旧版本机绝对路径（`/Users/xujin/.agents/...`），发布版无私有路径残留。
+
+### 3. 商店上架文案移出公开仓
+
+- `Xj-rules/gumroad-listing-en.md`、`Xj-rules/mianbaoduo-listing-zh.md` 移至仓外 `~/dsh-skills-listing/` 本地维护（上架通用版用运营物料，不公开发布）。
+- `Xj-rules/README.md` 同步清理上架文案引用，并加注"运营物料不入本仓"说明。
+
 ## 2026-08-29 · 治理规则同步（公共包路径范围补 `~/.agents/AGENTS.md`）
 
 ### 9. 08_governance_rules.md 增量同步
