@@ -19,6 +19,11 @@
 - `Xj-rules/gumroad-listing-en.md`、`Xj-rules/mianbaoduo-listing-zh.md` 移至仓外 `~/dsh-skills-listing/` 本地维护（上架通用版用运营物料，不公开发布）。
 - `Xj-rules/README.md` 同步清理上架文案引用，并加注"运营物料不入本仓"说明。
 
+### 4. archmap 私有路径残留清零
+
+- `SKILL.md` 示例与包装脚本路径、expert-router 引用，`archmap_agent/tests/` 3 个测试文件的运行注释与 `AGENT_HARNESS_ROOT` 默认值，全部改为中性路径（`/path/to/project`、`~/.dsh/skills/archmap/`、`Path.home()` 推导）。
+- 全仓 `archmap/` 目录 `/Users/xujin` 残留扫描零命中。
+
 ## 2026-08-29 · 治理规则同步（公共包路径范围补 `~/.agents/AGENTS.md`）
 
 ### 9. 08_governance_rules.md 增量同步

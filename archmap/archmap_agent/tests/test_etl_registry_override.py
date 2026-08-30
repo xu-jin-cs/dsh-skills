@@ -7,7 +7,7 @@
 4. 通用特征目录 etl / etl_pipeline / pipelines 命中检测；
 5. 无注册表且无特征目录 → detect False（不产出 etl_rules/，行为完全不变）。
 
-运行：cd /Users/xujin/.agents/skills/archmap && python3 -m pytest archmap_agent/tests/test_etl_registry_override.py -q
+运行：cd <archmap技能目录> && python3 -m pytest archmap_agent/tests/test_etl_registry_override.py -q
 （本文件全部使用 tmp_path 假项目，不依赖 agent-harness 私有仓库。）
 """
 import json

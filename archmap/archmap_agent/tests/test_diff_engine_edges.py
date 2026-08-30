@@ -1,6 +1,6 @@
 """diff_engine v2 边界测试：多语言检测 / JS import 边 / 跨语言路由边 / 符号映射 / 黑名单 / 快照迁移。
 
-运行：cd /Users/xujin/.agents/skills/archmap && python3 -m pytest archmap_agent/tests/test_diff_engine_edges.py -q
+运行：cd <archmap技能目录> && python3 -m pytest archmap_agent/tests/test_diff_engine_edges.py -q
 """
 import json
 from pathlib import Path

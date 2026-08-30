@@ -24,7 +24,7 @@ from archmap_agent.etl_rule_registry import (CONFIG_CONTRACTS, KEYWORD_INDEX, LA
 from archmap_agent.etl_profiler import (_CONFIG_READS, _load_config_params, _resolve_src_line,
                                         _scan_config_contract, detect_etl_project, generate_etl_reports)
 
-HARNESS = Path(os.environ.get("AGENT_HARNESS_ROOT", "/Users/xujin/agent-harness"))
+HARNESS = Path(os.environ.get("AGENT_HARNESS_ROOT", str(Path.home() / "agent-harness")))
 pytestmark = pytest.mark.skipif(not HARNESS.is_dir(), reason=f"agent-harness 未找到: {HARNESS}")
 
 EXPECTED_FILES = [
