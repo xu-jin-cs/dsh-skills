@@ -35,9 +35,9 @@ archmap = **纯分析方**：只做架构测绘与影响面分析、产出分析
 示例：
 
 ```
-/archmap /Users/xujin/projects/my-app
-/archmap /Users/xujin/projects/my-app 新增用户积分系统，涉及登录接口和角色表
-/archmap /Users/xujin/projects/my-app sync
+/archmap /path/to/project
+/archmap /path/to/project 新增用户积分系统，涉及登录接口和角色表
+/archmap /path/to/project sync
 ```
 
 ## 模式路由（零参自动分流，2026-08-12 新增）
@@ -316,27 +316,27 @@ ArchMap 全量分析产出的架构图、数据链路图、时序图、资产清
 
 ## 底层调用
 
-包装脚本位置：
+包装脚本位置（安装后位于技能发现根下，默认 `~/.dsh/skills/archmap/`）：
 
 ```bash
-/Users/xujin/.agents/skills/archmap/archmap <项目路径> [需求文本]
+~/.dsh/skills/archmap/archmap <项目路径> [需求文本]
 ```
 
 等价于：
 
 ```bash
 # 全量
-python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project
+python3 ~/.dsh/skills/archmap/archmap /path/to/project
 
 # 增量
-python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用户积分系统"
+python3 ~/.dsh/skills/archmap/archmap /path/to/project "新增用户积分系统"
 ```
 
 引擎包 `archmap_agent` 已随技能自包含分发（与包装脚本同目录），无需另外安装引擎。
 
 ## 专家槽位（SLOT-1 建议槽 / SLOT-2 内化槽，2026-08-15 接入）
 
-遵循 `/Users/xujin/.agents/skills/expert-router/docs/slots-protocol.md` 协议。核心理念：**自己做的是自己的，别人教的也是自己的**。
+遵循 expert-router 技能的 `docs/slots-protocol.md` 协议。核心理念：**自己做的是自己的，别人教的也是自己的**。
 
 ### SLOT-1 · 专家建议槽（挂载点：解析触发参数后、调用引擎前）
 
@@ -344,7 +344,7 @@ python3 /Users/xujin/.agents/skills/archmap/archmap /path/to/project "新增用�
 2. 调 expert-router 挑专家小组（archmap 任务聚焦，Top-4~8 即可）：
 
    ```bash
-   python3 /Users/xujin/.agents/skills/expert-router/scripts/route.py "<路由文本>" --top 6
+   python3 ~/.agents/skills/expert-router/scripts/route.py "<路由文本>" --top 6
    ```
 
 3. 对每张建议卡逐条裁决：`accepted`（说明怎么落实：转化为校验点 / 报告关注点 / 分析维度）｜`rejected`（说明理由）｜`deferred`（说明触发条件）。**禁止静默忽略**
