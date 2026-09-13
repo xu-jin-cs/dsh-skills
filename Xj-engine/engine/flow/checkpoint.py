@@ -248,6 +248,42 @@ class SqliteCheckpointer:
         ts = datetime.utcnow().strftime("%Y%m%d")
         return os.path.join(log_dir, f"corruption_{ts}.log")
 
+    def _bridge_state_store(self, thread_id: str, snap_id: str, node_key: str, status: str) -> None:
+        """StateStore 桥接（2026-09-13，核心零改动原则：只调用公开接口，不改引擎核心）。
+
+        checkpoint 保存成功后，把断点版本流转写入 Xj-engine StateStore
+        （EngineStateVersion/History 乐观锁版本链）——断点同时进引擎状态版本体系，
+        享受并发撕裂保护与历史审计。StateStore 不可用（无引擎环境/库缺失）时
+        降级为纯 SQLite checkpoint（功能不受影响），失败不阻断保存。
+        """
+        try:
+            from engine.state_store import SqliteStateStore, StateStoreError
+            if not hasattr(self, "_xj_state_store"):
+                self._xj_state_store = SqliteStateStore()
+                self._xj_state_version = {}
+            store = self._xj_state_store
+            to_state = f"flow_snap:{snap_id}"
+            ver = self._xj_state_version.get(thread_id, 0)
+            try:
+                cur_state, cur_ver = store.get_state(thread_id)
+                ver = cur_ver
+            except Exception:
+                cur_ver = 0
+            try:
+                r = store.transition(
+                    thread_id,
+                    None if cur_ver == 0 else f"flow_snap:v{cur_ver}",
+                    to_state,
+                    operator="engine.flow.checkpoint",
+                    expected_version=cur_ver,
+                    meta={"snap_id": snap_id, "node_key": node_key, "task_status": status},
+                )
+                self._xj_state_version[thread_id] = int(r.get("version", cur_ver + 1))
+            except StateStoreError as exc:
+                logger.debug("StateStore 桥接跳过（版本冲突已保护）: %s", exc)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("StateStore 桥接降级（纯 SQLite checkpoint 继续）: %s", exc)
+
     def _log_corruption(self, thread_id: str, operation: str, error: str, state_json_hint: str = "") -> None:
         """将损坏/写入失败记录到独立错误日志（不依赖 DB，防级联失败）"""
         record = {
@@ -310,6 +346,7 @@ class SqliteCheckpointer:
                 conn.commit()
                 logger.debug("Auto snapshot saved: thread=%s, snap=%s, node=%s, title=%s, status=%s",
                              tid, snap_id, node_key, title, status)
+                self._bridge_state_store(tid, snap_id, node_key, status)
                 return snap_id
             except sqlite3.Error as e:
                 conn.rollback()
