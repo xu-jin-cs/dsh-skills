@@ -477,6 +477,36 @@ class FlowGraph:
         """是否已注册治理子图节点"""
         return "gov_input" in self.nodes
 
+    def judge_parallel_fanout(self, branch_keys: list[str]) -> dict:
+        """动态并行判定接线（2026-09-13 用户裁定：并行判定复用 dispatch_switch 闸）。
+
+        分支数 >1 时先扳 parallel-dispatch 的 dispatch_switch 机械判定
+        （母体可控时机 DIM-031——判定权在闸，执行权在引擎）；
+        闸不可用/路径缺失时降级为本地并行放行并 WARN 留痕（不阻断图执行）。
+        返回 {"verdict": "parallel"|"serial"|"degraded", "via": ..., "detail": ...}。
+        """
+        if len(branch_keys) <= 1:
+            return {"verdict": "serial", "via": "engine.flow.graph", "detail": "单分支无需并行判定"}
+        import os
+        import subprocess
+        switch = os.path.expanduser(
+            "~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py")
+        if not os.path.isfile(switch):
+            logger.warning("dispatch_switch 不在 %s——降级本地并行放行（WARN 留痕）", switch)
+            return {"verdict": "degraded", "via": "engine.flow.graph", "detail": "闸脚本缺失"}
+        try:
+            r = subprocess.run(
+                ["python3", switch, "--files", str(len(branch_keys)),
+                 "--units", str(len(branch_keys)),
+                 "--desc", f"Xj-flow 并行分支判定: {','.join(branch_keys[:8])}"],
+                capture_output=True, text=True, timeout=60)
+            verdict = "parallel" if r.returncode == 0 else "serial"
+            return {"verdict": verdict, "via": f"dispatch_switch(exit={r.returncode})",
+                    "detail": (r.stdout or r.stderr)[-300:]}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("dispatch_switch 扳动异常，降级本地并行放行: %s", exc)
+            return {"verdict": "degraded", "via": "engine.flow.graph", "detail": str(exc)}
+
     def execute_branch(
         self,
         node_key: str,

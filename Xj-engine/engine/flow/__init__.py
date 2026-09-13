@@ -1,9 +1,11 @@
 # ══════════════════════════════════════════════════════════════════════
-# 【过渡组件 · TRANSITIONAL】2026-09-13 用户裁定：
-#   本模块（langgraph FlowGraph 平迁版）暂任 Xj-Frame 图编排内核。
-#   待 Xj-engine 补足图拓扑短板（depends_on 拓扑/动态并行/checkpoint 断点）后
-#   整体替换本模块——替换点=本包全部节点/边/图执行调用方。
-#   新代码引用本包时请注意此替换预期，编排逻辑尽量走 FlowNodeMeta 声明式。
+# 【Xj-engine 图层 · ENGINE.FLOW】2026-09-13 替换落地：
+#   本层=langgraph FlowGraph 迁入 Xj-engine 的正式图编排层（用户裁定）。
+#   相对原过渡组件的新增能力：①checkpoint StateStore 桥接（断点进引擎
+#   状态版本体系，乐观锁+历史审计，核心零改动）；②动态并行接
+#   dispatch_switch 机械判定（judge_parallel_fanout）；③et_test_gates 门禁
+#   与 audit 审计为引擎内建通道。
+#   原 langgraph 过渡组件（xjframe_flow）按双跑一致性验收后退役。
 # ══════════════════════════════════════════════════════════════════════
 """
 LangGraph 状态机融合层 — 自研 agent-harness 的 LangGraph 嵌入方案。
