@@ -1,7 +1,8 @@
 #!/bin/bash
 # dsh-skills 自动发布脚本（launchd WatchPaths 触发）
 # 变更落盘后防抖 60s 批量提交推送，避免每次按键都产生 commit
-REPO="/Users/xujin/dsh-skills"
+# 仓根自定位（脚本固定位于 <repo>/scripts/ 下），无私有绝对路径
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 LOG="$HOME/Library/Logs/dsh-skills-autopublish.log"
 LOCK="/tmp/dsh-skills-autopublish.lock"
 

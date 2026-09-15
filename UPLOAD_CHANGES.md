@@ -3,6 +3,23 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-09-15 · 发布前脱敏复核（milvus 改造前冻结版上传）
+
+### 1. 全仓敏感信息复合扫描
+
+- 扫描口径：`/Users/xujin` 绝对路径、`retro-skills-registry` 私有命名、私钥/密钥值、内网 IP、私人邮箱，全仓（含 shell/py/md/yaml）grep。
+- 结论：无密钥值、无内网 IP、无私人邮箱；真实残留 3 处已全部清理（见下）。
+
+### 2. 三处真实残留清理
+
+- `archive/backup_20260820/`（12 个 archmap SKILL.md 历史 .bak，含 `/Users/xujin` 绝对路径与私有命名）——整目录移出发布仓（git 历史可溯，本地真源备份保留在仓外）。
+- `scripts/auto-publish.sh`：`REPO="/Users/xujin/dsh-skills"` 硬编码改为仓根自定位（脚本位于 `<repo>/scripts/` 下向上推导），功能等价、`bash -n` 校验通过。
+- `archmap/archmap_agent/etl_rule_registry.py`：规则 ETL-ORCH-07 的 consumers 字段私有目录名改为中性描述「retro 复盘经验入库链路（GENERATE 落库）」。
+
+### 3. 复扫结论
+
+- 清理后复合模式复扫：真实残留零命中；仅存留本台账与 README 发布检查清单中的合规规则/台账文本（与 8/25、8/30 两轮发布口径一致）。
+
 ## 2026-08-30 · archmap 发布刷新 + 上架运营物料移出公开仓
 
 ### 1. archmap 技能与真源全量同步

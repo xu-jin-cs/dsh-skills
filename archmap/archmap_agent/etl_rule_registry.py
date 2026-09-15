@@ -149,7 +149,7 @@ RULES: list[dict] = [
      "src": [{"file": "tongue_diagnosis/etl/ingest_router.py", "fn": "_node_build_chunks"}],
      "config": [], "params": {"project_type": "skill_gen", "node_type": "archive", "pulse_main": "佳脉", "coating_tag": "复盘经验", "tongue_shard": "tongue_spleen", "pulse_position": "guan", "business_category": "佳脉"},
      "depends": ["ETL-ORCH-03"],
-     "consumers": ["~/.claude/retro-skills-registry 复盘入库链路（GENERATE 落库）"],
+     "consumers": ["retro 复盘经验入库链路（GENERATE 落库）"],
      "risk_level": "中", "risk_desc": "复盘入库检索（source_type 直召回 K12 skill_gen 映射）依赖此覆写",
      "history": ["2026-08-05 三线合一加入 retro 打标块"],
      "tests": ["tests/test_tongue_etl/test_ingest_router.py"],
