@@ -12,6 +12,21 @@
 
 ![Agent 综合能力排名](images/agent_rank.png)
 
+## 一键安装
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/agent-eval/install.sh | bash
+```
+
+自动完成：下载本技能 → 安装到 `~/.agents/skills/agent-eval/`（可用 `AGENT_EVAL_TARGET` 改目标根）→ 检查/安装依赖（matplotlib、numpy）→ 语法冒烟验证。
+
+也可以 clone 整仓库后用统一安装器（支持交互选择/多技能/指定目标根）：
+
+```bash
+git clone https://github.com/xu-jin-cs/dsh-skills.git
+cd dsh-skills && ./install.sh --target ~/.agents/skills agent-eval
+```
+
 ## 快速开始
 
 ```bash
