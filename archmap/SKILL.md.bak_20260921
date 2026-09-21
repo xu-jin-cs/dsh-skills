@@ -30,7 +30,6 @@ archmap = **纯分析方**：只做架构测绘与影响面分析、产出分析
 /archmap <项目路径> <需求文本>
 /archmap <项目路径> sync
 /archmap <项目路径> diff [修改内容备注]
-/archmap <项目路径> whitebox-pack          # 模式 H：生成 whitebox_data_pack.json（白盒数据支撑包）
 ```
 
 示例：
@@ -314,49 +313,6 @@ ArchMap 全量分析产出的架构图、数据链路图、时序图、资产清
 5. 产出/刷新 `diff_impact.json`（含 `direct_dependents` 一级依赖摘要 + 全量传递闭包，机器读全闭包不占 Agent 上下文）
 
 零变更时直接返回「无变更，无需更新」。01~09 报告需要反映最新代码时跑 `sync` 或 `full`。
-
-### 模式 H：whitebox 数据支撑包（whitebox_data_pack，2026-09-21 REFORM-GATE 判A 新增）
-
-为 `whitebox-coverage` 白盒静态分析提供**模块级影响图谱数据支撑**（代码依赖 / 数据链路 / 路由供需三维聚合）。**纯文本规程模式**——本模式不由 archmap 包装脚本路由、零新增脚本、零新扫描零 LLM，由 Agent 按本规程对既有产物机械聚合产出；属**派生数据**，真源（`full_index.json` / `file_imports.json` / `file_routes.json` / `module_hashes.json`）在则恒可重建（DIM-022）。
-
-触发时机：
-
-1. 消费方（whitebox-coverage 静态分析）要求提供数据支撑包时
-2. full / sync / lite 执行后可按需补生成（基线产物已就绪即可聚合）
-
-触发：
-
-```
-/archmap <项目路径> whitebox-pack
-```
-
-生成规程（逐字段来源映射，字段契约唯一权威 = 技能内 `contracts/whitebox_data_pack.schema.json`，相对技能根；聚合逻辑以契约 `fields.*.source` 描述为准）：
-
-1. 读取 `<项目路径>/archmap/` 下四件既有产物：`full_index.json`、`file_routes.json`、`file_imports.json`、`module_hashes.json`，记录各自 mtime 入 `source_artifacts` 留痕
-2. `baseline_fingerprint`：`module_hashes.json` 全量键值对 sha1 前 12 位 + `full_index.json` mtime（版本锚点 DIM-049，供消费方机械判陈旧）
-3. 聚合 `modules[]`（模块影响图谱主体，粒度上限=api/方法级不变）：
-   - `module_id` / `module_path` / `apis` / `storages` / `dependencies` / `dependents`：full_index `modules[]` 逐模块提取（apis/storages 原样）
-   - `routes_defined` / `routes_refs`：`file_routes.json` 的 defined / refs 中路径前缀=module_path 的文件路由归并去重
-   - `files`：`file_imports.json` 键中路径前缀=module_path 的文件清单
-4. 聚合 `dependency_graph`（代码依赖维）：
-   - `module_edges`：Σ full_index `modules[].dependency_edges`，[from_module, to_module] 去重
-   - `shared_apis`：full_index.shared_apis 原样
-   - `file_edges_ref`：字符串常量 `file_imports.json`（文件级图只引用不复制，防膨胀）
-5. 聚合 `data_links[]`（数据链路维）：full_index `modules[].storages` + `shared_storages` 倒排 → `name`（存储名）/ `producer_modules`（含写特征模块，无写读特征时=全部引用模块）/ `consumer_modules`（引用该存储的模块）
-6. 聚合 `route_supply`（路由供需维，跨语言路由边，ui/api 消费的桥）：`defined` = file_routes.defined 按模块归并 {route: module_id}；`refs` = file_routes.refs 按模块归并 {route: [module_id]}
-7. 聚合 `frontend_index`（前端文件与路由引用倒排，ui-test-engineer 消费预备）：`frontend_files` = file_imports 键中扩展名 .vue/.ts/.tsx/.js/.jsx 的文件；`route_to_frontend` = file_routes.refs 中前端文件→路由倒排 {route: [file]}
-8. `report_refs`：人类可读报告指针——`architecture` = `02_架构图.md`、`data_link` = `03_数据链路图.md`、`dep_matrix` = `08_依赖矩阵.md`
-9. 固定字段：`pack_version` = "1.0.0"、`project` = 项目根绝对路径、`generated_at` = ISO8601 生成时间；`truncated` / `warnings` 按下述护栏填记
-
-产物：`<项目路径>/archmap/whitebox_data_pack.json`。
-
-护栏（必须执行）：
-
-- **原子写（DIM-032）**：先写临时文件再 `os.replace` 原子落盘，禁止半截产物
-- **截断闸（DIM-050）**：`modules` 超过 200 时截断，置 `truncated=true` 并追加 WARN 级 `warnings`
-- **陈旧判（DIM-049）**：`baseline_fingerprint` 与消费方重算的当前 `module_hashes.json` 指纹不一致即陈旧，消费方机械可判并要求重生成；archmap 不主动追踪消费方判定
-
-与既有模式关系：本模式为**纯增量**能力，不改动 full / lite / sync / diff 任何既有行为与产物结构，仅消费既有产物做机械聚合。
 
 ## 底层调用
 
