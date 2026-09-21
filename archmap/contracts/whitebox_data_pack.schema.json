@@ -1,0 +1,76 @@
+{
+  "contract": "whitebox_data_pack",
+  "version": "1.0.0",
+  "owner": "archmap",
+  "producer": "archmap 模式 H（whitebox 数据支撑包，2026-09-21 REFORM-GATE 判A）",
+  "output_path": "<project>/archmap/whitebox_data_pack.json",
+  "consumers": ["whitebox-coverage"],
+  "design_intent": "模块级影响图谱数据支撑：代码依赖/数据链路/路由供需三维聚合，全部由 archmap 既有产物（full_index.json/file_imports.json/file_routes.json/module_hashes.json）机械聚合，零新扫描零 LLM；属派生数据，真源在则恒可重建（DIM-022）",
+  "fields": {
+    "pack_version": {"type": "string", "required": true, "value": "1.0.0", "desc": "契约版本锚点"},
+    "project": {"type": "string", "required": true, "desc": "项目根绝对路径（人类可辨父标识，DIM-009）"},
+    "generated_at": {"type": "string", "required": true, "desc": "ISO8601 生成时间"},
+    "baseline_fingerprint": {"type": "string", "required": true, "desc": "版本锚点（DIM-049）：module_hashes.json 全量键值对 sha1 前 12 位 + full_index.json mtime；消费方据此机械判陈旧", "source": "module_hashes.json + full_index.json mtime"},
+    "source_artifacts": {"type": "object", "required": true, "desc": "来源产物 mtime 留痕", "keys": ["full_index.json", "file_imports.json", "file_routes.json", "module_hashes.json"]},
+    "modules": {
+      "type": "list[object]",
+      "required": true,
+      "desc": "模块影响图谱主体（模块粒度上限=api/方法级，archmap 粒度裁定不变）",
+      "source": "full_index.json modules[] 逐模块提取 + file_routes.json 按模块归并 + file_imports.json 前缀归文件",
+      "item_fields": {
+        "module_id": "full_index modules[].module_id",
+        "module_path": "modules[].module_path",
+        "apis": "modules[].apis 原样",
+        "storages": "modules[].storages 原样",
+        "dependencies": "modules[].dependencies（本模块依赖的模块）",
+        "dependents": "modules[].dependents（依赖本模块的模块）",
+        "routes_defined": "file_routes.defined 中路径前缀=module_path 的文件路由归并去重",
+        "routes_refs": "file_routes.refs 中路径前缀=module_path 的文件路由归并去重",
+        "files": "file_imports.json 键中路径前缀=module_path 的文件清单"
+      }
+    },
+    "dependency_graph": {
+      "type": "object",
+      "required": true,
+      "desc": "代码依赖维",
+      "keys": {
+        "module_edges": "Σ full_index modules[].dependency_edges，[from_module,to_module] 去重",
+        "shared_apis": "full_index.shared_apis 原样",
+        "file_edges_ref": "字符串常量 file_imports.json（文件级图只引用不复制，防膨胀）"
+      }
+    },
+    "data_links": {
+      "type": "list[object]",
+      "required": true,
+      "desc": "数据链路维：存储资产 ↔ 生产/消费模块",
+      "source": "full_index modules[].storages + shared_storages 倒排",
+      "item_fields": {"name": "存储名", "producer_modules": "含写特征模块（无写读特征时=全部引用模块）", "consumer_modules": "引用该存储的模块"}
+    },
+    "route_supply": {
+      "type": "object",
+      "required": true,
+      "desc": "路由供需维（跨语言路由边，ui/api 消费的桥）",
+      "keys": {
+        "defined": "file_routes.defined 按模块归并 {route: module_id}",
+        "refs": "file_routes.refs 按模块归并 {route: [module_id]}"
+      }
+    },
+    "frontend_index": {
+      "type": "object",
+      "required": true,
+      "desc": "前端文件与路由引用倒排（ui-test-engineer 消费预备）",
+      "keys": {
+        "frontend_files": "file_imports 键中扩展名 .vue/.ts/.tsx/.js/.jsx 的文件",
+        "route_to_frontend": "file_routes.refs 中前端文件→路由倒排 {route: [file]}"
+      }
+    },
+    "report_refs": {"type": "object", "required": true, "desc": "人类可读报告指针", "keys": {"architecture": "02_架构图.md", "data_link": "03_数据链路图.md", "dep_matrix": "08_依赖矩阵.md"}},
+    "truncated": {"type": "bool", "required": true, "desc": "生成量护栏标记（DIM-050）"},
+    "warnings": {"type": "list[string]", "required": true, "desc": "INFO/WARN/BLOCK 分级（DIM-052）"}
+  },
+  "guards": {
+    "atomic_write": "tmp+os.replace 原子写（DIM-032）",
+    "truncation": "modules>200 截断 truncated=true + WARN（DIM-050）",
+    "staleness": "baseline_fingerprint 与当前 module_hashes.json 重算值不一致即陈旧，消费方机械可判并要求重生成（DIM-049）"
+  }
+}
