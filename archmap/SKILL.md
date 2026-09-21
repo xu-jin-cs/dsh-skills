@@ -339,10 +339,10 @@ ArchMap 全量分析产出的架构图、数据链路图、时序图、资产清
    - `routes_defined` / `routes_refs`：`file_routes.json` 的 defined / refs 中路径前缀=module_path 的文件路由归并去重
    - `files`：`file_imports.json` 键中路径前缀=module_path 的文件清单
 4. 聚合 `dependency_graph`（代码依赖维）：
-   - `module_edges`：Σ full_index `modules[].dependency_edges`，[from_module, to_module] 去重
+   - `module_edges`：Σ full_index `modules[].dependency_edges`，[from_module, to_module] 去重（**来源形态注记**，2026-09-21 目标反推验证实证：full_index 中 `dependency_edges` 条目为 `{"target": <模块>, "kind": "import"}` 对象，from_module=条目属主模块，聚合须重塑为二元组，禁止照抄对象入包）
    - `shared_apis`：full_index.shared_apis 原样
    - `file_edges_ref`：字符串常量 `file_imports.json`（文件级图只引用不复制，防膨胀）
-5. 聚合 `data_links[]`（数据链路维）：full_index `modules[].storages` + `shared_storages` 倒排 → `name`（存储名）/ `producer_modules`（含写特征模块，无写读特征时=全部引用模块）/ `consumer_modules`（引用该存储的模块）
+5. 聚合 `data_links[]`（数据链路维）：full_index `modules[].storages` + `shared_storages` 倒排 → `name`（存储名）/ `producer_modules`（含写特征模块，无写读特征时=全部引用模块）/ `consumer_modules`（引用该存储的模块）（**来源形态注记**：storages 条目为 `{"name": ..., "shared": bool}` 对象，倒排取 `.name`；pack 中 apis/storages 原样保留即可）
 6. 聚合 `route_supply`（路由供需维，跨语言路由边，ui/api 消费的桥）：`defined` = file_routes.defined 按模块归并 {route: module_id}；`refs` = file_routes.refs 按模块归并 {route: [module_id]}
 7. 聚合 `frontend_index`（前端文件与路由引用倒排，ui-test-engineer 消费预备）：`frontend_files` = file_imports 键中扩展名 .vue/.ts/.tsx/.js/.jsx 的文件；`route_to_frontend` = file_routes.refs 中前端文件→路由倒排 {route: [file]}
 8. `report_refs`：人类可读报告指针——`architecture` = `02_架构图.md`、`data_link` = `03_数据链路图.md`、`dep_matrix` = `08_依赖矩阵.md`
