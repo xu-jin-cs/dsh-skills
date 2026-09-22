@@ -391,6 +391,19 @@ ArchMap 全量分析产出的架构图、数据链路图、时序图、资产清
 - **陈旧判**：`module_hashes.json` 指纹与当前源码不一致时，提示先执行 `sync` 再执行 `api-doc`
 - **零接口项目**：输出空骨架文档 + INFO 留痕，不报错
 
+#### diff 联动标注（2026-09-22 用户裁定）
+
+diff / lite 模式产出或刷新 `diff_impact.json` 后，对模式 I 双产物做联动标注，全程纯文本规程、零新增脚本：
+
+1. **联动触发**：取 `diff_impact.json` 的变更文件集合（`changed_files` + `deleted_files`），与 `file_routes.json` 的路由→文件映射相交，得出**涉及路由集合**；零交集 → 零标注、不重出文档，仅 INFO 留痕「本次变更不涉及路由，跳过联动标注」。
+2. **标注语义（三类）**：
+   - **新增 API**（当前源码有、文档基线条目无）→ 该条目标注「新增（工作期 YYYY-MM-DD）」；
+   - **删除 API**（文档基线条目有、当前源码无）→ 条目保留并标注墓碑「已删除（工作期 YYYY-MM-DD）」，**禁止直接抹除**（审计留痕；墓碑在下次 full 重建时统一清理，防标注无限累积）；
+   - **路由签名变更**（method/url 不变但路径参数、所属文件变化）→ 标注「变更（工作期 YYYY-MM-DD）」。
+3. **索引字段扩展**：`api_doc_index.json` 条目同步增加 `status` 字段（`new` / `removed` / `changed` / `unchanged`）与 `last_seen_fingerprint`（该条目对应模块的 `module_hashes.json` 指纹），供消费方（api-test-engineer）机械区分增量条目与墓碑条目。
+4. **联动重出**：标注完成后重跑 api-doc 聚合规程，重出双产物（人类文档 + 机器索引），标注写进文档对应条目行首；重出沿用模式 I 全部护栏（原子写 / 截断闸 / 陈旧判）。
+5. **定位不变声明**：本联动仍为纯文本规程，零新增脚本、零新扫描、零 LLM，仅消费既有产物（`diff_impact.json` / `file_routes.json` / `module_hashes.json`）做机械比对与聚合。
+
 与既有模式关系：本模式为**纯增量**能力，不改动 full / lite / sync / diff / whitebox-pack 任何既有行为与产物结构，仅消费既有产物做机械聚合。
 
 ## 底层调用
