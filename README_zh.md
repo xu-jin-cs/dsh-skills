@@ -20,8 +20,8 @@
 ## 60 秒快速跑通
 
 ```bash
-# 1. 一键安装仓库技能（符号链接进技能发现根，DSH watcher 热加载即生效）
-curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval archmap --with-deps
+# 1. 一键安装全部四个技能（符号链接进技能发现根；商店包技能自动识别通道）
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 
 # 2. 给本机全部技能打分 → 雷达图 + 排名榜 + HTML 报告
 python3 ~/.dsh/dsh-skills/agent-eval/scripts/eval_agents.py --mode generic
@@ -41,7 +41,7 @@ python3 Xj-rules/store-package/skills/gate-switch/scripts/gate_switch.py --spec 
 | [`gate-switch`](./Xj-rules/store-package/skills/gate-switch/SKILL.md) 📦 | 通用概率执行门禁骨架（实证族 L2 引擎，零依赖）。治 LLM 三类顽疾：该做的没做 / 缺斤短两 / 伪造声称——把"声称 X 已满足"写成 spec JSON，引擎逐项机械核验，A 放行 / B 阻断列违例。7 检查原语 + 通用门禁实例 + L3 框架闸模板。新场景 = 写新 spec，引擎零改动。 |
 | [`parallel-dispatch`](./Xj-rules/store-package/skills/parallel-dispatch/SKILL.md) 📦 | 并行调度与子分身机制总规则。≥2 个无依赖子任务默认主动并行 spawn；规模轴（轻分身 / S 档 / M·L 档引擎级）× 数量轴（subagent 扇出 / 分组 / workflow 编排）双维决策；场景自动匹配表、最小探针、母体合并校验，全部经 `dispatch_switch` 闸机械判定留痕。 |
 
-> 📦 `gate-switch` 与 `parallel-dispatch` 的全量源码随 [`Xj-rules` 商店包](./Xj-rules/store-package/skills/)分发（57 技能，另有 `store-package-full.zip` / `-lite.zip`）；把技能目录拷进你的发现根即可用。`agent-eval` 与 `archmap` 为仓库顶层跟踪技能，可用上方一键命令安装。
+> 📦 `gate-switch` 与 `parallel-dispatch` 的全量源码随 [`Xj-rules` 商店包](./Xj-rules/store-package/skills/)分发（57 技能，另有 `store-package-full.zip` / `-lite.zip`）。安装器已自动识别该通道，`install --all` 同样覆盖二者；`agent-eval` 与 `archmap` 为仓库顶层跟踪技能。
 
 ## Xj-agent（PM 全流程工作流）
 
@@ -78,9 +78,19 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 # 安装指定技能（默认符号链接进 ~/.dsh/skills，DSH watcher 热加载即生效）
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install archmap
 
-# 仓库跟踪技能 + 自动装依赖（gate-switch / parallel-dispatch 随 Xj-rules 商店包分发）
-curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval archmap --with-deps
+# 全部技能 + 自动装依赖（gate-switch / parallel-dispatch 自动走商店包通道）
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 ```
+
+**免 clone 一键下载**
+
+```bash
+# 只装 agent-eval（独立安装器：只下载该技能、装依赖、冒烟自检）
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/agent-eval/install.sh | bash
+```
+
+- 57 技能商店包：[`store-package-full.zip`](./Xj-rules/store-package-full.zip) / [`store-package-lite.zip`](./Xj-rules/store-package-lite.zip)
+- 整仓 zip：GitHub 页面 **Code → Download ZIP**，或 `curl -fsSLO https://github.com/xu-jin-cs/dsh-skills/archive/refs/heads/main.zip`
 
 首次运行会自动把发布仓浅克隆到 `~/.dsh/dsh-skills`（可用 `DSH_SKILLS_HOME` 改位置），之后所有命令在本地仓执行。
 
@@ -91,7 +101,7 @@ git clone https://github.com/xu-jin-cs/dsh-skills.git
 cd dsh-skills
 ./install.sh                      # 交互式选择（列清单，输序号即可）
 ./install.sh archmap              # 安装指定技能
-./install.sh agent-eval archmap   # 一次装多个
+./install.sh --all                # 全部安装（商店包技能自动识别通道）
 ./install.sh --copy --target ~/.claude/skills agent-eval   # 拷贝模式 + 换发现根
 ```
 

@@ -3,6 +3,27 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-09-23（下午·二轮）· 一键下载/一键安装全技能不断链
+
+### 1. 安装器商店包回退（dsh-skill.sh）
+
+- 用户要求：上传的每个项目都要支持一键下载、一键安装。实测断点：08-25 裁定后 gate-switch/parallel-dispatch 全量源码不在 git 跟踪内，全新 clone 上 `install --all` 对二者报「仓库内缺少目录」。
+- 修复：`scripts/dsh-skill.sh` 的 `install_one` 增加回退源——顶层目录缺失时回退 `Xj-rules/store-package/skills/<name>`，输出标注分发通道。`install.sh` 为透传外壳，无需改动。
+- 计划闸：单路径豁免留痕 `~/.agents/logs/plan_select/EXEMPTION-20260923_oneclick_install.md`（重新公开源码违反 08-25 裁定、新建 zip 通道与既有商店包重复，唯一合规路径=安装器回退）；并行闸掷 B 串行备案。
+
+### 2. agent-eval 依赖声明补齐
+
+- 新增 `agent-eval/requirements.txt`（matplotlib/numpy），接通 `--with-deps` 一键装依赖（skills.json 既有 deps 声明现在有实体文件对齐）。agent-eval 另有独立 `install.sh` 支持免 clone curl 直装。
+
+### 3. 实证记录
+
+- 本地全新 clone：`install --all --with-deps` 四技能全成（两顶层 + 两商店包通道），`doctor` 全绿，交互式 `install.sh` 选 a 全量安装通过。
+- push 后 GitHub 端到端终验：`curl|bash` 自举（DSH_SKILLS_HOME 隔离）+ agent-eval 独立 install.sh（AGENT_EVAL_TARGET 隔离）。
+
+### 4. README 双语
+
+- 恢复 `install --all --with-deps` 口径（商店包通道自动识别）；新增「免 clone 一键下载」段（agent-eval 独立安装器 / 商店包 zip / 整仓 zip）。
+
 ## 2026-09-23 · 三技能归位复核 + 发布前最小脱敏 + README 双语地基
 
 ### 1. agent-eval 符号链接归位（publish_sync_check P1 FAIL 修复）

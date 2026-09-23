@@ -20,8 +20,8 @@ The lead hook is **[agent-eval](#skills) — agent/skills capability evaluation*
 ## 60-second quickstart
 
 ```bash
-# 1. Install the repo skills (symlinks into your skill discovery root)
-curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval archmap --with-deps
+# 1. Install all four skills (symlinks into your skill discovery root; packaged skills auto-resolve)
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 
 # 2. Score all your local agent skills → radar + leaderboard + HTML report
 python3 ~/.dsh/dsh-skills/agent-eval/scripts/eval_agents.py --mode generic
@@ -41,7 +41,7 @@ Sample outputs are checked in: [radar](agent-eval/images/agent_radar.png) · [le
 | [`gate-switch`](./Xj-rules/store-package/skills/gate-switch/SKILL.md) 📦 | Universal probabilistic-execution gate skeleton (evidence-family engine, zero deps). Cures three LLM chronic failures: skipped steps / half-done checklists / fabricated "done" claims. Write what must be true as a spec JSON; the engine mechanically verifies each check — A passes, B blocks with the violations as the reason. 7 frozen check primitives (`file_exists` / `json_field` / `glob_count` / `grep_count` / `mtime_after` / `script_exit` …) + ready-made gate instances + an L3 framework-gate template. New scenario = new spec, zero engine changes. |
 | [`parallel-dispatch`](./Xj-rules/store-package/skills/parallel-dispatch/SKILL.md) 📦 | Master rules for parallel dispatch & sub-agent clones. ≥2 independent subtasks trigger parallel fan-out by default; two-axis decision (scale: light clone / task-breakdown / engine-level × count: subagent / grouped / workflow); scene auto-matching, minimal probe, merge checkpoints — all through the audited `dispatch_switch` SPDT gate (A/B verdict, no handwritten decisions). |
 
-> 📦 `gate-switch` and `parallel-dispatch` full sources ship inside the [`Xj-rules` store package](./Xj-rules/store-package/skills/) (57 skills, also as `store-package-full.zip` / `-lite.zip`); copy the skill folder into your discovery root to use. `agent-eval` and `archmap` are tracked top-level repo skills, installable via the one-liner above.
+> 📦 `gate-switch` and `parallel-dispatch` full sources ship inside the [`Xj-rules` store package](./Xj-rules/store-package/skills/) (57 skills, also as `store-package-full.zip` / `-lite.zip`). The installer auto-resolves this channel, so `install --all` covers them too; `agent-eval` and `archmap` are tracked top-level repo skills.
 
 ## Xj-agent — full-lifecycle PM workflow
 
@@ -78,9 +78,19 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 # Install one skill (symlinked into ~/.dsh/skills, hot-reloaded by DSH's watcher)
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install archmap
 
-# Repo-tracked skills + dependencies (gate-switch / parallel-dispatch ship in the Xj-rules store package)
-curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval archmap --with-deps
+# Everything + dependencies (gate-switch / parallel-dispatch auto-resolve to the store-package channel)
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 ```
+
+**One-click downloads without a clone**
+
+```bash
+# Just agent-eval (standalone installer: downloads only that skill, wires deps, smoke-tests)
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/agent-eval/install.sh | bash
+```
+
+- 57-skill store pack: [`store-package-full.zip`](./Xj-rules/store-package-full.zip) / [`store-package-lite.zip`](./Xj-rules/store-package-lite.zip)
+- Whole repo zip: GitHub **Code → Download ZIP**, or `curl -fsSLO https://github.com/xu-jin-cs/dsh-skills/archive/refs/heads/main.zip`
 
 First run shallow-clones this repo to `~/.dsh/dsh-skills` (override with `DSH_SKILLS_HOME`); all later commands run locally.
 
@@ -90,8 +100,8 @@ First run shallow-clones this repo to `~/.dsh/dsh-skills` (override with `DSH_SK
 git clone https://github.com/xu-jin-cs/dsh-skills.git
 cd dsh-skills
 ./install.sh                # interactive picker
-./install.sh archmap        # a specific repo skill
-./install.sh agent-eval archmap   # several at once
+./install.sh archmap        # a specific skill
+./install.sh --all          # everything (packaged skills auto-resolve)
 ```
 
 CLI subcommands (`scripts/dsh-skill.sh`): `list` / `install` (`--copy`, `--target DIR`, `--with-deps`) / `uninstall` / `update` / `doctor`.
