@@ -18,10 +18,10 @@
       ],
       "match_mode": "keyword",
       "must_pull": [
-        "bash /Users/xujin/.agents/retro-skills-registry/scripts/retro-match.sh \"<用户输入>\"",
+        "bash ~/.agents/retro-skills-registry/scripts/retro-match.sh \"<用户输入>\"",
         "task_launch_gate.py --action clear --session-id=$DSH_SESSION_ID（复盘清空本会话任务版）",
         "复盘结构四部分（2026-08-31 用户终裁：复盘不走闸——着陆闸族摘除；engine_literal_scan/rules_inflation_guard/direct_db_write_gate 改挂代码交付期；retro_generate_token 废止归档 abolished_retro_generate_token_20260831）",
-        "复盘末步必须执行 GENERATE 模式（python3 /Users/xujin/.agents/retro-skills-registry/scripts/dispatcher_generate.py；无经验输入则声明跳过留痕）（2026-09-13 用户裁定：手动复盘路径与流程C Step 2.5 末步统一，REFORM 块 retro_generate_mount_20260913.md）"
+        "复盘末步必须执行 GENERATE 模式（python3 ~/.agents/retro-skills-registry/scripts/dispatcher_generate.py；无经验输入则声明跳过留痕）（2026-09-13 用户裁定：手动复盘路径与流程C Step 2.5 末步统一，REFORM 块 retro_generate_mount_20260913.md）"
       ],
       "source_row": "复盘触发词命中（复盘/验收通过/项目完成/收尾/结项/完工/交付/关闭）"
     },
