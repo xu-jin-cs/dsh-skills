@@ -20,7 +20,7 @@ The lead hook is **[agent-eval](#skills) — agent/skills capability evaluation*
 ## 60-second quickstart
 
 ```bash
-# 1. Install all four skills (symlinks into your skill discovery root; packaged skills auto-resolve)
+# 1. Install all four skills (symlinks into your skill discovery root)
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 
 # 2. Score all your local agent skills → radar + leaderboard + HTML report
@@ -78,7 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 # Install one skill (symlinked into ~/.dsh/skills, hot-reloaded by DSH's watcher)
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install archmap
 
-# Everything + dependencies (gate-switch / parallel-dispatch auto-resolve to the store-package channel)
+# Everything + dependencies
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 ```
 
@@ -101,7 +101,7 @@ git clone https://github.com/xu-jin-cs/dsh-skills.git
 cd dsh-skills
 ./install.sh                # interactive picker
 ./install.sh archmap        # a specific skill
-./install.sh --all          # everything (packaged skills auto-resolve)
+./install.sh --all          # everything
 ```
 
 CLI subcommands (`scripts/dsh-skill.sh`): `list` / `install` (`--copy`, `--target DIR`, `--with-deps`) / `uninstall` / `update` / `doctor`.
