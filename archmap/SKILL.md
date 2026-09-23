@@ -370,7 +370,7 @@ ArchMap 全量分析产出的架构图、数据链路图、时序图、资产清
 /archmap <项目路径> api-doc
 ```
 
-聚合规程（逐字段来源映射；接口条目格式唯一权威 = `/Users/xujin/.agents/rules/spec/rest-api-doc-standard.txt`）：
+聚合规程（逐字段来源映射；接口条目格式唯一权威 = `~/.agents/rules/spec/rest-api-doc-standard.txt`）：
 
 1. 读取 `<项目路径>/archmap/` 下三件既有产物：`full_index.json`（`modules[].apis`、路由资产）、`file_routes.json`（`defined` / `refs` 路由→文件映射）、`module_hashes.json`（取 mtime + 内容指纹作版本锚点留痕）
 2. 文档标题 = **产品名**，取项目根目录名
