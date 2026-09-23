@@ -3,6 +3,32 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-09-23 · 三技能归位复核 + 发布前最小脱敏 + README 双语地基
+
+### 1. agent-eval 符号链接归位（publish_sync_check P1 FAIL 修复）
+
+- 铁律口径：对外分发技能真源在 `~/dsh-skills` 仓库，`~/.dsh/skills` 与 `~/.agents/skills` 两个用户根必须是指向仓库的符号链接，禁止双副本漂移。
+- 实测：`~/.agents/skills/agent-eval` 为实目录、`~/.dsh/skills/agent-eval` 缺失（archmap/parallel-dispatch 既为符号链接，天然同步）。`diff -rq` 实证实目录与仓库内容全等后，实目录归档至 `~/.agents/archive/agent-eval_20260923`（铁律7 白名单通道），双根各建 symlink 指向仓库。
+- 归位后 publish_sync_check P1 通过（P2/P3 随本轮 push 复核）。
+
+### 2. 发布前最小脱敏（BLOCK 级违例清零）
+
+- 背景：09-19 agent-eval 入仓、09-21/22 archmap SKILL.md 更新经 auto-publish 直接外发，跳过脱敏复核，公开仓残留本机绝对路径。
+- 清理：`archmap/SKILL.md`（rest-api-doc-standard 引用）与 `parallel-dispatch/SKILL.md`（start.sh 提示）两处 `/Users/xujin` 绝对路径改为 `~` 家目录相对形式（本机功能等价）；`archmap/SKILL.md.bak_20260921` 移出仓库至仓外（对齐 09-15 备份不入仓口径）。
+- 复扫：三技能目录（agent-eval/archmap/parallel-dispatch）`/Users/xujin` 零命中；密钥/内网 IP/私人邮箱零命中。
+- WARN 级残留保留：`agent-harness`/`retro-skills-registry` 命名引用（home 相对路径，符号链接单副本下中性化会改写本地运行文档与脚本），沿用 08-30 历史口径保留，是否另起全量中性化轮次交用户裁定。另发现 `gate-switch/specs/*.json` 与 `council/` 存历史路径残留（非本轮三技能范围），一并留记录待裁定。
+
+### 3. README 双语地基（推广前置，对齐推广自检清单）
+
+- README.md 重构为英文主版、新建 README_zh.md 中文版，顶部互链。
+- 第一屏：badges（License / last-commit / Python 3.10+ / SKILL.md 格式）+ 一句话定位 + agent-eval 雷达图演示 + 60 秒快速跑通三命令。
+- 差异化卖点显性化：agent-eval 能力评估拎为主推钩子，Xj-engine 作配套；技能清单表补齐 agent-eval（09-19 入仓后表格漏更）；移除 README 内 launchd 运维内部备注。
+- 新增 `examples/`：`gate-switch/demo_spec.json`（核验本仓 README 的演示闸，已实测判 A）+ agent-eval / archmap / parallel-dispatch 演示各带预期输出。
+
+### 4. 闸链留痕
+
+- 计划闸：POOL-20260923_dsh_publish_promote.md（plan_select chosen=方案一 S=7）；推演：deep_analysis/dsh_skills_publish_promote-20260923.md；收益闸/逻辑闸：reform_blocks、logic_blocks/dsh_skills_sync_promote_20260923.md 均判 A；并行闸：dispatch_switch 掷 B 串行（同一 git 仓库产物耦合，理由已备案）。
+
 ## 2026-09-15 · 发布前脱敏复核（milvus 改造前冻结版上传）
 
 ### 1. 全仓敏感信息复合扫描
