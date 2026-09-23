@@ -29,6 +29,13 @@
 
 - 计划闸：POOL-20260923_dsh_publish_promote.md（plan_select chosen=方案一 S=7）；推演：deep_analysis/dsh_skills_publish_promote-20260923.md；收益闸/逻辑闸：reform_blocks、logic_blocks/dsh_skills_sync_promote_20260923.md 均判 A；并行闸：dispatch_switch 掷 B 串行（同一 git 仓库产物耦合，理由已备案）。
 
+### 5. 补：README/examples 与 2026-08-25 打包裁定对齐
+
+- 发现：`.gitignore` 第 11-12 行（`/gate-switch/`、`/parallel-dispatch/`）+ commit 80b4693 证实 08-25 用户裁定——两技能全量源码停止公开跟踪，统一经 `Xj-rules/store-package` 分发；但 README 技能表链接、quickstart 命令、`install --all` 文案仍指向仓内不存在路径（08-25 遗留不一致）。
+- 修复：README 双语技能表两技能链接改指 `Xj-rules/store-package/skills/` 并加 📦 分发说明；quickstart 第 1/3 命令改为可跑通形式（`install agent-eval archmap --with-deps`；demo 闸走包内 `gate_switch.py`，已实测判 A）；examples/ 两个演示路径同步修正。
+- 更正本节第 2 条措辞：`gate-switch/specs/*.json` 与 `council/` 的 `/Users/xujin` 命中位于**未被 git 跟踪的本地真源**（.gitignore 拦截），从未公开，非公开仓残留。
+- 遗留建议（交用户裁定，未动）：`skills.json` 清单含两个未跟踪技能，`install --all` 在全新 clone 上对二者报「仓库内缺少目录」；建议安装器增加包内路径回退或清单标注分发通道。
+
 ## 2026-09-15 · 发布前脱敏复核（milvus 改造前冻结版上传）
 
 ### 1. 全仓敏感信息复合扫描
