@@ -1,0 +1,9 @@
+{
+  "desc": "direct_db_write_gate 存量违规登记（只减不增，2026-08-31 问题闸判A）：3 个直连 ingest 脚本已于 2026-08-31 任务15 拆解销项（适配逻辑迁入 RetroETLEngine external_impls，脚本壳删除）；pdf_storage/pdf_tiering 为用户 2026-08-31 裁定保留的 PDF 独立通道（'pdf上传通道可以使用，而且有单独的解析分配逻辑'），非违规但形态命中，登记豁免。新增条目即闸通胀，禁止。",
+  "legacy_allowlist": [
+    "/backend/api/pdf_storage.py",
+    "/backend/services/pdf_tiering.py",
+    "/tongue_diagnosis/scripts/migrate_to_v2_0.py",
+    "/knowledge_base/etl/etl_pipeline.py"
+  ]
+}

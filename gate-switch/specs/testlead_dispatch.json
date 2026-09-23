@@ -1,0 +1,7 @@
+{
+  "gate": "testlead_dispatch",
+  "desc": "test-lead 下发门禁（2026-08-25 用户裁定默认收敛为 api 路）：默认只判 api 路——A=api 路就绪可下发；B=api 路缺口补齐后重扳。whitebox/ui 为'用户显式开启路'：仅用户明确要求白盒/UI 测试时才判对应路齐备（缺路搁置该路，其余已启用路正常，violations 写入收口缺口原因）；用户未开启的 whitebox/ui 路静默、不视为缺口。",
+  "checks": [
+    {"type": "file_exists", "path": "{project}/.api-schema.json", "label": "api 路（默认路）：.api-schema.json"}
+  ]
+}

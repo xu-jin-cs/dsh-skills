@@ -1,0 +1,24 @@
+{
+ "gate": "session_compliance_audit",
+ "desc": "会话合规审计合并闸（2026-08-19 复盘闸族瘦身，REFORM-GATE 判 A 落地）：原 first_push_audit（F1-F8 该扳未扳，F8=查询闸漏扳后查 2026-08-20 任务书 D2）+ safety_cmd_audit（S1-S3 危险命令/固定区块/打断）+ todo_resend_audit（T1 todo 重发）三闸证据源同源（均扫会话 jsonl），合并为一次扳动出全维报告。A=三维全合规；B=violations 即各维违例清单，按原口径记复盘第三部分/第一部分。挂接点：复盘第四部分着陆检查前。",
+ "checks": [
+  {
+   "type": "script_exit",
+   "cmd": "python3 ~/.agents/skills/gate-switch/scripts/gate_first_push_audit.py",
+   "expect": 0,
+   "label": "F 维·第一推动八查（扇出/方案/复盘/真扇出/engine/retro-match/起手式/查询闸）"
+  },
+  {
+   "type": "script_exit",
+   "cmd": "python3 ~/.agents/skills/gate-switch/scripts/safety_cmd_guard.py",
+   "expect": 0,
+   "label": "S 维·安全三查（危险命令/固定区块/打断弱审计）"
+  },
+  {
+   "type": "script_exit",
+   "cmd": "python3 ~/.agents/skills/gate-switch/scripts/gate_todo_resend_audit.py",
+   "expect": 0,
+   "label": "T 维·todo 重发+状态变迁同步逐 turn 核验（T1 新回合重发 / T2 状态变迁即重发，2026-08-22 REFORM-GATE 判A）"
+  }
+ ]
+}

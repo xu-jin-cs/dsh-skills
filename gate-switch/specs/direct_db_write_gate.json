@@ -1,0 +1,17 @@
+{
+  "gate": "direct_db_write_gate",
+  "desc": "直连写库静态扫描闸（2026-08-31 问题闸判A，块文件 ~/.agents/logs/reform_blocks/problem_gate_direct_db_write_20260831.md）：规则 38「RetroETLEngine 唯一写点，禁止绕开引擎直连 LanceDB/SQLite/BM25 写数据」从文本升级为机械扫描。扫描 agent-harness 工程代码，白名单外命中直连写库原语（lancedb.connect/VectorStore(/lancedb_manager/LanceStore/write_overwrite 等）即判 B。豁免：engine 本体、knowledge_base/vector_store/ 管理器层、direct_db_write_allowlist.json 存量登记（3 个直连 ingest 脚本，任务15拆解中，只减不增）。挂点：复盘着陆闸族 + 交付期。",
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "~/.agents/skills/gate-switch/data/direct_db_write_allowlist.json",
+      "label": "存量豁免登记文件存在"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 ~/.agents/skills/gate-switch/scripts/direct_db_write_scan.py",
+      "expect": 0,
+      "label": "白名单外直连写库零命中（engine/管理器层/存量登记除外）"
+    }
+  ]
+}

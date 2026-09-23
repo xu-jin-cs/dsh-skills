@@ -1,0 +1,18 @@
+{
+  "gate": "council_reverify",
+  "desc": "review-council 对抗复核留痕机械闸（2026-08-16 D 域批量开关化，SKILL.md 06 对抗复核节 L82；2026-08-16 GENERALIZE-GATE 泛化克隆勾稽闸）：报告交付前必须存在本轮复核 verdict 留痕 reverify-*.json ≥1 份、history.jsonl 已建，且最新一份 reverify-*.json 通过勾稽校验（verdict 条目带 claim 字段即按冻结四枚举 coverage_verdict/severity_rating/evidence_sufficiency/boundary_omission 强校验，不带不罚）。治「声称复核过但无留痕」+「复核结论可枚举部分自相矛盾」。判 A 才许交付报告；判 B = 先补对抗复核/修复勾稽矛盾后重扳。复核结论的语义合理性本体仍属软层抽查。",
+  "checks": [
+    {"type": "glob_count",
+     "pattern": "{project}/council/reverify-*.json",
+     "op": "min",
+     "value": 1,
+     "label": "对抗复核 verdict 留痕 ≥1"},
+    {"type": "file_exists",
+     "path": "{project}/council/history.jsonl",
+     "label": "体检历史 history.jsonl 存在"},
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/review-council/scripts/council_reverify_claims_check.py --reverify-glob \"{project}/council/reverify-*.json\" --project \"{project}\"",
+     "expect": 0,
+     "label": "最新 reverify-*.json 勾稽校验（claim 四枚举，claim 可选出现即强校验）"}
+  ]
+}

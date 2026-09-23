@@ -1,0 +1,10 @@
+{
+  "gate": "rework_budget_contract",
+  "desc": "rework_budget.py 四态契约回归闸（CLAIM-GATE 族复用件，2026-09-10 落地，REFORM-GATE 判A）：回炉计数闸改动后「声称已修复/已完成」的实证闸。script_exit 调 rework_budget_contract_check.py 做 10 条契约路径回归——stamp 1/2/3 判A标注轮次、跨成员跨驳回点同 key 累计、第 4 次回炉判 B 出【卡死裁定】、卡死后幂等禁复活、status 查账、pass 销账与重开、空 key CLARIFY、裸跑 argparse，并保证默认账本零污染。全路径过→A 放行声称；任一不符→B 阻断，violations 即失败明细。判定禁止手写，模型只照抄输出。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/gate-switch/scripts/rework_budget_contract_check.py",
+     "expect": 0,
+     "label": "rework_budget.py 四态契约全路径回归（10 条路径机械断言 + 默认账本零污染）"}
+  ]
+}

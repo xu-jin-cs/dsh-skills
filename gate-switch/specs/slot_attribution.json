@@ -1,0 +1,10 @@
+{
+  "gate": "slot_attribution",
+  "desc": "SLOT 回链闸（2026-08-16 B 域开关化）：治「裁决铁律不归因不收尾被静默跳过」的提示词执行失效。机械核验 <project>/.expert-loop/ 或 archmap 风格 <project>/archmap/ 下的 internalizations.jsonl / expert_advice.jsonl 中存在含该 expert_id 的回链条目：有→A 放行收尾；无→B 阻断，violations 即修复指令（accepted 必须落实改动并回链 expert_id 落盘）。软层边界：本闸只判回链落盘存在性（L2 可判），落实质量为纯语义判断留软层人工校验。判定禁止手写，模型只照抄输出。用法：--set project=<项目根> --set expert_id=<如 A04-E13>。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/expert-loop/scripts/slot_attribution_check.py --project \"{project}\" --expert-id \"{expert_id}\"",
+     "expect": 0,
+     "label": "SLOT 回链落盘核验（internalizations/expert_advice 含 expert_id 条目）"}
+  ]
+}

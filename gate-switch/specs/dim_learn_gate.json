@@ -1,0 +1,35 @@
+{
+  "gate": "dim_learn_gate",
+  "desc": "维度学习闸（2026-09-01 用户亲自设计四决策拍板，块文件 ~/.agents/logs/reform_blocks/dim_learn_gate_20260901.md）：治'模型方案近视症'。F1 强制学习——用户方案被采纳并进改造链时，块文件必须含「用户维度学习总结」节：用户想到了什么模型没考虑到，≥1条或显式豁免声明（防形式主义空转，豁免也须给理由），缺节判B。F2 强制复用由 plan_select.py dimension_refill 节承载（缺节 VIOLATION）。注册表 data/learned_dimensions.json。粒度标准：抽掉本案还成立吗——'τc=0.657'不是维度，'验收标准看分布重叠余量而非单点指标'是维度。",
+  "checks": [
+    {
+      "type": "grep_count",
+      "pattern": "用户维度学习总结",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "F1:用户维度学习总结节必填（用户方案被采纳时，总结用户想到了什么模型没考虑到）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "维度",
+      "path": "{block}",
+      "op": "min",
+      "value": 2,
+      "label": "F1:维度条目存在（≥1条学习维度，或豁免声明中说明无遗漏维度的理由）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "豁免|没考虑到|未考虑到",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "F1:学习或豁免二选一声明（有学习写'没考虑到'，无学习写'豁免'+理由，防空转）"
+    },
+    {
+      "type": "file_exists",
+      "path": "~/.agents/skills/gate-switch/data/learned_dimensions.json",
+      "label": "F1/F2:维度注册表存在"
+    }
+  ]
+}

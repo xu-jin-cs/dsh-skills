@@ -1,0 +1,8 @@
+{
+  "gate": "field_consumer",
+  "desc": "字段修改前验证消费闸（01_workflows.md 规则26，2026-08-16 开关化）：修改任何配置/规则/YAML 字段前，必须实证 {field_name} 在 {engine_path}（引擎代码路径，支持 glob）内被真实读取（grep 命中 ≥1）。治「凭字段名猜含义改装饰性配置，事后发现引擎根本不读」（ppt flow.yml parallel/execution_mode 事故）。A=消费方存在，允许改并须阅读消费代码上下文；B=0 命中=装饰性配置，修改不会改变行为，跳过或仅做文档同步。注意 field_name 按正则解释，含特殊字符须转义。",
+  "checks": [
+    {"type": "grep_count", "pattern": "{field_name}", "path": "{engine_path}", "op": "min", "value": 1,
+     "label": "字段消费实证（{field_name} 在引擎代码内命中 ≥1）"}
+  ]
+}

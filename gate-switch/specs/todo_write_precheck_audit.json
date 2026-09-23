@@ -1,0 +1,12 @@
+{
+ "gate": "todo_write_precheck_audit",
+ "desc": "todo_write 前置附身闸事后审计闸（2026-08-25）：每次调用 todo_write 前应先跑 todo_write_precheck.py（起始端扫描可能要触发的闸）。本闸核验 precheck 留痕在案——todo_write 用过但无 precheck 留痕 = 漏跑（B，进复盘）。挂点：复盘着陆（与 first_push_audit 同级）+ 人工随时可扳。",
+ "checks": [
+  {
+   "type": "script_exit",
+   "cmd": "python3 ~/.agents/skills/gate-switch/scripts/check_todo_precheck.py",
+   "expect": 0,
+   "label": "todo_write 前置附身闸触发留痕核验（漏跑必查）"
+  }
+ ]
+}

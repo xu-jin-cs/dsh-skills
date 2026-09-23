@@ -1,0 +1,36 @@
+{
+  "gate": "stat_citation",
+  "desc": "统计引用口径闸（2026-08-20 问题闸+REFORM-GATE 双判A，挂 CLAIM-GATE 族）——任何统计结论（命中率/通过率/比率/占比）出口前机械三查+时效一查。用法：--set doc=<统计结论文档> --set source=<数据真源文件>。A=文档标注真源+声明统计区间+真源带 pipeline_hash 版本戳+文档不旧于真源；B=缺标注/真源无版本戳/真源已更新但文档未重算（跨口径混算嫌疑），violations 即理由。语义层（指标性质判断是否误读）留软层+复盘后查。真源版本戳由各写入方自盖（首例 retro-match.sh E1，2026-08-20）。",
+  "checks": [
+    {
+      "type": "grep_count",
+      "pattern": "真源|数据源|来源",
+      "path": "{doc}",
+      "op": "min",
+      "value": 1,
+      "label": "①统计结论标注数据真源"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "区间|截至|起止|窗口",
+      "path": "{doc}",
+      "op": "min",
+      "value": 1,
+      "label": "②统计区间声明（跨断代点引用必须显式标注）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "pipeline_hash",
+      "path": "{source}",
+      "op": "min",
+      "value": 1,
+      "label": "③真源带 pipeline_hash 口径版本戳（无戳=口径不可断代）"
+    },
+    {
+      "type": "script_exit",
+      "cmd": "python3 -c \"import os,sys; sys.exit(2 if os.path.getmtime('{source}')>os.path.getmtime('{doc}') else 0)\"",
+      "expect": 0,
+      "label": "④时效：真源新于文档=统计基于旧口径（须重算后出口）"
+    }
+  ]
+}

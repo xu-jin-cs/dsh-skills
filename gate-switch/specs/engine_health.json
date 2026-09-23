@@ -1,0 +1,10 @@
+{
+  "gate": "engine_health",
+  "desc": "引擎探针闸（2026-08-16 B 域开关化）：治「引擎离线时 Agent 静默降级为软执行」的提示词执行失效。机械核验 engine 在线：script_exit 包装既有 engine_preflight.sh（在线体检→离线自动拉起→复检，exit 0=可用）。全过→A 放行流程启动；不过→B 阻断，violations 即修复指令（人工检查引擎，流程冻结）。判定禁止手写，模型只照抄输出。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "bash ~/.agents/skills/pm/scripts/engine_preflight.sh",
+     "expect": 0,
+     "label": "engine 在线体检（离线自动拉起+复检）"}
+  ]
+}

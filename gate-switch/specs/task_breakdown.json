@@ -1,0 +1,7 @@
+{
+  "gate": "task_breakdown",
+  "desc": "任务拆解输出机械门禁（2026-08-15 裁定）：八字段齐全且非空 / size∈{S,M,L,XL} / deps 数组 / deps 引用闭环无悬空 / 无自引用 / 无环 / id 唯一。全过→A 放行移交；任一违例→B 打回，violations 即修复清单。规模定档合理性仍属 sv-supervisor 软层终裁。",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/task-breakdown/scripts/breakdown_check.py --tasks {tasks}", "expect": 0, "label": "拆解 schema 完整性 + deps 引用闭环"}
+  ]
+}

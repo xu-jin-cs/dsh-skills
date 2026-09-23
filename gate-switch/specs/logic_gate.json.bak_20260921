@@ -1,0 +1,127 @@
+{
+  "gate": "logic_gate",
+  "directive": "四力强制逻辑闸机（2026-09-08 用户终裁执行规范落地）：强制必经关卡，无跳过无省略。固定顺序 分析→正反对比→闭环→决断，四力缺一直接驳回；铁律：缺力驳回/单向推演驳回/闭环缺监测纠偏复盘驳回/决断无取舍无红线驳回；终审附加机制配给+判官外置双校验。规则真源 ~/.agents/rules/16_logic_gate.md。",
+  "desc": "四力强制逻辑闸机（2026-09-08 强制执行规范版）：所有方案/计划/判断/结论/策略/设计类输出必须完整走完 分析→对比→闭环→决断 四力全链路，零例外。机械层校验：力零专家咨询节在场+无否决权边界+路由留痕（2026-09-15 增补）+四力齐全+反向推演词+取舍止损词+监测环节+机制配给+判官外置+结论举证计数。规则真源 16_logic_gate.md（强制执行规范七节+四力定义+十六手法库）。",
+  "checks": [
+    {
+      "type": "grep_count",
+      "pattern": "力零 咨询",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "力零 专家咨询闸（2026-09-15 增补：方向判定+8位专家缺失向清单，只喂力一）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "无否决权",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "力零边界一：专家只有输入权无否决权（出口判定归力一结论、拍板归力四）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "route\\.py",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "力零举证：expert-router route.py --top 8 路由留痕（禁经 review-council）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "\\[LOGIC-GATE\\]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "块标识：[LOGIC-GATE] 头"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "力一 分析",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "力一 分析闸（强制拆透：结构/因果/主次/病根）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "力二 对比",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "力二 正反对比闸（强制双向推演）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "力三 闭环",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "力三 闭环闸（目标→执行→监测→纠偏→复盘）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "力四 决断",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "力四 决断闸（选定/放弃/止损线）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "不做|不执行|缺位|反向|不走的路|放弃",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "铁律2：力二必须含反向路径推演（不做/缺位/反向），单向=驳回"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "放弃|止损|红线",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "铁律4：力四必须有取舍（放弃项）与止损红线"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "监测|监控|验收|验证",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "铁律3：力三必须含监测/验收环节"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "机制配给",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "终审1：机制配给校验（防臃肿）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "判官外置|自评",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "终审2：判官外置校验（防自证）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "结论[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 4,
+      "label": "每力必须给结论，≥4 处"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "举证[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 4,
+      "label": "每力必须举证，≥4 处"
+    }
+  ]
+}

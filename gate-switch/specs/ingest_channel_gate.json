@@ -1,0 +1,47 @@
+{
+  "gate": "ingest_channel_gate",
+  "directive": "入库动作执行前必扳（2026-08-31 P0 裁定，问题闸+REFORM-GATE 双判A，块文件 ~/.agents/logs/reform_blocks/ingest_cli_ban_20260831.md）：把本次入库动作声明块存为文件过本门禁。A=通道在白名单且归属参数显式；B=CLI 通道/裸默认归属/缺声明。附身点位：todo_write_precheck 入库类任务提醒。",
+  "desc": "入库通道闸：校验入库动作声明块——①通道 ∈ 白名单（upload_general=backend upload general 通道 / mq_consumer=MQ 投递）；②显式归属（tenant、biz_tag 非裸默认）；③黑名单机械拦截（etl_batch_ingest.py、general_etl.py ingest/run/retry-failed、CLI 直跑、tenant=default 裸值）。",
+  "checks": [
+    {
+      "type": "grep_count",
+      "pattern": "upload_general|mq_consumer",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "①通道白名单：声明块必须明确通道为 upload_general 或 mq_consumer"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "etl_batch_ingest|general_etl\\.py|CLI 直跑|cli_ingest",
+      "path": "{block}",
+      "op": "max",
+      "value": 0,
+      "label": "②黑名单：禁止 CLI 入库脚本/直跑（2026-08-31 P0 禁用）"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "tenant[=：:]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "③归属参数：必须显式声明 tenant"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "tenant[=：:]\\s*default\\b",
+      "path": "{block}",
+      "op": "max",
+      "value": 0,
+      "label": "④归属参数：tenant 禁止裸默认值 default"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "biz_tag[=：:]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "⑤归属参数：必须显式声明 biz_tag"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "gate": "whitebox_scope",
+  "desc": "白盒增量回归范围圈定单刀双掷开关（2026-08-16 用户裁定「加扳手进去」）：治「Agent 不读 diff_impact 直接凭 git status 圈范围」的提示词执行失效。机械核验 {project}/archmap/diff_impact.json 存在+mode=diff+computed_at 不旧于最新源码变更，全过→A 并机械输出权威范围照抄块（selected/untested_changes/SCOPE_CMD）；任一不过→B 且 violations 即修复指令（先跑 archmap diff）；零变更→A 免测。判定权从模型移交脚本，模型只照抄。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/whitebox-coverage/scripts/whitebox_scope_switch.py --project \"{project}\"",
+     "expect": 0,
+     "label": "白盒增量范围圈定（diff_impact 存在+合法+新鲜，照抄块输出）"}
+  ]
+}

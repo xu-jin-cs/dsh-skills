@@ -1,0 +1,7 @@
+{
+  "gate": "loop_fuse",
+  "desc": "规则34 复刻循环熔断：3轮未过强制升级/同源补丁>2次熔断/超轮上限熔断，计数留痕 jsonl 不凭记忆",
+  "checks": [
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/gate-switch/scripts/loop_fuse_switch.py --loop-id \"{loop_id}\" --event \"{event}\" --patch-sig \"{patch_sig}\"", "expect": 0, "label": "循环计数未触熔断"}
+  ]
+}

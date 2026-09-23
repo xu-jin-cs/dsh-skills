@@ -1,0 +1,11 @@
+{
+  "gate": "ppt_shots_seq",
+  "desc": "ppt-direct 节点0 模板逆向解析输入闸（2026-08-17 C域开关化，SKILL.md 输入校验规则 L159）：page_*.png 数量 ≥3 且序号连续无断档；不足或断档判 B，violations 即缺失页码清单，记录缺失页码并提示用户，禁止凭空编造页面。数量下限用 glob_count 原语机考，连续性逻辑收进 ppt_shots_check.py 用 script_exit 包装。扳动时机：节点0 输入校验时（截图目录就位后、大模型视觉逐页识别前）。用法：--set shots=<模板截图目录>",
+  "checks": [
+    {"type": "glob_count", "pattern": "{shots}/page_*.png", "op": "min", "value": 3, "label": "模板截图页数≥3"},
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/ppt-direct/scripts/ppt_shots_check.py --shots-dir \"{shots}\"",
+     "expect": 0,
+     "label": "page_*.png 序号连续无断档（缺失页码即 B 档理由）"}
+  ]
+}
