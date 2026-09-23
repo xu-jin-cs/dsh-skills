@@ -3,6 +3,36 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-09-23（下午·三轮）· gate-switch / parallel-dispatch 全量源码回归公开 + 脱敏 + 协议更换
+
+### 1. 裁定变更
+
+- 2026-09-23 用户裁定：两技能全量源码直接公开（**覆盖 08-25 打包分发裁定**）。`.gitignore` 撤销整目录屏蔽，改为仅排除本地运行态：`gate-switch/runtime/`（会话判定状态）、`gate-switch/council/`（会诊报告）、`gate-switch/data/calibration_examples.json`（校准例句含真实会话引用）——非源码且有泄露面，不入库。
+
+### 2. 脱敏口径（功能保留型）
+
+- **引擎补丁**：`gate_switch.py` 检查原语的路径类字段统一 `os.path.expanduser`（`~` 展开），`script_exit` 的 cmd 执行前 `os.path.expandvars`（`$HOME` 展开，规避 shell 单引号不展开问题）——对既有绝对路径幂等，规格从此可跨机移植。
+- **字段级改写**：34 个 spec 共 86 行——path/desc/label 字段 `/Users/xujin`→`~`，cmd 字段→`$HOME`；grep 探测签名 pattern（其职责即检出 `/Users/` 泄露）**不动**。
+- **脚本**：`direct_db_write_scan.py` ROOT、`plan_select_contract_check.py` REAL_POOL 改 `expanduser`（前者支持 `AGENT_HARNESS_ROOT` 环境变量覆盖）；`trigger_signals.json` 2 处注入指令同步改写。
+- **复扫**：两目录可入库文件 `/Users/xujin` 零命中；密钥/邮箱/内网 IP 零命中（127.0.0.1 本机引擎地址属文档级保留）。
+
+### 3. 回归实证
+
+- 107 个 spec 改写前后判定逐一对比 **diff 为零**；reform_gate（script_exit+expandvars 通道）与 demo 闸复跑判 A；`py_compile` 全通过；trigger_signal_scan 注入指令复跑正常。
+
+### 4. 协议更换：MIT → CC BY-NC-SA 4.0
+
+- 用户裁定口径：**禁止商用；二次开发与转载必须署名作者（xu-jin-cs）；衍生品保持同协议**。CC BY-NC-SA 4.0 三条全中（OSI 系协议无禁商用条款，故不选 MIT/Apache）。
+- `LICENSE` 全文替换为官方 legalcode；README 双语 License 节改写为三条白话义务 + badge 换静态 CC BY-NC-SA。
+
+### 5. 功能用途标注
+
+- 新建 `gate-switch/README.md`、`parallel-dispatch/README.md`（功能/用途/快速开始/协议四点式）；主 README 双语技能表链接改回顶层目录（两技能回归一等公民），quickstart 与 examples 演示路径同步改回顶层。
+
+### 6. 留痕
+
+- 计划闸单路径豁免：`EXEMPTION-20260923b_publish_full_source.md`（原样公开=违门禁、盲 sed=毁探测签名且闸失效、继续打包=被本轮裁定否决，唯一合规路径=引擎补丁+字段级脱敏）；并行闸掷 B 串行备案。
+
 ## 2026-09-23（下午·二轮）· 一键下载/一键安装全技能不断链
 
 ### 1. 安装器商店包回退（dsh-skill.sh）
