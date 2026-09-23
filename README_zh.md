@@ -1,6 +1,6 @@
 # dsh-skills
 
-[![License: MIT](https://img.shields.io/github/license/xu-jin-cs/dsh-skills)](LICENSE)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-orange)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/xu-jin-cs/dsh-skills)](https://github.com/xu-jin-cs/dsh-skills/commits/main)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![Format: SKILL.md](https://img.shields.io/badge/format-SKILL.md-brightgreen)](README.md#compatibility)
@@ -20,14 +20,14 @@
 ## 60 秒快速跑通
 
 ```bash
-# 1. 一键安装全部四个技能（符号链接进技能发现根；商店包技能自动识别通道）
+# 1. 一键安装全部四个技能（符号链接进技能发现根，DSH watcher 热加载即生效）
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 
 # 2. 给本机全部技能打分 → 雷达图 + 排名榜 + HTML 报告
 python3 ~/.dsh/dsh-skills/agent-eval/scripts/eval_agents.py --mode generic
 
 # 3. 看机械门禁核验本仓自己的 README（在仓库根目录执行）
-python3 Xj-rules/store-package/skills/gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md
+python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md
 ```
 
 真实产出样本已随仓附上：[雷达图](agent-eval/images/agent_radar.png) · [排名榜](agent-eval/images/agent_rank.png) · 更多见 [examples/](examples/)。
@@ -38,10 +38,10 @@ python3 Xj-rules/store-package/skills/gate-switch/scripts/gate_switch.py --spec 
 |------|------|
 | [`agent-eval`](./agent-eval/SKILL.md) | Agent/Skills 专项能力评估与可视化报告：只读采集 → 9 维评分（冻结基线+信号确定性加减）→ 强弱三级 → 综合排名 → 雷达图+排名榜+HTML 报告。 |
 | [`archmap`](./archmap/SKILL.md) | 架构测绘 Agent（含 Python 引擎，自包含分发）。零参自动分流 full/lite；需求文本→精准影响面（文件/函数/路由级）；`diff` 零 LLM 行级影响面 + 导入闭包 + 测试选择 + 变更台账；`sync` 增量同步基线并刷新 01~09 报告。以确定性计算替代全库通读，显著节约 tokens。 |
-| [`gate-switch`](./Xj-rules/store-package/skills/gate-switch/SKILL.md) 📦 | 通用概率执行门禁骨架（实证族 L2 引擎，零依赖）。治 LLM 三类顽疾：该做的没做 / 缺斤短两 / 伪造声称——把"声称 X 已满足"写成 spec JSON，引擎逐项机械核验，A 放行 / B 阻断列违例。7 检查原语 + 通用门禁实例 + L3 框架闸模板。新场景 = 写新 spec，引擎零改动。 |
-| [`parallel-dispatch`](./Xj-rules/store-package/skills/parallel-dispatch/SKILL.md) 📦 | 并行调度与子分身机制总规则。≥2 个无依赖子任务默认主动并行 spawn；规模轴（轻分身 / S 档 / M·L 档引擎级）× 数量轴（subagent 扇出 / 分组 / workflow 编排）双维决策；场景自动匹配表、最小探针、母体合并校验，全部经 `dispatch_switch` 闸机械判定留痕。 |
+| [`gate-switch`](./gate-switch/SKILL.md) | 通用概率执行门禁骨架（实证族 L2 引擎，零依赖）。治 LLM 三类顽疾：该做的没做 / 缺斤短两 / 伪造声称——把"声称 X 已满足"写成 spec JSON，引擎逐项机械核验，A 放行 / B 阻断列违例。7 检查原语 + 通用门禁实例 + L3 框架闸模板。新场景 = 写新 spec，引擎零改动。 |
+| [`parallel-dispatch`](./parallel-dispatch/SKILL.md) | 并行调度与子分身机制总规则。≥2 个无依赖子任务默认主动并行 spawn；规模轴（轻分身 / S 档 / M·L 档引擎级）× 数量轴（subagent 扇出 / 分组 / workflow 编排）双维决策；场景自动匹配表、最小探针、母体合并校验，全部经 `dispatch_switch` 闸机械判定留痕。 |
 
-> 📦 `gate-switch` 与 `parallel-dispatch` 的全量源码随 [`Xj-rules` 商店包](./Xj-rules/store-package/skills/)分发（57 技能，另有 `store-package-full.zip` / `-lite.zip`）。安装器已自动识别该通道，`install --all` 同样覆盖二者；`agent-eval` 与 `archmap` 为仓库顶层跟踪技能。
+> 四个技能均为仓库顶层目录，clone 即用或 `install --all` 一键安装。另有 57 技能合集包在 [`Xj-rules/store-package`](./Xj-rules/store-package/skills/)（`store-package-full.zip` / `-lite.zip`）。
 
 ## Xj-agent（PM 全流程工作流）
 
@@ -78,7 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 # 安装指定技能（默认符号链接进 ~/.dsh/skills，DSH watcher 热加载即生效）
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install archmap
 
-# 全部技能 + 自动装依赖（gate-switch / parallel-dispatch 自动走商店包通道）
+# 全部技能 + 自动装依赖
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 ```
 
@@ -101,7 +101,7 @@ git clone https://github.com/xu-jin-cs/dsh-skills.git
 cd dsh-skills
 ./install.sh                      # 交互式选择（列清单，输序号即可）
 ./install.sh archmap              # 安装指定技能
-./install.sh --all                # 全部安装（商店包技能自动识别通道）
+./install.sh --all                # 全部安装
 ./install.sh --copy --target ~/.claude/skills agent-eval   # 拷贝模式 + 换发现根
 ```
 
@@ -176,4 +176,8 @@ python3 -m py_compile $(find . -name '*.py' -not -path './.git/*')
 
 ## License
 
-[MIT](LICENSE)
+[CC BY-NC-SA 4.0](LICENSE)（署名—非商业性使用—相同方式共享）：
+
+- **禁止商用**：本仓库及其衍生品不得用于商业目的。
+- **署名作者**：二次开发、转载、分发（全部或部分）必须标注作者 **xu-jin-cs**（https://github.com/xu-jin-cs/dsh-skills）。
+- **相同方式共享**：二次开发产物须以同一协议发布。

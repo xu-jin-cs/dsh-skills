@@ -1,6 +1,6 @@
 # dsh-skills
 
-[![License: MIT](https://img.shields.io/github/license/xu-jin-cs/dsh-skills)](LICENSE)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-orange)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/xu-jin-cs/dsh-skills)](https://github.com/xu-jin-cs/dsh-skills/commits/main)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![Format: SKILL.md](https://img.shields.io/badge/format-SKILL.md-brightgreen)](#compatibility)
@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 python3 ~/.dsh/dsh-skills/agent-eval/scripts/eval_agents.py --mode generic
 
 # 3. Watch a mechanical gate verify this repo's own README (run from the repo root)
-python3 Xj-rules/store-package/skills/gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md
+python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md
 ```
 
 Sample outputs are checked in: [radar](agent-eval/images/agent_radar.png) · [leaderboard](agent-eval/images/agent_rank.png) · more in [examples/](examples/).
@@ -38,10 +38,10 @@ Sample outputs are checked in: [radar](agent-eval/images/agent_radar.png) · [le
 |-------|--------------|
 | [`agent-eval`](./agent-eval/SKILL.md) | Agent/skills capability evaluation & visual reports. Read-only collection → 9-dimension frozen-baseline scoring → three-tier strength/weakness verdicts with action guidance → overall ranking → dark-tech radar chart + rank board + HTML report. |
 | [`archmap`](./archmap/SKILL.md) | Architecture cartography agent (self-contained Python engine). Zero-arg full/lite auto-routing; requirement text → precise impact surface (file/function/route level); `diff` mode: zero-LLM line-level impact + import closure + test selection + change ledger; `sync` incremental baseline refresh. Deterministic computation instead of full-repo reading — massive token savings. |
-| [`gate-switch`](./Xj-rules/store-package/skills/gate-switch/SKILL.md) 📦 | Universal probabilistic-execution gate skeleton (evidence-family engine, zero deps). Cures three LLM chronic failures: skipped steps / half-done checklists / fabricated "done" claims. Write what must be true as a spec JSON; the engine mechanically verifies each check — A passes, B blocks with the violations as the reason. 7 frozen check primitives (`file_exists` / `json_field` / `glob_count` / `grep_count` / `mtime_after` / `script_exit` …) + ready-made gate instances + an L3 framework-gate template. New scenario = new spec, zero engine changes. |
-| [`parallel-dispatch`](./Xj-rules/store-package/skills/parallel-dispatch/SKILL.md) 📦 | Master rules for parallel dispatch & sub-agent clones. ≥2 independent subtasks trigger parallel fan-out by default; two-axis decision (scale: light clone / task-breakdown / engine-level × count: subagent / grouped / workflow); scene auto-matching, minimal probe, merge checkpoints — all through the audited `dispatch_switch` SPDT gate (A/B verdict, no handwritten decisions). |
+| [`gate-switch`](./gate-switch/SKILL.md) | Universal probabilistic-execution gate skeleton (evidence-family engine, zero deps). Cures three LLM chronic failures: skipped steps / half-done checklists / fabricated "done" claims. Write what must be true as a spec JSON; the engine mechanically verifies each check — A passes, B blocks with the violations as the reason. 7 frozen check primitives (`file_exists` / `json_field` / `glob_count` / `grep_count` / `mtime_after` / `script_exit` …) + ready-made gate instances + an L3 framework-gate template. New scenario = new spec, zero engine changes. |
+| [`parallel-dispatch`](./parallel-dispatch/SKILL.md) | Master rules for parallel dispatch & sub-agent clones. ≥2 independent subtasks trigger parallel fan-out by default; two-axis decision (scale: light clone / task-breakdown / engine-level × count: subagent / grouped / workflow); scene auto-matching, minimal probe, merge checkpoints — all through the audited `dispatch_switch` SPDT gate (A/B verdict, no handwritten decisions). |
 
-> 📦 `gate-switch` and `parallel-dispatch` full sources ship inside the [`Xj-rules` store package](./Xj-rules/store-package/skills/) (57 skills, also as `store-package-full.zip` / `-lite.zip`). The installer auto-resolves this channel, so `install --all` covers them too; `agent-eval` and `archmap` are tracked top-level repo skills.
+> All four skills are first-class top-level directories — clone and use, or `install --all`. A 57-skill bundle also ships in [`Xj-rules/store-package`](./Xj-rules/store-package/skills/) (`store-package-full.zip` / `-lite.zip`).
 
 ## Xj-agent — full-lifecycle PM workflow
 
@@ -122,4 +122,8 @@ Every release passes a pre-publish compatibility checklist (portable paths / zer
 
 ## License
 
-[MIT](LICENSE)
+[CC BY-NC-SA 4.0](LICENSE) — Attribution–NonCommercial–ShareAlike.
+
+- **No commercial use.** You may not use this repo, or derivatives of it, for commercial purposes.
+- **Attribution required.** If you modify, extend, or redistribute it (in whole or part), you must credit the author: **xu-jin-cs** (https://github.com/xu-jin-cs/dsh-skills).
+- **ShareAlike.** Derivatives must be released under the same license.
