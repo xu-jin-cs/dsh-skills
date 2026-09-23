@@ -78,8 +78,8 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 # 安装指定技能（默认符号链接进 ~/.dsh/skills，DSH watcher 热加载即生效）
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install archmap
 
-# 安装全部技能 + 自动装依赖
-curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
+# 仓库跟踪技能 + 自动装依赖（gate-switch / parallel-dispatch 随 Xj-rules 商店包分发）
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval archmap --with-deps
 ```
 
 首次运行会自动把发布仓浅克隆到 `~/.dsh/dsh-skills`（可用 `DSH_SKILLS_HOME` 改位置），之后所有命令在本地仓执行。
@@ -91,7 +91,7 @@ git clone https://github.com/xu-jin-cs/dsh-skills.git
 cd dsh-skills
 ./install.sh                      # 交互式选择（列清单，输序号即可）
 ./install.sh archmap              # 安装指定技能
-./install.sh --all                # 全部安装
+./install.sh agent-eval archmap   # 一次装多个
 ./install.sh --copy --target ~/.claude/skills agent-eval   # 拷贝模式 + 换发现根
 ```
 

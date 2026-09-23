@@ -78,8 +78,8 @@ curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/d
 # Install one skill (symlinked into ~/.dsh/skills, hot-reloaded by DSH's watcher)
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install archmap
 
-# Everything + dependencies
-curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
+# Repo-tracked skills + dependencies (gate-switch / parallel-dispatch ship in the Xj-rules store package)
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval archmap --with-deps
 ```
 
 First run shallow-clones this repo to `~/.dsh/dsh-skills` (override with `DSH_SKILLS_HOME`); all later commands run locally.
@@ -90,8 +90,8 @@ First run shallow-clones this repo to `~/.dsh/dsh-skills` (override with `DSH_SK
 git clone https://github.com/xu-jin-cs/dsh-skills.git
 cd dsh-skills
 ./install.sh                # interactive picker
-./install.sh archmap        # a specific skill
-./install.sh --all          # everything
+./install.sh archmap        # a specific repo skill
+./install.sh agent-eval archmap   # several at once
 ```
 
 CLI subcommands (`scripts/dsh-skill.sh`): `list` / `install` (`--copy`, `--target DIR`, `--with-deps`) / `uninstall` / `update` / `doctor`.

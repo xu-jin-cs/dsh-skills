@@ -4,10 +4,10 @@
 
 ## 1. gate-switch：30 秒看清「机械门禁」（纯 CLI）
 
-在仓库根目录执行：
+在仓库根目录执行（gate-switch 引擎随 Xj-rules 商店包分发，路径如下）：
 
 ```bash
-python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md
+python3 Xj-rules/store-package/skills/gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md
 ```
 
 预期输出（节录）：
@@ -26,9 +26,7 @@ python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec
 
 ```bash
 # 安装（含 matplotlib/numpy 依赖）
-curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval --with-deps
-
-# 只读采集 ~/.agents/skills 全部技能 → 9 维评分 → 雷达图 + 排名榜 + HTML 报告
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install agent-eval --with-deps# 只读采集 ~/.agents/skills 全部技能 → 9 维评分 → 雷达图 + 排名榜 + HTML 报告
 python3 ~/.dsh/dsh-skills/agent-eval/scripts/eval_agents.py --mode generic
 ```
 
@@ -56,10 +54,10 @@ archmap 在 Agent 宿主（DSH / Claude Code / Kimi Code）内运行。安装后
 
 ## 4. parallel-dispatch：并行闸单刀双掷（纯 CLI 可见判定）
 
-直接扳开关看机械判定（无需 Agent 宿主）：
+直接扳开关看机械判定（无需 Agent 宿主；引擎随 Xj-rules 商店包分发）：
 
 ```bash
-python3 parallel-dispatch/scripts/dispatch_switch.py --files 6 --units 3 --desc "demo"
+python3 Xj-rules/store-package/skills/parallel-dispatch/scripts/dispatch_switch.py --files 6 --units 3 --desc "demo"
 ```
 
 预期输出：JSON 门禁声明。裸 shell 下它会拒绝扳动并列出原因（本 turn 任务清单未登记等）——**这不是报错，是门禁在工作**：并行扇出必须先登记任务清单、过基线校验，全程留痕 `~/.agents/logs/dispatch_switch.jsonl`。在 Agent 宿主内，≥2 个无依赖子任务会自动触发同一判定。
