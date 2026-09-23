@@ -73,7 +73,13 @@ install_one() {
     echo "[dsh-skill] ✗ 技能不存在：${name}（用 list 查看可用技能）" >&2; return 1
   fi
   local src="${REPO_DIR}/${name}" dst="${TARGET}/${name}"
-  [ -d "${src}" ] || { echo "[dsh-skill] ✗ 仓库内缺少目录：${src}" >&2; return 1; }
+  # 回退通道（2026-08-25 裁定）：部分技能全量源码不以顶层目录公开跟踪，
+  # 统一随 Xj-rules 商店包分发；顶层目录缺失时回退包内路径，保证一键安装不断链
+  if [ ! -d "${src}" ] && [ -d "${REPO_DIR}/Xj-rules/store-package/skills/${name}" ]; then
+    src="${REPO_DIR}/Xj-rules/store-package/skills/${name}"
+    echo "[dsh-skill] · ${name} 经商店包通道安装（Xj-rules/store-package/skills/）"
+  fi
+  [ -d "${src}" ] || { echo "[dsh-skill] ✗ 仓库内缺少目录：${name}（顶层与商店包均无）" >&2; return 1; }
   mkdir -p "${TARGET}"
   if [ -L "${dst}" ] || [ -d "${dst}" ]; then
     echo "[dsh-skill] · 已存在，跳过：${dst}（如需重装请先 uninstall）"; return 0
