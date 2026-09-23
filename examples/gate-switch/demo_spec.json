@@ -1,0 +1,35 @@
+{
+  "gate": "demo_release_hygiene",
+  "desc": "演示闸：机械核验本仓 README 的第一屏要素——badges、中文镜像互链、演示图引用、快速跑通段。在仓库根目录执行：python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md。全过→A 放行；任一失败→B 阻断并列出违例。这就是「判定权从模型移交脚本」的最小演示。",
+  "checks": [
+    {
+      "type": "grep_count",
+      "pattern": "img.shields.io",
+      "path": "{target}",
+      "op": "min",
+      "value": 3,
+      "label": "README 至少 3 枚 shields.io badges"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "README_zh.md",
+      "path": "{target}",
+      "op": "min",
+      "value": 1,
+      "label": "顶部中英互链存在"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "agent-eval/images/agent_radar.png",
+      "path": "{target}",
+      "op": "min",
+      "value": 1,
+      "label": "第一屏引用 agent-eval 演示图"
+    },
+    {
+      "type": "file_exists",
+      "path": "README_zh.md",
+      "label": "中文 README 存在"
+    }
+  ]
+}
