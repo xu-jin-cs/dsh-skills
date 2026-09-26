@@ -1,0 +1,12 @@
+{
+ "gate": "promotion_gate",
+ "desc": "职级晋升判定闸（career-evolution，2026-09-26 REFORM-GATE 判A，块文件 ~/.agents/logs/reform_blocks/career_evolution_20260926.md）。晋升判定禁止手写：机械核验 profile 存在、无跳级（level 差==1）、ledger 留痕、门槛达标证据在快照。低阶（→L2）自动生效；高阶（→L3/L4）仅生成建议卡，用户批准留痕后才写档。",
+ "checks": [
+  {
+   "type": "script_exit",
+   "cmd": "python3 ~/.agents/skills/career-evolution/scripts/collect_assets.py verify-promotion --role {role} --project {project}",
+   "expect": 0,
+   "label": "晋升合法性（profile存在+无跳级+门槛达标+ledger留痕）"
+  }
+ ]
+}

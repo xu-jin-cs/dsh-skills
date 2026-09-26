@@ -1,0 +1,12 @@
+{
+ "gate": "org_integrity_gate",
+ "desc": "组织完整性闸（career-evolution，2026-09-26 REFORM-GATE 判A）。机械核验：org_state.json 的 headcount==career/ 目录 active 档案实测数、规模称号与 scale_ladder 一致、并行上限与阶梯一致、空壳候选清单超期判定正确。",
+ "checks": [
+  {
+   "type": "script_exit",
+   "cmd": "python3 ~/.agents/skills/career-evolution/scripts/collect_assets.py verify-org",
+   "expect": 0,
+   "label": "组织状态一致性（在编数/规模称号/并行上限/空壳清单）"
+  }
+ ]
+}

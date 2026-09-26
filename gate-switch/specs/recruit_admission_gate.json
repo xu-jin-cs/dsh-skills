@@ -1,0 +1,12 @@
+{
+ "gate": "recruit_admission_gate",
+ "desc": "招募准入闸（career-evolution，2026-09-26 REFORM-GATE 判A）。招募落盘唯一入口：机械核验方案卡七节齐全、初始 level==3（外聘专家通道，不从初级培养）、提名与批准主体分离声明、用户批准留痕非空。判 B 禁止建档。",
+ "checks": [
+  {
+   "type": "script_exit",
+   "cmd": "python3 ~/.agents/skills/career-evolution/scripts/collect_assets.py verify-recruit --card {card}",
+   "expect": 0,
+   "label": "招募方案卡合规（七节+level==3+分权+批准留痕）"
+  }
+ ]
+}
