@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "引擎固定出参契约，gate调度层消费",
+  "properties": {
+    "_debug": {
+      "description": "仅debug=true时返回：本次执行使用的规则快照、各钩子明细",
+      "type": "object"
+    },
+    "audit_meta": {
+      "description": "入参审计元数据透传",
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "code": {
+      "enum": [
+        "success",
+        "block",
+        "reject",
+        "timeout",
+        "error"
+      ],
+      "type": "string"
+    },
+    "delivery": {
+      "properties": {
+        "mode": {
+          "enum": [
+            "single",
+            "async",
+            "broadcast"
+          ]
+        },
+        "next_handler": {
+          "type": [
+            "string",
+            "array",
+            "null"
+          ]
+        },
+        "payload": {},
+        "require_ack": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "next_handler",
+        "require_ack"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "failure_info": {
+      "properties": {
+        "alert": {
+          "type": "boolean"
+        },
+        "compensation_action": {
+          "enum": [
+            "none",
+            "revoke_issue",
+            "rollback_state"
+          ]
+        },
+        "error_msg": {
+          "type": "string"
+        },
+        "fallback_target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "max_retry": {
+          "type": "integer"
+        },
+        "retry_delay_ms": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "error_msg"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "gate_result": {
+      "properties": {
+        "pass": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pass",
+        "reason"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "issue_meta": {
+      "description": "签发哈希、时间等凭证",
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "new_task_state": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parent_trace_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resource": {
+      "properties": {
+        "pass": {
+          "type": "boolean"
+        },
+        "priority": {
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ]
+        },
+        "violations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "pass",
+        "violations"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "signed_artifact": {
+      "type": [
+        "object",
+        "string",
+        "null"
+      ]
+    },
+    "task_result": {
+      "description": "task 生命周期动作结果（task_complete/task_cancel/task_archive）",
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "validate_result": {
+      "properties": {
+        "failures": {
+          "type": "array"
+        },
+        "pass": {
+          "type": "boolean"
+        },
+        "results": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "pass",
+        "results",
+        "failures"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "trace_id"
+  ],
+  "title": "AgentEngine Output Contract",
+  "type": "object"
+}
