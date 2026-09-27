@@ -1,0 +1,507 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Agent接力交付物流转引擎入参契约，由ET生成，引擎消费",
+  "properties": {
+    "artifact": {
+      "description": "Agent原始交付物主体",
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "artifact_validate": {
+      "additionalProperties": false,
+      "description": "【平台扩展】交付物校验规则，在 state_intercept 之前执行",
+      "properties": {
+        "checks": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "algo": {
+                "type": "string"
+              },
+              "denominator": {},
+              "field": {
+                "type": "string"
+              },
+              "field_a": {
+                "type": "string"
+              },
+              "field_b": {
+                "type": "string"
+              },
+              "fields": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "ignore_empty": {
+                "type": "boolean"
+              },
+              "items_path": {
+                "type": "string"
+              },
+              "json_field": {
+                "type": "string"
+              },
+              "json_file": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "min": {
+                "type": "number"
+              },
+              "min_size": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "nonempty": {
+                "type": "boolean"
+              },
+              "numerator": {},
+              "on_fail": {
+                "description": "deprecated，内核不消费，统一用 failure_policy",
+                "enum": [
+                  "terminate",
+                  "rollback",
+                  "failed"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "pattern": {
+                "type": "string"
+              },
+              "suffix": {
+                "type": "string"
+              },
+              "text_source": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "required_fields",
+                  "file_exists",
+                  "file_min_size",
+                  "json_field",
+                  "regex",
+                  "min_ratio",
+                  "items_regex",
+                  "items_unique",
+                  "items_required_fields",
+                  "items_enum",
+                  "dir_glob_count",
+                  "dir_file_count_eq_json",
+                  "dir_file_hash_unique",
+                  "fields_distinct"
+                ]
+              },
+              "values": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "checks"
+      ],
+      "type": "object"
+    },
+    "audit_meta": {
+      "additionalProperties": false,
+      "description": "租户、身份、密级、留存策略【扩展必选推荐】",
+      "properties": {
+        "audit_tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "principal": {
+          "description": "操作主体",
+          "type": "string"
+        },
+        "retention_ttl_sec": {
+          "description": "审计快照保留时长",
+          "type": "integer"
+        },
+        "sensitivity_level": {
+          "enum": [
+            "public",
+            "internal",
+            "sensitive",
+            "confidential"
+          ],
+          "type": "string"
+        },
+        "tenant_id": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "content_issue": {
+      "additionalProperties": false,
+      "description": "交付物签发/防篡改配置，不传则跳过本钩子",
+      "properties": {
+        "attach_issue_meta": {
+          "type": "object"
+        },
+        "secret": {
+          "description": "【平台扩展】hmac-sha256 密钥；缺省用内核内置密钥",
+          "type": "string"
+        },
+        "sign": {
+          "type": "boolean"
+        },
+        "sign_algo": {
+          "default": "sha256",
+          "enum": [
+            "sha256",
+            "hmac-sha256"
+          ]
+        },
+        "watermark": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "debug": {
+      "default": false,
+      "description": "开启则出参附加本次规则快照，生产默认关闭",
+      "type": "boolean"
+    },
+    "delivery": {
+      "additionalProperties": false,
+      "description": "下游投递模式、回执控制【扩展必选推荐】",
+      "properties": {
+        "mode": {
+          "enum": [
+            "single",
+            "async",
+            "broadcast"
+          ],
+          "type": "string"
+        },
+        "next_handler": {
+          "type": [
+            "string",
+            "array"
+          ]
+        },
+        "output_transform": {
+          "additionalProperties": false,
+          "description": "轻量字段过滤/脱敏映射，禁止重型ETL逻辑",
+          "properties": {
+            "exclude_fields": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "include_fields": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "mask_fields": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "require_ack": {
+          "description": "是否需要下游回执确认",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "failure_policy": {
+      "additionalProperties": false,
+      "description": "失败、重试、兜底分流策略【扩展必选推荐】",
+      "properties": {
+        "alert_on_block": {
+          "type": "boolean"
+        },
+        "compensation_action": {
+          "enum": [
+            "none",
+            "revoke_issue",
+            "rollback_state"
+          ],
+          "type": "string"
+        },
+        "fallback_target": {
+          "description": "校验失败兜底节点，如人工agent",
+          "type": "string"
+        },
+        "max_retry": {
+          "type": "integer"
+        },
+        "retry_delay_ms": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "gate_guard": {
+      "additionalProperties": false,
+      "description": "门禁准入规则，不传则跳过本钩子",
+      "properties": {
+        "acl": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "permission_scope": {
+          "type": "string"
+        },
+        "rate_current": {
+          "description": "【平台扩展】ET 上报当前速率（仅作参考）：内核侧按 key 自维护 60s 滑窗权威计数，有效速率=max(上报,内核实测)，报低无法穿透",
+          "type": "integer"
+        },
+        "rate_limit": {
+          "type": "integer"
+        },
+        "route": {
+          "description": "【平台扩展】本次请求路由，配合 route_whitelist",
+          "type": "string"
+        },
+        "route_whitelist": {
+          "description": "【平台扩展】路由白名单",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "target_agent_id": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "parent_trace_id": {
+      "description": "上游父链路ID，构建完整谱系，可选",
+      "type": "string"
+    },
+    "resource_control": {
+      "additionalProperties": false,
+      "description": "资源、Token、超时、优先级控制【扩展必选推荐】",
+      "properties": {
+        "concurrent_current": {
+          "description": "【平台扩展】ET 上报实测（仅作参考）：内核侧自测在飞请求数，有效并发=max(上报,内核实测)",
+          "type": "integer"
+        },
+        "cost_budget": {
+          "type": "number"
+        },
+        "cost_used": {
+          "description": "【平台扩展】ET 上报实测（仅作参考）：内核侧按身份单调高水位台账夹紧，有效用量=max(上报,内核台账)",
+          "type": "number"
+        },
+        "global_timeout_ms": {
+          "type": "integer"
+        },
+        "hook_timeout_ms": {
+          "type": "integer"
+        },
+        "max_concurrent": {
+          "type": "integer"
+        },
+        "model": {
+          "description": "【平台扩展】本次使用模型",
+          "type": "string"
+        },
+        "model_allow_list": {
+          "description": "【平台扩展】模型版本约束",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ],
+          "type": "string"
+        },
+        "token_limit": {
+          "type": "integer"
+        },
+        "token_used": {
+          "description": "【平台扩展】ET 上报实测（仅作参考）：内核侧按身份单调高水位台账夹紧，有效用量=max(上报,内核台账)，报低/重置计数器无效",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "sandbox_policy": {
+      "additionalProperties": false,
+      "description": "沙箱、工具权限控制【高级安全场景，预留】",
+      "properties": {
+        "network_isolate": {
+          "type": "boolean"
+        },
+        "tool_allow_list": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "state_intercept": {
+      "additionalProperties": false,
+      "description": "状态拦截&状态跃迁规则，不传则跳过本钩子",
+      "properties": {
+        "allow_transition": {
+          "description": "【弱模式，推荐 allowed_pairs】允许的源状态集合：仅校验 current ∈ 集合，不校验 (current, target) 跃迁对，存在 PENDING→CLOSED 类非法目标逃逸风险；仅在未提供 allowed_pairs 时生效",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "allowed_pairs": {
+          "description": "【推荐】合法跃迁对集合：提供时内核严格校验 (current_state, target_state) ∈ 集合，不在则 block",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "current_state": {
+          "description": "【平台扩展】源状态显式传入；缺省回退读 artifact.state",
+          "type": "string"
+        },
+        "state_meta": {
+          "description": "随状态变更附加的自定义元数据",
+          "type": "object"
+        },
+        "target_state": {
+          "description": "校验通过后写入的目标任务状态",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "task": {
+      "additionalProperties": false,
+      "description": "任务生命周期动作：完成后状态流转、证据校验、审计、签名、桥接通知",
+      "properties": {
+        "action": {
+          "description": "complete=完成；cancel=取消；archive=注销归档",
+          "enum": [
+            "complete",
+            "cancel",
+            "archive"
+          ],
+          "type": "string"
+        },
+        "evidence": {
+          "description": "完成证据：由 artifact_validate 或外部证据校验消费",
+          "type": "object"
+        },
+        "from_state": {
+          "description": "期望源状态，可选；缺省由 StateStore 当前状态决定",
+          "type": "string"
+        },
+        "require_bridge_ack": {
+          "default": false,
+          "description": "桥接是否需要前端回执；未实现回执时按成功处理",
+          "type": "boolean"
+        },
+        "targets": {
+          "description": "桥接目标，如 dsh / kimi / claude；缺省不通知前端",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "task_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "to_state": {
+          "description": "目标状态，可选；缺省按 action 映射：complete->completed / cancel->cancelled / archive->archived",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "task_id"
+      ],
+      "type": "object"
+    },
+    "trace_id": {
+      "description": "全局追踪ID，审计、日志、链路排查唯一标识",
+      "minLength": 1,
+      "type": "string"
+    },
+    "traffic_exp": {
+      "additionalProperties": false,
+      "description": "灰度、A/B实验、流量染色【平台进阶，预留】",
+      "properties": {
+        "experiment_id": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "traffic_tag": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "artifact",
+    "trace_id"
+  ],
+  "title": "AgentEngine Input Payload",
+  "type": "object"
+}
