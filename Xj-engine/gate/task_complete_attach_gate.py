@@ -21,8 +21,10 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
+import subprocess
 import sys
 
 SEAL_DIR = os.environ.get(
@@ -57,8 +59,10 @@ def append_seen(session: str, entries: list[str]) -> None:
     os.makedirs(SEAL_DIR, exist_ok=True)
     path = os.path.join(SEAL_DIR, f"{session}.jsonl")
     with open(path, "a", encoding="utf-8") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)  # 并发 todo_write 防台账撕裂（2026-09-27 环1 K9）
         for k in entries:
             f.write(json.dumps({"task_key": k}, ensure_ascii=False) + "\n")
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def normalize(t: str) -> str:
@@ -92,11 +96,24 @@ def main() -> int:
         print("EXEMPT: 本次 todo_write 无新任务（重发豁免），不重复追加完成步骤")
         return 0
 
+    done_keys: list[str] = []
     for k in new_keys:
-        os.system(f'python3 {ATTACH_SCRIPT} --task "{k}"')
+        # 2026-09-27 环1 修复 K1：os.system(f'...--task "{k}"') 拼接外部任务文本
+        # = 任意命令注入洞（含 " 或 $() 即穿透）；改 subprocess 数组参数，不经 shell。
+        # K9：子进程失败不记账（否则该任务永不再追加完成步骤），下轮重试。
+        r = subprocess.run(
+            [sys.executable, ATTACH_SCRIPT, "--task", k],
+            capture_output=True, text=True,
+        )
+        if r.returncode != 0:
+            print(f"WARN: 任务 [{k}] 追加完成步骤失败（exit {r.returncode}），不记账，下轮重试: {r.stderr.strip()[:200]}")
+            continue
+        if r.stdout.strip():
+            print(r.stdout.strip())
+        done_keys.append(k)
 
-    append_seen(session, new_keys)
-    print(f"A: 给 {len(new_keys)} 个新任务末尾追加完成步骤: {', '.join(new_keys)}")
+    append_seen(session, done_keys)
+    print(f"A: 给 {len(done_keys)}/{len(new_keys)} 个新任务末尾追加完成步骤: {', '.join(done_keys)}")
     return 0
 
 
