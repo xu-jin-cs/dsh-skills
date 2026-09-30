@@ -22,7 +22,7 @@ The lead hook is **[agent-eval](#skills) — agent/skills capability evaluation*
 ## 60-second quickstart
 
 ```bash
-# 1. Install all four skills (symlinks into your skill discovery root)
+# 1. Install all five skills (symlinks into your skill discovery root)
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 
 # 2. Score all your local agent skills → radar + leaderboard + HTML report

@@ -22,7 +22,7 @@
 ## 60 秒快速跑通
 
 ```bash
-# 1. 一键安装全部四个技能（符号链接进技能发现根，DSH watcher 热加载即生效）
+# 1. 一键安装全部五个技能（符号链接进技能发现根，DSH watcher 热加载即生效）
 curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install --all --with-deps
 
 # 2. 给本机全部技能打分 → 雷达图 + 排名榜 + HTML 报告
