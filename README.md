@@ -17,6 +17,8 @@ Most agent skills *hope* the model follows instructions. This repo **moves judgm
 
 The lead hook is **[agent-eval](#skills) — agent/skills capability evaluation**: read-only collection of every skill on your machine → 9-dimension scoring against a frozen baseline → strength/weakness grading (blocking / high-risk / optimization) → overall ranking → radar chart + leaderboard + HTML report. Evaluation tooling for agents is the gap; the RAG/ETL engine ([Xj-engine](#xj-engine)) plays support.
 
+![Five-layer agent system evaluation — real output](docs/images/eval-overview.png)
+
 ## 60-second quickstart
 
 ```bash
@@ -40,8 +42,9 @@ Sample outputs are checked in: [radar](agent-eval/images/agent_radar.png) · [le
 | [`archmap`](./archmap/SKILL.md) | Architecture cartography agent (self-contained Python engine). Zero-arg full/lite auto-routing; requirement text → precise impact surface (file/function/route level); `diff` mode: zero-LLM line-level impact + import closure + test selection + change ledger; `sync` incremental baseline refresh. Deterministic computation instead of full-repo reading — massive token savings. |
 | [`gate-switch`](./gate-switch/SKILL.md) | Universal probabilistic-execution gate skeleton (evidence-family engine, zero deps). Cures three LLM chronic failures: skipped steps / half-done checklists / fabricated "done" claims. Write what must be true as a spec JSON; the engine mechanically verifies each check — A passes, B blocks with the violations as the reason. 7 frozen check primitives (`file_exists` / `json_field` / `glob_count` / `grep_count` / `mtime_after` / `script_exit` …) + ready-made gate instances + an L3 framework-gate template. New scenario = new spec, zero engine changes. |
 | [`parallel-dispatch`](./parallel-dispatch/SKILL.md) | Master rules for parallel dispatch & sub-agent clones. ≥2 independent subtasks trigger parallel fan-out by default; two-axis decision (scale: light clone / task-breakdown / engine-level × count: subagent / grouped / workflow); scene auto-matching, minimal probe, merge checkpoints — all through the audited `dispatch_switch` SPDT gate (A/B verdict, no handwritten decisions). |
+| [`expert-clinic`](./expert-clinic/SKILL_EN.md) | Self-contained diagnostic workflow agent for hard problems. Single file, zero dependencies — works as a system prompt on any platform. Fixed pipeline: intake → expert triage → 7-step deduction (locate the gap → root cause → candidate fixes → pseudo-solution detection → converge) → plan selection (fewest steps wins) → four-force logic check → ROI assessment → consultation report. |
 
-> All four skills are first-class top-level directories — clone and use, or `install --all`. A 57-skill bundle also ships in [`Xj-rules/store-package`](./Xj-rules/store-package/skills/) (`store-package-full.zip` / `-lite.zip`).
+> All five skills are first-class top-level directories — clone and use, or `install --all`. A 57-skill bundle also ships in [`Xj-rules/store-package`](./Xj-rules/store-package/skills/) (`store-package-full.zip` / `-lite.zip`).
 
 ## Xj-agent — full-lifecycle PM workflow
 
@@ -55,6 +58,8 @@ python3 Xj-agent/pm/scripts/flow_kernel.py routes --rules Xj-agent/pm/flow.yml -
 ## Xj-engine
 
 The standalone engine (`engine.kernel.et` / `xj-engine` CLI): ETL + task domain + bridge executor, local database, `pip install -e .` installable. See [`Xj-engine/`](./Xj-engine/).
+
+![XJ-Engine vs LangChain — capability comparison](docs/images/xj-engine-vs-langchain.png)
 
 ## Compatibility
 

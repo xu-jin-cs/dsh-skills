@@ -17,6 +17,8 @@
 
 主推钩子 = **[agent-eval](#技能清单)：Agent/Skills 专项能力评估**——只读采集本机全部技能 → 冻结基线 9 维评分 → 强弱三级判定（阻断/高风险/一般优化，带行动指引）→ 综合排名 → 深色科技风雷达图 + 排名榜 + HTML 报告。Agent 评估工具是当前行业缺口；RAG/ETL 引擎（[Xj-engine](#xj-engine)）作配套。
 
+![Five-layer agent system evaluation — real output](docs/images/eval-overview.png)
+
 ## 60 秒快速跑通
 
 ```bash
@@ -40,8 +42,9 @@ python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec
 | [`archmap`](./archmap/SKILL.md) | 架构测绘 Agent（含 Python 引擎，自包含分发）。零参自动分流 full/lite；需求文本→精准影响面（文件/函数/路由级）；`diff` 零 LLM 行级影响面 + 导入闭包 + 测试选择 + 变更台账；`sync` 增量同步基线并刷新 01~09 报告。以确定性计算替代全库通读，显著节约 tokens。 |
 | [`gate-switch`](./gate-switch/SKILL.md) | 通用概率执行门禁骨架（实证族 L2 引擎，零依赖）。治 LLM 三类顽疾：该做的没做 / 缺斤短两 / 伪造声称——把"声称 X 已满足"写成 spec JSON，引擎逐项机械核验，A 放行 / B 阻断列违例。7 检查原语 + 通用门禁实例 + L3 框架闸模板。新场景 = 写新 spec，引擎零改动。 |
 | [`parallel-dispatch`](./parallel-dispatch/SKILL.md) | 并行调度与子分身机制总规则。≥2 个无依赖子任务默认主动并行 spawn；规模轴（轻分身 / S 档 / M·L 档引擎级）× 数量轴（subagent 扇出 / 分组 / workflow 编排）双维决策；场景自动匹配表、最小探针、母体合并校验，全部经 `dispatch_switch` 闸机械判定留痕。 |
+| [`expert-clinic`](./expert-clinic/SKILL.md) | 自包含疑难杂症诊疗工作流 agent。单文件、零依赖——复制到任意平台即可作为系统提示词使用。固定流水线：接诊建档 → 专家分诊 → 七步完整推演（定位断档 → 溯源机理 → 全部候选修法 → 伪解法识别 → 收敛决断）→ 三维方案择优（步骤数最低分最优）→ 四力逻辑校验 → 收益评估 → 会诊报告。 |
 
-> 四个技能均为仓库顶层目录，clone 即用或 `install --all` 一键安装。另有 57 技能合集包在 [`Xj-rules/store-package`](./Xj-rules/store-package/skills/)（`store-package-full.zip` / `-lite.zip`）。
+> 五个技能均为仓库顶层目录，clone 即用或 `install --all` 一键安装。另有 57 技能合集包在 [`Xj-rules/store-package`](./Xj-rules/store-package/skills/)（`store-package-full.zip` / `-lite.zip`）。
 
 ## Xj-agent（PM 全流程工作流）
 
@@ -55,6 +58,8 @@ python3 Xj-agent/pm/scripts/flow_kernel.py routes --rules Xj-agent/pm/flow.yml -
 ## Xj-engine
 
 独立引擎（`engine.kernel.et` / CLI `xj-engine`）：ETL + 任务域 + 桥接执行层，本地数据库，`pip install -e .` 可安装。详见 [`Xj-engine/`](./Xj-engine/)。
+
+![XJ-Engine vs LangChain — capability comparison](docs/images/xj-engine-vs-langchain.png)
 
 ## 兼容矩阵
 
