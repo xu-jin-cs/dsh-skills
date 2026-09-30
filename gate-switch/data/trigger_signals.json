@@ -158,7 +158,7 @@
       ],
       "match_mode": "keyword",
       "must_pull": [
-        "python3 ~/.agents/skills/dual-gates/scripts/dual_gates.py declare --raw \"<用户输入原文>\" --session-id $DSH_SESSION_ID（is_query 续扳 query 闸——2026-08-29 用户裁定：查询闸改为知识库优先，优先去知识库（kb_search/历史会话向量库）查需要的数据，KB 未命中/离线才回落会话锚点溯源；not_query 直接推进）"
+        "python3 ~/.agents/skills/dual-gates/scripts/dual_gates.py declare --raw \"<用户输入原文>\" --session-id $DSH_SESSION_ID（is_query 续扳 query 闸——会话锚点定向溯源检索，2026-09-30 用户裁定摘除知识库优先通道；not_query 直接推进）"
       ],
       "source_row": "查询闸触发词兜底（2026-08-23 用户裁定新增：找/查询/寻找）"
     },
