@@ -49,8 +49,8 @@ PRECHECK_LOG = os.environ.get(
     os.path.expanduser("~/.agents/logs/todo_write_precheck.jsonl"),
 )
 
-# content 内嵌标注：[S] / [M|deps:1,3]（deps 引用清单内 1 基序号）
-_ANNOTATION = re.compile(r"^\[(S|M|L|XL)(?:\|deps:([\d,\s]+))?\]")
+# content 内嵌标注：[S] / [M|deps:1,3] / [L|deps:]（deps 引用清单内 1 基序号；deps: 空=显式无依赖）
+_ANNOTATION = re.compile(r"^\[(S|M|L|XL)(?:\|deps:([\d,\s]*))?\]")
 
 
 def session_id() -> str:
@@ -82,10 +82,17 @@ def parse_tasks(raw: str) -> list[str]:
     try:
         data = json.loads(raw)
         if isinstance(data, list):
-            return [str(x) for x in data]
+            out = []
+            for x in data:
+                if isinstance(x, dict):
+                    out.append(str(x.get("content") or x.get("title") or ""))
+                else:
+                    out.append(str(x))
+            return [t for t in out if t]
     except Exception:
         pass
-    return [t for t in raw.split(",") if t.strip()]
+    # 纯文本：中英文逗号/分号皆可分隔（hook 层以 "；" 连接 content）
+    return [t for t in re.split(r"[，,；;]", raw) if t.strip()]
 
 
 def remind(text, task):
@@ -101,7 +108,7 @@ def parse_fanout_tasks(tasks: list) -> list:
         m = _ANNOTATION.match(str(c).strip())
         if m:
             t["size"] = m.group(1)
-            if m.group(2):
+            if m.group(2) is not None:  # deps: 空串 = 显式无依赖；缺失 = 未声明（保守串行）
                 t["deps"] = [d.strip() for d in m.group(2).split(",") if d.strip()]
         out.append(t)
     return out
