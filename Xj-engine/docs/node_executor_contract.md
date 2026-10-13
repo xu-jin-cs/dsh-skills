@@ -45,6 +45,9 @@
 
 ## 5. LangGraph 适配指引
 
+**状态（2026-10-13 合并完成）**：langgraph≥0.2 已安装（requirements-optional.txt 登记），
+最小三路并行子图冒烟通过（START 扇出 → aggregate 聚合 → END）。
+
 ```python
 from engine.executors import ExecutorContext, ExecutorResult, NodeExecutor
 
@@ -60,6 +63,10 @@ class TestFullExecutor(NodeExecutor):
             trace_path=f"{ctx.workdir}/subgraph_trace.jsonl",
         ))
 ```
+
+**并行写入坑（2026-10-13 实测）**：并行分支写同一 state key 必须用 reducer 声明，
+否则 `InvalidUpdateError: Can receive only one value per step`——
+`class S(TypedDict): results: Annotated[list, operator.add]`。首个子图作者务必注意。
 
 LangGraph 为可选依赖（参照 `engine/claude_engine.py` 的可选先例），
 未安装时仅 executor 声明节点不可用，引擎与其余节点不受影响。
