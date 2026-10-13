@@ -76,11 +76,27 @@ def make_plan(tasks: list) -> dict:
     }
 
 
+def gear_decide(files: int | None, coupled: bool) -> dict:
+    """规模档位判定（2026-10-13 承接退役 dispatch_switch 的规模职能 · dispatch_switch_retire_20261013.md）。
+    判据：files≤3 且无耦合 → S 档走 lite 链；否则 M/L 档走主链。恒有输出。"""
+    if files is not None and files <= 3 and not coupled:
+        return {"size_gear": "S", "route": "lite",
+                "rule": "S 档（≤3 文件无耦合）→ pm-direct lite 链；M/L 档→ /pm 主链路"}
+    return {"size_gear": "M/L", "route": "main",
+            "rule": "S 档（≤3 文件无耦合）→ pm-direct lite 链；M/L 档→ /pm 主链路"}
+
+
 def main() -> int:
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tasks", required=True, help="任务清单 JSON 路径或内联串")
+    ap.add_argument("--tasks", help="任务清单 JSON 路径或内联串")
+    ap.add_argument("--gear", action="store_true", help="规模档位判定模式（承接退役并行闸职能）")
+    ap.add_argument("--files", type=int, default=None, help="预估变更文件数（gear 模式）")
+    ap.add_argument("--coupled", action="store_true", help="存在契约耦合（gear 模式）")
     args = ap.parse_args()
+    if args.gear:
+        print(json.dumps(gear_decide(args.files, args.coupled), ensure_ascii=False))
+        return 0
     try:
         data = load_tasks(args.tasks)
         tasks = data.get("tasks") if isinstance(data, dict) else data
