@@ -70,33 +70,12 @@ def split_waves(tasks: list) -> tuple[list, list]:
     return waves, notes
 
 
-def main() -> int:
-    import argparse
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--tasks", required=True, help="任务清单 JSON 路径或内联串")
-    args = ap.parse_args()
-    try:
-        data = load_tasks(args.tasks)
-    except (json.JSONDecodeError, OSError) as e:
-        # 输入都解析不了时也给出下文：无法分流，按串行原样执行
-        print(json.dumps({"execution_plan": {
-            "mode": "serial",
-            "waves": [],
-            "breakdown": {},
-            "notes": [f"输入解析失败（{e}），按串行原样执行"],
-        }}, ensure_ascii=False))
-        return 0
+def make_plan(tasks: list) -> dict:
+    """分流判定本体（闸内调用口）：tasks=[{id,size?,deps?}] → execution_plan。恒有输出。"""
+    notes = []
+    waves, wnotes = split_waves(tasks)
+    notes.extend(wnotes)
 
-    tasks = data.get("tasks") if isinstance(data, dict) else data
-    if not isinstance(tasks, list) or not tasks:
-        print(json.dumps({"execution_plan": {
-            "mode": "serial", "waves": [], "breakdown": {},
-            "notes": ["任务清单为空或非法，按串行原样执行"]}}, ensure_ascii=False))
-        return 0
-
-    waves, notes = split_waves(tasks)
-
-    # 分解判定：逐任务独立
     breakdown = {}
     for t in tasks:
         tid = t.get("id") or "?"
@@ -110,7 +89,7 @@ def main() -> int:
 
     multi = len(tasks) >= 2
     width = max((len(w) for w in waves), default=1)
-    plan = {
+    return {
         "mode": "parallel" if (multi and width > 1) else "serial",
         "waves": [{"wave": i + 1, "tasks": w, "parallel": len(w) > 1}
                   for i, w in enumerate(waves)],
@@ -120,7 +99,26 @@ def main() -> int:
         "rule": "wave 内并行 spawn 子 agent、wave 间串行；decomposable 任务到点先拆子任务再执行；"
                 "并行安全性由 dispatch_switch --units <width> 复核（width>1 时）",
     }
-    print(json.dumps({"execution_plan": plan}, ensure_ascii=False))
+
+
+def main() -> int:
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--tasks", required=True, help="任务清单 JSON 路径或内联串")
+    args = ap.parse_args()
+    try:
+        data = load_tasks(args.tasks)
+        tasks = data.get("tasks") if isinstance(data, dict) else data
+        if not isinstance(tasks, list) or not tasks:
+            raise ValueError("任务清单为空或非法")
+    except Exception as e:
+        # 输入都解析不了时也给出下文：无法分流，按串行原样执行
+        print(json.dumps({"execution_plan": {
+            "mode": "serial", "waves": [], "breakdown": {},
+            "notes": [f"输入解析失败（{e}），按串行原样执行"],
+        }}, ensure_ascii=False))
+        return 0
+    print(json.dumps({"execution_plan": make_plan(tasks)}, ensure_ascii=False))
     return 0
 
 
