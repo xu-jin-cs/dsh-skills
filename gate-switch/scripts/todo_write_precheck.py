@@ -170,8 +170,10 @@ def main() -> int:
     if any(k in " ".join(keys) for k in ("改造", "重构", "机制", "规则")):
         remind("改造/机制/重构 → 收益闸", "REFORM-GATE 判 A 才动手，禁以'用户指令'跳闸")
 
-    # 闸内扇出分流判定（必定触发·恒有输出·不阻塞）
-    emit_fanout_plan(tasks)
+    # 闸内扇出分流判定（必定触发·恒有输出·不阻塞）；
+    # 关5 裁定（2026-10-13 用户终裁 fanout_gate5_off）：无新任务（重发/销号）跳过分流段——拓扑在新建时已定，销号不重算
+    if new_keys:
+        emit_fanout_plan(tasks)
 
     print("提示：照抄并执行命中项后再调用 todo_write；判定禁止手写。")
 
