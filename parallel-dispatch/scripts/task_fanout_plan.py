@@ -72,7 +72,7 @@ def make_plan(tasks: list) -> dict:
         "breakdown": breakdown,
         "parallel_width": width if multi else 1,
         "notes": notes,
-        "rule": "并行=任务独立·谁完成谁销号；分解=母子共成一事·母等全部子事项合并后销号；wave 内并行·wave 间串行；decomposable 任务先拆子任务再执行",
+        "rule": "分流结论即终局许可（2026-10-13 用户终裁·关卡合并）：符合并行直接并行扇出、符合分解直接分解，无需再扳并行闸；并行=任务独立谁完谁销，分解=母合并子事项后销；wave 内并行·wave 间串行。仅 width>5 或显式耦合才扳 dispatch_switch 复核（重型场景）",
     }
 
 
@@ -90,7 +90,7 @@ def main() -> int:
     except Exception as e:
         plan = {"mode": "serial", "waves": [], "breakdown": {}, "parallel_width": 1,
                 "notes": [f"输入解析失败（{e}），按串行原样执行"],
-                "rule": "并行=任务独立·谁完成谁销号；分解=母子共成一事·母等全部子事项合并后销号；wave 内并行·wave 间串行；decomposable 任务先拆子任务再执行"}
+                "rule": "分流结论即终局许可（2026-10-13 用户终裁·关卡合并）：符合并行直接并行扇出、符合分解直接分解，无需再扳并行闸；并行=任务独立谁完谁销，分解=母合并子事项后销；wave 内并行·wave 间串行。仅 width>5 或显式耦合才扳 dispatch_switch 复核（重型场景）"}
     print(json.dumps({"execution_plan": plan}, ensure_ascii=False))
     return 0
 

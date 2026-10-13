@@ -23,6 +23,8 @@
   ② 并行判定（仅 ≥2 任务触发）：读 content 内嵌 deps 标注（[M|deps:1,3] 引用清单序号），
      无依赖同 wave 并行、有依赖 wave 间串行；缺 deps 标注保守串行。
   输出=执行拓扑（wave 结构+分解标注），注入 additionalContext 随 TodoWrite 生效。
+  终局许可（2026-10-13 用户终裁·关卡合并）：分流结论即放行，生成任务后一次判断完毕，
+  符合并行直接并行、符合分解直接分解，禁止再增设关卡。
   销号规则（2026-10-13 用户终裁）：并行任务谁完成谁销号；decomposable 任务由母 agent
   等全部子 agent 事项合并后才销号；复合拓扑=多母并行（母间互不等待）×各母带子群聚合。
 """
@@ -160,7 +162,7 @@ def main() -> int:
     # 并行/多任务启发：任务数>1 且含并行意图
     multi = any(k in " ".join(keys) for k in ("并行", "多任务", "扇出", "多个"))
     if len(keys) > 1 or multi:
-        remind("多任务/并行 → 并行闸", "dispatch_switch（PARALLEL-GATE）+ todo_write 先登记，判定禁止手写")
+        remind("多任务/并行 → 分流结论即放行", "按上方扇出拓扑直接执行；仅 width>5 或显式耦合才扳 dispatch_switch（重型场景）")
 
     if args.new_turn:
         remind("新回合有未完成 todo → 重发", "todo_write 面板 turn 级清零，重发同步面板")
