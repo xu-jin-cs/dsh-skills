@@ -14,14 +14,31 @@
 用法：
   python3 todo_write_precheck.py --tasks '["任务A","任务B"]' [--new-turn]
 
-退出码：0=提醒已输出（非判定）。
+退出码：0=提醒与分流结论已输出（恒放行，不阻塞不打回）。
+
+闸内扇出分流（2026-10-13 用户终裁：必定是闸·闸内判断·事前型·恒有下文不阻塞）：
+  每次 TodoWrite 必经本闸——闸体内直接完成分流判定并输出执行拓扑结论：
+  ① 分解判定（逐任务独立）：content 内嵌标注 [S]=不可分解 / [M]/[L]/[XL]=可分解；
+     缺标注按不可分解处理并 notes 提示。混合合法，不要求全部可分解。
+  ② 并行判定（仅 ≥2 任务触发）：读 content 内嵌 deps 标注（[M|deps:1,3] 引用清单序号），
+     无依赖同 wave 并行、有依赖 wave 间串行；缺 deps 标注保守串行。
+  输出=执行拓扑（wave 结构+分解标注），注入 additionalContext 随 TodoWrite 生效。
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import re
 import sys
+
+# 闸内分流判定件（task_fanout_plan.make_plan 函数级复用，判定逻辑唯一副本）；
+# 导入失败按无分流段照章运行，不炸主流程
+try:
+    sys.path.insert(0, os.path.expanduser("~/.agents/skills/parallel-dispatch/scripts"))
+    from task_fanout_plan import make_plan as _fanout_make_plan
+except Exception:
+    _fanout_make_plan = None
 
 SEAL_DIR = os.environ.get(
     "TODO_SEAL_DIR",
@@ -31,6 +48,9 @@ PRECHECK_LOG = os.environ.get(
     "TODO_PRECHECK_LOG",
     os.path.expanduser("~/.agents/logs/todo_write_precheck.jsonl"),
 )
+
+# content 内嵌标注：[S] / [M|deps:1,3]（deps 引用清单内 1 基序号）
+_ANNOTATION = re.compile(r"^\[(S|M|L|XL)(?:\|deps:([\d,\s]+))?\]")
 
 
 def session_id() -> str:
@@ -73,6 +93,38 @@ def remind(text, task):
     print(f"     ↳ {task}")
 
 
+def parse_fanout_tasks(tasks: list) -> list:
+    """content 内嵌标注解析：[S] / [M|deps:1,3] → [{id,size,deps}]（序号=清单内 1 基位置）。"""
+    out = []
+    for i, c in enumerate(tasks, 1):
+        t = {"id": str(i)}
+        m = _ANNOTATION.match(str(c).strip())
+        if m:
+            t["size"] = m.group(1)
+            if m.group(2):
+                t["deps"] = [d.strip() for d in m.group(2).split(",") if d.strip()]
+        out.append(t)
+    return out
+
+
+def emit_fanout_plan(tasks: list) -> None:
+    """闸内分流判定：输出执行拓扑结论（必定有下文；判定件缺失则跳过不炸）。"""
+    if _fanout_make_plan is None or not tasks:
+        return
+    plan = _fanout_make_plan(parse_fanout_tasks(tasks))
+    print(f"  ⇒ 扇出分流结论：{plan['mode']}（并行宽度 width={plan['parallel_width']}）")
+    for w in plan["waves"]:
+        tag = "并行" if w["parallel"] else "串行"
+        decomp = [tid for tid in w["tasks"] if plan["breakdown"].get(tid) == "decomposable"]
+        line = f"     wave{w['wave']} [{tag}] 任务{w['tasks']}"
+        if decomp:
+            line += f"｜可分解: {decomp}（到点先拆子任务再执行）"
+        print(line)
+    for n in plan["notes"]:
+        print(f"     · {n}")
+    print(f"     规则：{plan['rule']}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="todo_write 前置提醒脚本")
     ap.add_argument("--tasks", required=True, help="本次 todo_write 任务清单（JSON 数组/逗号分隔）")
@@ -102,6 +154,9 @@ def main() -> int:
 
     if any(k in " ".join(keys) for k in ("改造", "重构", "机制", "规则")):
         remind("改造/机制/重构 → 收益闸", "REFORM-GATE 判 A 才动手，禁以'用户指令'跳闸")
+
+    # 闸内扇出分流判定（必定触发·恒有输出·不阻塞）
+    emit_fanout_plan(tasks)
 
     print("提示：照抄并执行命中项后再调用 todo_write；判定禁止手写。")
 
