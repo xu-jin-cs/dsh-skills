@@ -1,7 +1,8 @@
 {
   "gate": "task_breakdown",
-  "desc": "任务拆解输出机械门禁（2026-08-15 裁定）：八字段齐全且非空 / size∈{S,M,L,XL} / deps 数组 / deps 引用闭环无悬空 / 无自引用 / 无环 / id 唯一。全过→A 放行移交；任一违例→B 打回，violations 即修复清单。规模定档合理性仍属 sv-supervisor 软层终裁。",
+  "desc": "任务拆解输出机械门禁（2026-08-15 裁定）：八字段齐全且非空 / size∈{S,M,L,XL} / deps 数组 / deps 引用闭环无悬空 / 无自引用 / 无环 / id 唯一。2026-10-13 扩展（problem_gate+REFORM-GATE 双判A，parallel_layer_gate）：追加并行层机械分层——deps 拓扑分层必须由 dag_layer.py 产出（层内并行/层间串行），deps:[] 显式无依赖须填 no_dep_reason，分层宽度 parallel_width 作为下游并行闸 dispatch_switch --units 唯一喂参来源。全过→A 放行移交；任一违例→B 打回，violations 即修复清单。规模定档合理性仍属 sv-supervisor 软层终裁。",
   "checks": [
-    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/task-breakdown/scripts/breakdown_check.py --tasks {tasks}", "expect": 0, "label": "拆解 schema 完整性 + deps 引用闭环"}
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/task-breakdown/scripts/breakdown_check.py --tasks {tasks}", "expect": 0, "label": "拆解 schema 完整性 + deps 引用闭环"},
+    {"type": "script_exit", "cmd": "python3 ~/.agents/skills/parallel-dispatch/scripts/dag_layer.py --tasks {tasks}", "expect": 0, "label": "parallel_layer_gate 并行层机械分层 + 无依赖显式声明（漏标拦截）"}
   ]
 }
