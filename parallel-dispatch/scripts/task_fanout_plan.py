@@ -1,57 +1,73 @@
 #!/usr/bin/env python3
-# task_fanout_plan.py — 通用任务扇出判定计算件（2026-10-13 REFORM-GATE 判A · task_fanout_plan_20261013.md）
+# task_fanout_plan.py — 任务扇出分流器（2026-10-13 用户终裁版）
 #
-# 定位：独立于 task-breakdown 的通用调度判定层。任何入口（普通对话/PM 流程/手动）
-#       新建任务（单个或多个）时，先过本脚本拿"母 agent 执行拓扑"。
-# 两件判定：
-#   ① 任务间并行性（多任务时）：deps → Kahn 分层（复用 dag_layer 同目录函数）
-#   ② 逐任务可拆性：size==S → atomic（单子 agent 直接执行）；
-#                   size∈{M,L,XL} → needs_breakdown（母 agent 先拆子任务，
-#                   子任务清单回来后【递归再调本脚本】直到全部 atomic）
-# 本件只判定不执行：真并行 spawn 由母 Agent（Agent 工具）或 node_executor 完成；
-#                   并行安全性由 dispatch_switch 闸复核（units=本件输出 width）。
+# 定位：分流器，不是闸。任何任务清单进来，必然输出执行拓扑——
+#   要么并行、要么串行，附加每个任务能否分解的标注。
+#   必定有下文：不存在阻塞、打回、判A/判B。
+# 判定逻辑（极简）：
+#   分解：逐任务独立——size=M/L/XL 可分解（decomposable）；size=S 或缺失 → atomic 不拆。
+#         混合合法，不要求全部可分解。
+#   并行：仅多任务前提触发——任务数≥2 才判依赖；无依赖同 wave 并行，
+#         有依赖 wave 间串行、wave 内并行。单任务无并行概念。
+# 缺省规则（保守，notes 提示补标注可解锁）：
+#   deps 缺失 → 该任务独立成 wave（保守串行），notes 提示声明 deps:[] 可并行；
+#   size 缺失 → atomic；deps 成环 → 环内任务按 id 序串行收尾。
 # 用法：python3 task_fanout_plan.py --tasks <JSON文件路径 或 内联JSON串>
-# 出参 verdict：A=拓扑产出；B=标注违例（漏标/悬空/成环/缺size/no_dep_reason），violations 即修复指令。
+# 出参：{"execution_plan": {...}}，恒 exit 0。
 import json
-import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from dag_layer import load_tasks, validate_structure, kahn_layers  # 复用分层件，口径唯一
+from dag_layer import load_tasks  # 仅复用入参加载
 
-BREAKDOWN_SIZES = {"M", "L", "XL"}   # 非 S 即需拆解
-
-# 留痕产物（2026-10-13 REFORM-GATE 判A · todo_fanout_gate_20261013.md）：
-# 判 A 时原子写 /tmp/fanout_plan_<session>.json，作为 todo_write_precheck 阻断闸的
-# "fanout 判定已真实执行"唯一凭证（母本=retro_match_gate marker 模式）。
-def _session() -> str:
-    return os.environ.get("DSH_SESSION_ID", "").strip() or "default-session"
+BREAKDOWN_SIZES = {"M", "L", "XL"}
 
 
-def marker_path(session: str) -> str:
-    return f"/tmp/fanout_plan_{session}.json"
-
-
-def write_marker(plan: dict) -> None:
-    """原子写留痕（tmp+os.replace，DIM-032）；失败不阻断主流程。"""
-    import datetime
-    import tempfile
-    rec = {
-        "ts": datetime.datetime.now().isoformat(timespec="seconds"),
-        "verdict": "A",
-        "width": plan["dispatch_hint"]["units"],
-        "n_tasks": sum(len(l) for l in plan["task_layers"]),
-        "via": "task_fanout_plan",
-    }
-    path = marker_path(_session())
-    try:
-        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(rec, f, ensure_ascii=False)
-        os.replace(tmp, path)
-    except OSError:
-        pass
+def split_waves(tasks: list) -> tuple[list, list]:
+    """Kahn 分层变体：永不出错。返回 (waves, notes)。
+    deps 缺失的任务保守独立成 wave；成环残余按 id 序串行追加。"""
+    notes = []
+    declared = {}   # 显式声明 deps 的任务
+    solo = []       # deps 缺失 → 保守独立 wave
+    for t in tasks:
+        tid = t.get("id") or "?"
+        if "deps" not in t:
+            solo.append(tid)
+            notes.append(f"{tid}: 未声明 deps，保守串行（显式写 deps:[] 可解锁并行）")
+        else:
+            declared[tid] = [d for d in (t.get("deps") or []) if d in
+                             {x.get("id") for x in tasks}]  # 悬空引用静默剔除并提示
+            missing = [d for d in (t.get("deps") or []) if d not in {x.get("id") for x in tasks}]
+            for m in missing:
+                notes.append(f"{tid}: deps 引用了不存在的 {m}，已忽略该依赖")
+    # Kahn 分层（仅对显式声明 deps 的任务）
+    indeg = {tid: len(ds) for tid, ds in declared.items()}
+    rdep = {tid: [] for tid in declared}
+    for tid, ds in declared.items():
+        for d in ds:
+            rdep[d].append(tid)
+    waves = []
+    ready = sorted([t for t, dg in indeg.items() if dg == 0])
+    done = set()
+    while ready:
+        waves.append(ready)
+        nxt = []
+        for tid in ready:
+            done.add(tid)
+            for m in rdep[tid]:
+                indeg[m] -= 1
+                if indeg[m] == 0:
+                    nxt.append(m)
+        ready = sorted(nxt)
+    leftover = sorted(set(declared) - done)
+    if leftover:
+        notes.append(f"依赖成环 {leftover}：环内任务按序串行，建议拆解后重新声明依赖")
+        for tid in leftover:
+            waves.append([tid])
+    for tid in solo:
+        waves.append([tid])
+    return waves, notes
 
 
 def main() -> int:
@@ -61,59 +77,50 @@ def main() -> int:
     args = ap.parse_args()
     try:
         data = load_tasks(args.tasks)
-    except json.JSONDecodeError as e:
-        print(json.dumps({"verdict": "B", "violations": [f"JSON 解析失败: {e}"]}, ensure_ascii=False))
-        return 2
+    except (json.JSONDecodeError, OSError) as e:
+        # 输入都解析不了时也给出下文：无法分流，按串行原样执行
+        print(json.dumps({"execution_plan": {
+            "mode": "serial",
+            "waves": [],
+            "breakdown": {},
+            "notes": [f"输入解析失败（{e}），按串行原样执行"],
+        }}, ensure_ascii=False))
+        return 0
 
-    tasks, violations = validate_structure(data)
-    # 本件额外要求：size 必填（可拆性判定依据）
-    for t in tasks:
-        if not t.get("size"):
-            violations.append(f"{t.get('id')}: size 字段缺失——可拆性判定需要 S/M/L/XL 标注")
-    if violations:
-        print(json.dumps({"verdict": "B", "violations": violations}, ensure_ascii=False))
-        return 2
-    layers, cyc = kahn_layers(tasks)
-    if cyc:
-        print(json.dumps({"verdict": "B", "violations": cyc}, ensure_ascii=False))
-        return 2
+    tasks = data.get("tasks") if isinstance(data, dict) else data
+    if not isinstance(tasks, list) or not tasks:
+        print(json.dumps({"execution_plan": {
+            "mode": "serial", "waves": [], "breakdown": {},
+            "notes": ["任务清单为空或非法，按串行原样执行"]}}, ensure_ascii=False))
+        return 0
 
-    per_task = {}
+    waves, notes = split_waves(tasks)
+
+    # 分解判定：逐任务独立
+    breakdown = {}
     for t in tasks:
-        if t["size"] == "S":
-            per_task[t["id"]] = {"mode": "atomic"}
+        tid = t.get("id") or "?"
+        size = t.get("size")
+        if size in BREAKDOWN_SIZES:
+            breakdown[tid] = "decomposable"
         else:
-            per_task[t["id"]] = {"mode": "needs_breakdown",
-                                 "reason": f"size={t['size']}（非 S），母 agent 先拆子任务，"
-                                           f"子任务清单递归再调本脚本直到全部 atomic"}
+            breakdown[tid] = "atomic"
+            if not size:
+                notes.append(f"{tid}: 未标 size，按不可分解处理（标 M/L/XL 可解锁拆解）")
 
-    waves = []
-    for i, layer in enumerate(layers, 1):
-        waves.append({
-            "wave": i,
-            "parallel_sub_agents": layer,
-            "width": len(layer),
-            "modes": {tid: per_task[tid]["mode"] for tid in layer},
-        })
-    width = max(len(l) for l in layers)
+    multi = len(tasks) >= 2
+    width = max((len(w) for w in waves), default=1)
     plan = {
-        "task_layers": layers,
-        "per_task": per_task,
-        "spawn_topology": {
-            "mother_agent": "主 Agent（母）",
-            "waves": waves,
-            "rule": "wave 内并行 spawn 子 agent；wave 间按依赖就绪串行推进；"
-                    "needs_breakdown 任务先拆解再递归判定",
-        },
-        "dispatch_hint": {
-            "units": width,
-            "cmd": f"python3 ~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py "
-                   f"--units {width} --desc \"<任务摘要>\"",
-            "note": "width>1 时派发前必须扳并行闸复核安全性；width==1 全串行免扳",
-        },
+        "mode": "parallel" if (multi and width > 1) else "serial",
+        "waves": [{"wave": i + 1, "tasks": w, "parallel": len(w) > 1}
+                  for i, w in enumerate(waves)],
+        "breakdown": breakdown,
+        "parallel_width": width if multi else 1,
+        "notes": notes,
+        "rule": "wave 内并行 spawn 子 agent、wave 间串行；decomposable 任务到点先拆子任务再执行；"
+                "并行安全性由 dispatch_switch --units <width> 复核（width>1 时）",
     }
-    print(json.dumps({"verdict": "A", "fanout_plan": plan, "violations": []}, ensure_ascii=False))
-    write_marker(plan)
+    print(json.dumps({"execution_plan": plan}, ensure_ascii=False))
     return 0
 
 

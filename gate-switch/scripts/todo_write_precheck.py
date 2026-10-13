@@ -14,15 +14,11 @@
 用法：
   python3 todo_write_precheck.py --tasks '["任务A","任务B"]' [--new-turn]
 
-退出码：0=提醒已输出/放行；2=阻断（fanout 判定留痕缺失——2026-10-13 升级，
-REFORM-GATE 判A 块 todo_fanout_gate_20261013.md，用户裁定"并行闸放在 TodoWrite 之前，
-任务分解功能移入并行闸内"：含新任务时必须先跑 task_fanout_plan.py 且判 A 留痕，
-否则阻断 TodoWrite。重发/无新任务豁免 via=resend_exempt；留痕窗口 1800 秒）。
+退出码：0=提醒已输出（非判定）。
 """
 from __future__ import annotations
 
 import argparse
-import datetime
 import json
 import os
 import sys
@@ -35,8 +31,6 @@ PRECHECK_LOG = os.environ.get(
     "TODO_PRECHECK_LOG",
     os.path.expanduser("~/.agents/logs/todo_write_precheck.jsonl"),
 )
-FANOUT_MARKER_TTL = 1800  # 留痕有效窗口（秒）：跑完 fanout 到 TodoWrite 的合理间隔
-FANOUT_SCRIPT = "~/.agents/skills/parallel-dispatch/scripts/task_fanout_plan.py"
 
 
 def session_id() -> str:
@@ -79,38 +73,6 @@ def remind(text, task):
     print(f"     ↳ {task}")
 
 
-def fanout_marker_ok(session: str) -> tuple[bool, str]:
-    """fanout 留痕核验：文件存在 + verdict==A + ts 在窗口期内。
-    缺失/解析失败/过期一律视为无留痕（DIM-032 读侧不炸）。返回 (是否放行, via/原因)。"""
-    path = f"/tmp/fanout_plan_{session}.json"
-    try:
-        with open(path, encoding="utf-8") as f:
-            rec = json.load(f)
-        if rec.get("verdict") != "A":
-            return False, "留痕 verdict != A（fanout 判定未通过）"
-        ts = datetime.datetime.fromisoformat(rec.get("ts") or "")
-        age = (datetime.datetime.now() - ts).total_seconds()
-        if age > FANOUT_MARKER_TTL:
-            return False, f"留痕过期（{int(age)}s > {FANOUT_MARKER_TTL}s）"
-        return True, f"fresh_fanout_marker(width={rec.get('width')}, age={int(age)}s)"
-    except Exception:
-        return False, "无 fanout 留痕（task_fanout_plan.py 未跑或未判 A）"
-
-
-def log_via(session: str, n_tasks: int, n_new: int, new_turn: bool, via: str) -> None:
-    """统一留痕（DIM-033：放行/阻断带 via 通道，供事后审计回溯）。"""
-    try:
-        os.makedirs(os.path.dirname(PRECHECK_LOG), exist_ok=True)
-        with open(PRECHECK_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "ts": datetime.datetime.now().isoformat(timespec="seconds"),
-                "session_id": session, "n_tasks": n_tasks, "n_new": n_new,
-                "new_turn": new_turn, "via": via,
-            }, ensure_ascii=False) + "\n")
-    except Exception:
-        pass  # 留痕失败不阻断
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description="todo_write 前置提醒脚本")
     ap.add_argument("--tasks", required=True, help="本次 todo_write 任务清单（JSON 数组/逗号分隔）")
@@ -125,26 +87,10 @@ def main() -> int:
 
     print(f"todo_write 前置提醒（会话 {session}，共 {len(tasks)} 项任务）:")
 
-    fanout_via = "no_tasks"
     if new_keys:
         remind("清单含新任务 → 计划闸附身", "attached_plan 对新任务触发；重发（无新任务）豁免")
-        ok, why = fanout_marker_ok(session)
-        if not ok:
-            print(f"  ✖ 阻断：{why}")
-            print("  【fanout 前置判定缺失 · 阻断 TodoWrite】（2026-10-13 用户裁定：")
-            print("   任务分解判定移入并行闸——新建任务前先判每个任务可拆性与多任务依赖并行）")
-            print("  解除步骤：")
-            print("  1. 构造任务清单 JSON：每任务必标 id / size(S·M·L·XL) / deps；")
-            print("     无依赖显式写 deps:[] 并附 no_dep_reason")
-            print(f"  2. 跑 python3 {FANOUT_SCRIPT} --tasks '<JSON>' 照抄输出（判 B 按 violations 修复）")
-            print("  3. 判 A 留痕后重新 todo_write")
-            log_via(session, len(tasks), len(new_keys), args.new_turn, f"blocked:{why}")
-            return 2
-        fanout_via = why
-        print(f"  ✓ fanout 判定留痕核验通过（via={why}）——分解/并行判定已先行")
     else:
         print("  ✓ 无新任务（重发豁免，不重复附身计划闸）")
-        fanout_via = "resend_exempt"
 
     # 并行/多任务启发：任务数>1 且含并行意图
     multi = any(k in " ".join(keys) for k in ("并行", "多任务", "扇出", "多个"))
@@ -159,8 +105,20 @@ def main() -> int:
 
     print("提示：照抄并执行命中项后再调用 todo_write；判定禁止手写。")
 
-    # 留痕（事后审计闸核验"todo_write 前已触发 precheck"用；via 通道必填，DIM-033）
-    log_via(session, len(tasks), len(new_keys), args.new_turn, fanout_via)
+    # 留痕（事后审计闸核验"todo_write 前已触发 precheck"用）
+    try:
+        os.makedirs(os.path.dirname(PRECHECK_LOG), exist_ok=True)
+        import datetime
+        with open(PRECHECK_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "ts": datetime.datetime.now().isoformat(timespec="seconds"),
+                "session_id": session,
+                "n_tasks": len(tasks),
+                "n_new": len(new_keys),
+                "new_turn": args.new_turn,
+            }, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # 留痕失败不阻断
     return 0
 
 
