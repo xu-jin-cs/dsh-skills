@@ -23,6 +23,8 @@
   ② 并行判定（仅 ≥2 任务触发）：读 content 内嵌 deps 标注（[M|deps:1,3] 引用清单序号），
      无依赖同 wave 并行、有依赖 wave 间串行；缺 deps 标注保守串行。
   输出=执行拓扑（wave 结构+分解标注），注入 additionalContext 随 TodoWrite 生效。
+  销号规则（2026-10-13 用户终裁）：并行任务谁完成谁销号；decomposable 任务由母 agent
+  等全部子 agent 事项合并后才销号；复合拓扑=多母并行（母间互不等待）×各母带子群聚合。
 """
 from __future__ import annotations
 

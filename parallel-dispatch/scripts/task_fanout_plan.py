@@ -72,7 +72,7 @@ def make_plan(tasks: list) -> dict:
         "breakdown": breakdown,
         "parallel_width": width if multi else 1,
         "notes": notes,
-        "rule": "wave 内并行、wave 间串行；decomposable 任务先拆子任务再执行",
+        "rule": "并行=任务独立·谁完成谁销号；分解=母子共成一事·母等全部子事项合并后销号；wave 内并行·wave 间串行；decomposable 任务先拆子任务再执行",
     }
 
 
@@ -90,7 +90,7 @@ def main() -> int:
     except Exception as e:
         plan = {"mode": "serial", "waves": [], "breakdown": {}, "parallel_width": 1,
                 "notes": [f"输入解析失败（{e}），按串行原样执行"],
-                "rule": "wave 内并行、wave 间串行；decomposable 任务先拆子任务再执行"}
+                "rule": "并行=任务独立·谁完成谁销号；分解=母子共成一事·母等全部子事项合并后销号；wave 内并行·wave 间串行；decomposable 任务先拆子任务再执行"}
     print(json.dumps({"execution_plan": plan}, ensure_ascii=False))
     return 0
 
