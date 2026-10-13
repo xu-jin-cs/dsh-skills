@@ -57,6 +57,9 @@ EXIT_A, EXIT_B, EXIT_CLARIFY, EXIT_VIOLATION = 0, 2, 3, 4
 # （DSH zstd + Kimi wire.jsonl 双格式）。
 TODO_GATE_FRESH_SECONDS = 900  # 会话日志活跃窗口：窗口内被写入才视为"当前会话"
 BASELINE_MIN_FILES = 4       # 有效文件数 ≥4（规模轴 >3）强制上下文基线文件
+LIGHT_LANE_MAX_UNITS = 5     # 轻任务快车道阈值（2026-10-13 P0 重构判A，块 fanout_p0_rebuild_20261013.md）：
+                             # units≤5 且未声明 coupled 时基线闸免评估——shell 级无共享状态任务无契约冲突面。
+                             # 冷启动默认值，跑真实数据后校准；豁免放行带 via=light_lane 留痕。
 PROBE_MIN_FANOUT = 6         # 扇出单元 ≥6 强制最小探针（收益拐点 N*=c/p≈0.3/0.05，对齐数量轴 6~9 档）
 PROBE_FRESH_SECONDS = 1800   # 探针实证 30 分钟有效窗
 FANOUT_TOOL_NAMES = slog.DSH_FANOUT_TOOLS + slog.KIMI_FANOUT_TOOLS
@@ -104,11 +107,16 @@ def todo_gate_check(n, session_log=None):
     return {"ok": True, "log": path, "log_source": source, "todos": count}
 
 
-def baseline_gate_check(baseline, files_effective):
-    """闸2 基线存在：有效文件数达到 BASELINE_MIN_FILES 时基线文件必须真实非空。"""
+def baseline_gate_check(baseline, files_effective, coupled=False):
+    """闸2 基线存在：有效文件数达到 BASELINE_MIN_FILES 时基线文件必须真实非空。
+    轻任务快车道：units≤LIGHT_LANE_MAX_UNITS 且无 coupled 时免评估（via=light_lane）。"""
     if files_effective is None or files_effective < BASELINE_MIN_FILES:
         return {"ok": True, "skipped": True,
                 "reason": "有效文件数 %s < %s → 免评估档，基线闸跳过" % (files_effective, BASELINE_MIN_FILES)}
+    if not coupled and files_effective <= LIGHT_LANE_MAX_UNITS:
+        return {"ok": True, "skipped": True, "via": "light_lane",
+                "reason": "轻任务快车道：units %s ≤ %s 且无耦合声明 → 基线闸免评估"
+                          % (files_effective, LIGHT_LANE_MAX_UNITS)}
     paths = [x.strip() for x in (baseline or "").split(",") if x.strip()]
     if not paths:
         return {"ok": False,
@@ -205,7 +213,7 @@ def flip(files, units, coupled, batch, desc, dep_reason, force_serial, session_l
                 ],
                 "directive": "先调用 todo_write 把全部子任务登记进任务清单（本 turn 内，条目数 ≥ 扇出单元数），再重扳本开关",
             }, EXIT_VIOLATION
-        baseline_gate = baseline_gate_check(baseline, files if files is not None else n_eff)
+        baseline_gate = baseline_gate_check(baseline, files if files is not None else n_eff, coupled=coupled)
         if baseline_gate["ok"] is False:
             return {
                 "verdict": "VIOLATION",
