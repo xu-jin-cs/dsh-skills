@@ -91,8 +91,13 @@ def parse_tasks(raw: str) -> list[str]:
             return [t for t in out if t]
     except Exception:
         pass
-    # 纯文本：中英文逗号/分号皆可分隔（hook 层以 "；" 连接 content）
-    return [t for t in re.split(r"[，,；;]", raw) if t.strip()]
+    # 纯文本：分号优先（hook 层以 "；" 连接 content，且 deps:1,2 内含逗号防误切）；
+    # 无分号才按逗号切（逗号分隔场景请勿用 deps 内联列表）
+    if "；" in raw or ";" in raw:
+        parts = re.split(r"[；;]", raw)
+    else:
+        parts = re.split(r"[，,]", raw)
+    return [t for t in parts if t.strip()]
 
 
 def remind(text, task):
