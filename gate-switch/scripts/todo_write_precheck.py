@@ -120,21 +120,20 @@ def parse_fanout_tasks(tasks: list) -> list:
 
 
 def emit_fanout_plan(tasks: list) -> None:
-    """闸内分流判定：输出执行拓扑结论（必定有下文；判定件缺失则跳过不炸）。"""
+    """闸内分流判定：一行结论式输出（2026-10-13 P0 重构：去门槛去轰炸）。
+    判定件缺失则跳过不炸；notes 仅异常级（成环/悬空/非法输入）。"""
     if _fanout_make_plan is None or not tasks:
         return
     plan = _fanout_make_plan(parse_fanout_tasks(tasks))
-    print(f"  ⇒ 扇出分流结论：{plan['mode']}（并行宽度 width={plan['parallel_width']}）")
-    for w in plan["waves"]:
-        tag = "并行" if w["parallel"] else "串行"
-        decomp = [tid for tid in w["tasks"] if plan["breakdown"].get(tid) == "decomposable"]
-        line = f"     wave{w['wave']} [{tag}] 任务{w['tasks']}"
-        if decomp:
-            line += f"｜可分解: {decomp}（到点先拆子任务再执行）"
-        print(line)
+    waves = " → ".join(
+        ("∥" if w["parallel"] else "") + str(w["tasks"]) for w in plan["waves"])
+    decomp = [tid for tid, m in plan["breakdown"].items() if m == "decomposable"]
+    line = f"  ⇒ 分流：{plan['mode']} width={plan['parallel_width']} | {waves}"
+    if decomp:
+        line += f" | 可分解:{decomp}（先拆再执行）"
+    print(line)
     for n in plan["notes"]:
-        print(f"     · {n}")
-    print(f"     规则：{plan['rule']}")
+        print(f"     ⚠ {n}")
 
 
 def main() -> int:
