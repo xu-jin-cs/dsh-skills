@@ -175,6 +175,15 @@ def main() -> int:
     if new_keys:
         emit_fanout_plan(tasks)
 
+    # seal 台账闭合（2026-10-13：原实现只读不写导致 seen 永空、重发豁免失效）——本次任务 keys 落台账
+    try:
+        os.makedirs(SEAL_DIR, exist_ok=True)
+        with open(os.path.join(SEAL_DIR, f"{session}.jsonl"), "a", encoding="utf-8") as f:
+            for k in keys:
+                f.write(json.dumps({"task_key": k}, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # 台账写失败不阻断
+
     print("提示：照抄并执行命中项后再调用 todo_write；判定禁止手写。")
 
     # 留痕（事后审计闸核验"todo_write 前已触发 precheck"用）
