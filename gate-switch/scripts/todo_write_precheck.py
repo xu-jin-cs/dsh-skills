@@ -7,7 +7,7 @@
 
 提醒项：
   ① 清单含【新任务】 → 计划闸附身（attached_plan：新任务才触发、重发豁免）
-  ② 出现【多任务/并行】→ 并行闸（PARALLEL-GATE：dispatch_switch + todo_write 先登记）
+  ② 出现【多任务/并行】→ 闸内分流（单源真源，分流结论即放行）
   ③ 新回合有【未完成 todo】→ 需重发 todo_write（面板 turn 级清零）
   ④ 若为【改造/机制/重构】→ 收益闸（REFORM-GATE）判 A 才动手
 
@@ -167,7 +167,7 @@ def main() -> int:
     # 并行/多任务启发：任务数>1 且含并行意图
     multi = any(k in " ".join(keys) for k in ("并行", "多任务", "扇出", "多个"))
     if len(keys) > 1 or multi:
-        remind("多任务/并行 → 分流结论即放行", "按上方扇出拓扑直接执行；仅 width>5 或显式耦合才扳 dispatch_switch（重型场景）")
+        remind("多任务/并行 → 分流结论即放行", "按上方扇出拓扑直接执行（并行闸已退役，分流器单源真源）")
 
     if args.new_turn:
         remind("新回合有未完成 todo → 重发", "todo_write 面板 turn 级清零，重发同步面板")
