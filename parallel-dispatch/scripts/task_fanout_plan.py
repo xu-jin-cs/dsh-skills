@@ -13,6 +13,7 @@
 # 用法：python3 task_fanout_plan.py --tasks <JSON文件路径 或 内联JSON串>
 # 出参 verdict：A=拓扑产出；B=标注违例（漏标/悬空/成环/缺size/no_dep_reason），violations 即修复指令。
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -20,6 +21,37 @@ sys.path.insert(0, str(Path(__file__).parent))
 from dag_layer import load_tasks, validate_structure, kahn_layers  # 复用分层件，口径唯一
 
 BREAKDOWN_SIZES = {"M", "L", "XL"}   # 非 S 即需拆解
+
+# 留痕产物（2026-10-13 REFORM-GATE 判A · todo_fanout_gate_20261013.md）：
+# 判 A 时原子写 /tmp/fanout_plan_<session>.json，作为 todo_write_precheck 阻断闸的
+# "fanout 判定已真实执行"唯一凭证（母本=retro_match_gate marker 模式）。
+def _session() -> str:
+    return os.environ.get("DSH_SESSION_ID", "").strip() or "default-session"
+
+
+def marker_path(session: str) -> str:
+    return f"/tmp/fanout_plan_{session}.json"
+
+
+def write_marker(plan: dict) -> None:
+    """原子写留痕（tmp+os.replace，DIM-032）；失败不阻断主流程。"""
+    import datetime
+    import tempfile
+    rec = {
+        "ts": datetime.datetime.now().isoformat(timespec="seconds"),
+        "verdict": "A",
+        "width": plan["dispatch_hint"]["units"],
+        "n_tasks": sum(len(l) for l in plan["task_layers"]),
+        "via": "task_fanout_plan",
+    }
+    path = marker_path(_session())
+    try:
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(rec, f, ensure_ascii=False)
+        os.replace(tmp, path)
+    except OSError:
+        pass
 
 
 def main() -> int:
@@ -81,6 +113,7 @@ def main() -> int:
         },
     }
     print(json.dumps({"verdict": "A", "fanout_plan": plan, "violations": []}, ensure_ascii=False))
+    write_marker(plan)
     return 0
 
 

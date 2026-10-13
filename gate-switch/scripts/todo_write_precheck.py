@@ -14,11 +14,15 @@
 用法：
   python3 todo_write_precheck.py --tasks '["任务A","任务B"]' [--new-turn]
 
-退出码：0=提醒已输出（非判定）。
+退出码：0=提醒已输出/放行；2=阻断（fanout 判定留痕缺失——2026-10-13 升级，
+REFORM-GATE 判A 块 todo_fanout_gate_20261013.md，用户裁定"并行闸放在 TodoWrite 之前，
+任务分解功能移入并行闸内"：含新任务时必须先跑 task_fanout_plan.py 且判 A 留痕，
+否则阻断 TodoWrite。重发/无新任务豁免 via=resend_exempt；留痕窗口 1800 秒）。
 """
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -31,6 +35,8 @@ PRECHECK_LOG = os.environ.get(
     "TODO_PRECHECK_LOG",
     os.path.expanduser("~/.agents/logs/todo_write_precheck.jsonl"),
 )
+FANOUT_MARKER_TTL = 1800  # 留痕有效窗口（秒）：跑完 fanout 到 TodoWrite 的合理间隔
+FANOUT_SCRIPT = "~/.agents/skills/parallel-dispatch/scripts/task_fanout_plan.py"
 
 
 def session_id() -> str:
