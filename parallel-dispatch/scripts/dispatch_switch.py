@@ -6,7 +6,9 @@ dispatch_switch.py — 调度单刀双掷开关（2026-08-15 用户裁定，para
 物理原型：单刀双掷（SPDT）——一个刀闸、两个掷点，电流必走一路，无悬空态。
 多任务触发并行判定后、执行前，必须扳动本开关，输出必然二选一：
 
-  掷点 A（执行并行）：无依赖单元 ≥2，按数量轴机制扇出（subagent / 分组 / workflow）
+  掷点 A（执行并行）：无依赖单元 ≥2，按数量轴机制执行
+    （main_parallel 主agent并行·todo清单并行显示 / workflow 编排；
+      2026-10-14 用户终裁：并行不 spawn 子智能体，子智能体仅子母分解 task_breakdown 场景启用）
   掷点 B（不执行并行）：串行 —— 但多任务串行必须携带依赖链理由，空理由即 VIOLATION
 
 设计要点：
@@ -247,6 +249,17 @@ def flip(files, units, coupled, batch, desc, dep_reason, force_serial, session_l
             passed.append(f"掷点 A 闸2 基线存在已通过：{len(baseline_gate['paths'])} 个基线文件真实非空")
         if not probe_gate.get("skipped"):
             passed.append(f"掷点 A 闸3 探针实证已通过：窗口内 {probe_gate['proofs']} 次扇出类调用完成往返")
+        directive = (
+            "照抄 gate_declaration 输出后按 mechanism 立即执行，禁止只评估不执行；"
+            "每路 settle 后立即销号对应 todo"
+        )
+        if probe["mechanism"] == "main_parallel":
+            directive = (
+                "照抄 gate_declaration 输出后由主agent并行执行：todo 清单各并行项同时置 "
+                "in_progress 直接显示并行，同一回合内并行推进，禁止 spawn 子智能体"
+                "（2026-10-14 用户终裁：子智能体仅子母分解 task_breakdown 场景启用）；"
+                "每路 settle 后立即销号对应 todo"
+            )
         return {
             "verdict": "A",
             "throw": "A",
@@ -259,7 +272,7 @@ def flip(files, units, coupled, batch, desc, dep_reason, force_serial, session_l
             "baseline_gate": baseline_gate,
             "probe_gate": probe_gate,
             "reasons": probe["reasons"] + passed,
-            "directive": "照抄 gate_declaration 输出后，按 mechanism 立即扇出，禁止只评估不执行；每路 settle 后立即销号对应 todo",
+            "directive": directive,
         }, EXIT_A
 
     # ---- 掷点 B：不执行并行（串行）----

@@ -86,15 +86,23 @@ def decide(files, units, coupled, batch, desc):
             + " → 必须 workflow 脚本编排，禁止逐个人肉 spawn"
         )
     elif n <= 5:
-        mechanism = "subagent"
+        # 2026-10-14 用户终裁：并行=主agent执行+todo清单并行显示，不 spawn 子智能体；
+        # 子智能体（Agent 分身）仅子母任务分解（task_breakdown）场景启用
+        mechanism = "main_parallel"
         fanout = n
         topology = "parallel"
-        reasons.append(f"单元数 {n} ∈ 2~5 → subagent 同一消息内一次性扇出")
+        reasons.append(
+            f"单元数 {n} ∈ 2~5 → 主agent并行：todo 清单并行显示（多项同时 in_progress），"
+            "同一回合内并行处理，禁止 spawn 子智能体"
+        )
     else:  # 6~9
-        mechanism = "subagent_grouped"
+        mechanism = "main_parallel"
         fanout = n
         topology = "parallel"
-        reasons.append(f"单元数 {n} ∈ 6~9 → subagent 按角色分组扇出（同层 ≤{GROUP_MAX_UNITS}）")
+        reasons.append(
+            f"单元数 {n} ∈ 6~9 → 主agent并行（2026-10-14 用户终裁口径，不再分组 spawn 子智能体）："
+            "todo 清单并行显示，按 FE/BE 等角色分批推进"
+        )
 
     # ---- 耦合修正拓扑 ----
     if coupled and topology == "parallel":
@@ -114,7 +122,8 @@ def decide(files, units, coupled, batch, desc):
     # ---- PARALLEL-GATE 声明生成 ----
     gate = None
     if fanout >= 1:
-        mech_text = {"subagent": f"subagent×{fanout}",
+        mech_text = {"main_parallel": f"主agent并行×{fanout}(清单并行显示)",
+                     "subagent": f"subagent×{fanout}",
                      "subagent_grouped": f"subagent×{fanout}(分组)",
                      "workflow": "workflow"}.get(mechanism, mechanism)
         gate = (f"[PARALLEL-GATE] 子任务数:{n} | 无依赖:{fanout} | "
