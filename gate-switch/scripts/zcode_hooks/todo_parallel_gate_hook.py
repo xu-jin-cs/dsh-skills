@@ -142,7 +142,8 @@ def main():
         except Exception:
             pass
         ctx = (f"[并行闸·轻量声明] 新任务 {units} 个，无文件路径证据。"
-               "依赖判断归模型：互不依赖或依赖已完成 → 可并行扇出；有未完成依赖 → 串行。"
+               "依赖判断归模型：互不依赖或依赖已完成 → 可并行（主agent执行，清单并行显示，"
+               "不 spawn 子智能体）；有未完成依赖 → 串行。"
                "一句话说明判定即可，零阻断零强制。")
         print(json.dumps({"additionalContext": ctx}, ensure_ascii=False))
         return 0

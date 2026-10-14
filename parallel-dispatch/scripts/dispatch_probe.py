@@ -60,7 +60,7 @@ def decide(files, units, coupled, batch, desc):
             reasons.append("存在契约/状态耦合 → 需评估：先 task_breakdown 定档（不论文件数）")
     elif f is not None and f <= LIGHT_MAX_FILES:
         scale = "light"
-        reasons.append(f"文件数 {f} ≤ {LIGHT_MAX_FILES} 且无耦合 → 免评估轻分身")
+        reasons.append(f"文件数 {f} ≤ {LIGHT_MAX_FILES} 且无耦合 → 免评估轻量并行（主agent直接执行）")
     elif f is not None and f > ENGINE_MIN_FILES:
         scale = "engine"
         reasons.append(
