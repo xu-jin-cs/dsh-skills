@@ -123,8 +123,6 @@ def decide(files, units, coupled, batch, desc):
     gate = None
     if fanout >= 1:
         mech_text = {"main_parallel": f"主agent并行×{fanout}(清单并行显示)",
-                     "subagent": f"subagent×{fanout}",
-                     "subagent_grouped": f"subagent×{fanout}(分组)",
                      "workflow": "workflow"}.get(mechanism, mechanism)
         gate = (f"[PARALLEL-GATE] 子任务数:{n} | 无依赖:{fanout} | "
                 f"判定:parallel | 机制:{mech_text}")

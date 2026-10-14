@@ -275,7 +275,7 @@ def seal(session_log=None, switch_log=DEFAULT_SWITCH_LOG, sessions_root=None, pr
 
 
 def main():
-    ap = argparse.ArgumentParser(description="扇出收尾闸：真扇出 + 全销号的机械实证")
+    ap = argparse.ArgumentParser(description="扇出收尾闸：真执行（按 mechanism 分流）+ 全销号的机械实证")
     ap.add_argument("--session-log", type=str, default=None,
                     help="显式指定当前会话日志路径（DSH session.jsonl.zstd 或 Kimi wire.jsonl；缺省 DSH_SESSION_JSONL/活跃启发式）")
     ap.add_argument("--switch-log", type=str, default=DEFAULT_SWITCH_LOG,

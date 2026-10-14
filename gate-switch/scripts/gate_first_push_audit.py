@@ -13,8 +13,9 @@
   F3 复盘触发词命中未走 GENERATE 准入：user 文本命中触发词表（源自
      dispatcher_generate_config.json fixed_phrases），但窗口内无
      spec=retro_generate_token 掷点 → 违例
-  F4 掷点 A 后未真扇出：窗口内 dispatch_switch 有 throw=A 留痕，但会话无任何
-     subagent 族 tool/call → 违例（只评估不执行=故意串行化的机械代理信号）
+  F4 掷点 A 后未真执行：窗口内 dispatch_switch 有 throw=A 留痕且机制非 main_parallel，
+     但会话无任何 subagent 族 tool/call → 违例（只评估不执行=故意串行化的机械代理信号）；
+     main_parallel（2026-10-14 终裁：主agent并行）豁免本维，实证归 fanout_seal
   F5 WARNING：流程特征（harness-step-sync / HARNESS_API_URL）出现但窗口内无
      engine_health 掷点 → 仅告警（流程启动特征枚举先窄后宽，防误报）
   F6 retro-match 该跑没跑：用户消息命中复盘/流程触发词，但窗口内
@@ -171,6 +172,22 @@ def read_session(path):
     return events, a_texts, u_texts, bash_cmds, sub_calls, start_iso, end_iso, u_msgs_timed
 
 
+def log_records(path, start_iso, predicate):
+    """窗口内留痕 jsonl 中满足 predicate 的记录清单（2026-10-14 main_parallel 分流用）。"""
+    out = []
+    if not os.path.exists(path):
+        return out
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if str(rec.get("ts", "")) >= start_iso and predicate(rec):
+                out.append(rec)
+    return out
+
+
 def log_has_record(path, start_iso, predicate):
     """窗口内留痕 jsonl 是否存在满足 predicate 的记录。"""
     if not os.path.exists(path):
@@ -241,10 +258,16 @@ def main():
         violations.append({"code": "F3-RETRO-NO-TOKEN",
             "detail": f"用户消息命中复盘触发词「{hit}」但窗口内无 retro_generate_token 掷点 → 复盘未走 GENERATE 准入"})
 
-    # F4 掷点 A 未真扇出（2026-08-19 起按 session 过滤，防并发会话掷点 A 污染本窗口）
-    if log_has_record(DISPATCH_LOG, start_iso, lambda r: r.get("throw") == "A" and same_session(r, sid)) and sub_calls == 0:
+    # F4 掷点 A 未真执行（2026-08-19 起按 session 过滤，防并发会话掷点 A 污染本窗口；
+    # 2026-10-14 用户终裁分流：main_parallel 主agent并行不要求 subagent 族调用，
+    # 其真执行实证=todo 清单并行显示，由 fanout_seal 终答前核验，本维豁免；
+    # 非 main_parallel 机制的掷点 A 仍须 subagent 族调用实证）
+    a_recs = log_records(DISPATCH_LOG, start_iso,
+                         lambda r: r.get("throw") == "A" and same_session(r, sid))
+    non_main_a = [r for r in a_recs if r.get("mechanism") != "main_parallel"]
+    if non_main_a and sub_calls == 0:
         violations.append({"code": "F4-THROW-A-NO-FANOUT",
-            "detail": "窗口内有 dispatch_switch 掷点 A 留痕但会话零 subagent 族调用 → 只评估不执行（故意串行化代理信号）"})
+            "detail": "窗口内有非 main_parallel 机制的掷点 A 留痕但会话零 subagent 族调用 → 只评估不执行（故意串行化代理信号）"})
 
     # F5 WARNING：流程特征无 engine_health
     if any(sig in cmd for cmd in bash_cmds for sig in ENGINE_FLOW_SIGNALS):
