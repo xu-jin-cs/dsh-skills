@@ -20,8 +20,7 @@ import subprocess
 import sys
 import datetime
 
-# 2026-10-13 旧并行闸退役（dispatch_switch_retire_20261013.md）：末端改指分流器 --gear 规模档位判定
-DISPATCH_SWITCH = os.path.expanduser("~/.agents/skills/parallel-dispatch/scripts/task_fanout_plan.py")
+DISPATCH_SWITCH = os.path.expanduser("~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py")
 ATTACHED_LOG = os.path.expanduser("~/.agents/logs/attached_dispatch.jsonl")
 
 
@@ -55,7 +54,8 @@ def main():
     files, units, desc = resolve_inputs(args)
     try:
         r = subprocess.run(
-            [sys.executable, DISPATCH_SWITCH, "--gear", "--files", str(files)],
+            [sys.executable, DISPATCH_SWITCH, "--files", str(files),
+             "--units", str(units), "--desc", desc],
             capture_output=True, text=True, timeout=120)
         try:
             dispatch = json.loads(r.stdout)
@@ -68,11 +68,13 @@ def main():
     out = {
         "attached": True, "host": args.host,
         "files": files, "units": units, "desc": desc,
-        "dispatch_verdict": dispatch.get("route"),
-        "dispatch_throw": dispatch.get("size_gear"),
+        "dispatch_verdict": dispatch.get("verdict"),
+        "dispatch_throw": dispatch.get("throw"),
         # 原文转发（含 VIOLATION 拒扳理由，作提醒不炸宿主）
         "dispatch_raw": dispatch,
-        "note": "附身执行非判定：gear 判定结果原文转发（size_gear=S→lite / M·L→main），照抄执行。",
+        "note": ("附身执行非判定：dispatch 结果原文转发。"
+                 + ("闸1/闸2 拒扳（VIOLATION）→ 按 directive 补登记后重扳。"
+                    if dispatch.get("verdict") == "VIOLATION" else "照抄掷点结论执行。")),
     }
     print(json.dumps(out, ensure_ascii=False, indent=2))
     try:

@@ -7,26 +7,14 @@
 
 提醒项：
   ① 清单含【新任务】 → 计划闸附身（attached_plan：新任务才触发、重发豁免）
-  ② 出现【多任务/并行】→ 闸内分流（单源真源，分流结论即放行）
+  ② 出现【多任务/并行】→ 并行闸（dispatch_switch PARALLEL-GATE）
   ③ 新回合有【未完成 todo】→ 需重发 todo_write（面板 turn 级清零）
   ④ 若为【改造/机制/重构】→ 收益闸（REFORM-GATE）判 A 才动手
 
 用法：
   python3 todo_write_precheck.py --tasks '["任务A","任务B"]' [--new-turn]
 
-退出码：0=提醒与分流结论已输出（恒放行，不阻塞不打回）。
-
-闸内扇出分流（2026-10-13 用户终裁：必定是闸·闸内判断·事前型·恒有下文不阻塞）：
-  每次 TodoWrite 必经本闸——闸体内直接完成分流判定并输出执行拓扑结论：
-  ① 分解判定（逐任务独立）：content 内嵌标注 [S]=不可分解 / [M]/[L]/[XL]=可分解；
-     缺标注按不可分解处理并 notes 提示。混合合法，不要求全部可分解。
-  ② 并行判定（仅 ≥2 任务触发）：读 content 内嵌 deps 标注（[M|deps:1,3] 引用清单序号），
-     无依赖同 wave 并行、有依赖 wave 间串行；缺 deps 标注保守串行。
-  输出=执行拓扑（wave 结构+分解标注），注入 additionalContext 随 TodoWrite 生效。
-  终局许可（2026-10-13 用户终裁·关卡合并）：分流结论即放行，生成任务后一次判断完毕，
-  符合并行直接并行、符合分解直接分解，禁止再增设关卡。
-  销号规则（2026-10-13 用户终裁）：并行任务谁完成谁销号；decomposable 任务由母 agent
-  等全部子 agent 事项合并后才销号；复合拓扑=多母并行（母间互不等待）×各母带子群聚合。
+退出码：0=提醒已输出（恒放行，不阻塞不打回）。
 """
 from __future__ import annotations
 
@@ -36,14 +24,6 @@ import os
 import re
 import sys
 
-# 闸内分流判定件（task_fanout_plan.make_plan 函数级复用，判定逻辑唯一副本）；
-# 导入失败按无分流段照章运行，不炸主流程
-try:
-    sys.path.insert(0, os.path.expanduser("~/.agents/skills/parallel-dispatch/scripts"))
-    from task_fanout_plan import make_plan as _fanout_make_plan
-except Exception:
-    _fanout_make_plan = None
-
 SEAL_DIR = os.environ.get(
     "TODO_SEAL_DIR",
     os.path.expanduser("~/.agents/logs/todo_seal"),
@@ -52,9 +32,6 @@ PRECHECK_LOG = os.environ.get(
     "TODO_PRECHECK_LOG",
     os.path.expanduser("~/.agents/logs/todo_write_precheck.jsonl"),
 )
-
-# content 内嵌标注：[S] / [M|deps:1,3] / [L|deps:]（deps 引用清单内 1 基序号；deps: 空=显式无依赖）
-_ANNOTATION = re.compile(r"^\[(S|M|L|XL)(?:\|deps:([\d,\s]*))?\]")
 
 
 def session_id() -> str:
@@ -95,8 +72,7 @@ def parse_tasks(raw: str) -> list[str]:
             return [t for t in out if t]
     except Exception:
         pass
-    # 纯文本：分号优先（hook 层以 "；" 连接 content，且 deps:1,2 内含逗号防误切）；
-    # 无分号才按逗号切（逗号分隔场景请勿用 deps 内联列表）
+    # 纯文本：分号优先（hook 层以 "；" 连接 content）；无分号才按逗号切
     if "；" in raw or ";" in raw:
         parts = re.split(r"[；;]", raw)
     else:
@@ -107,37 +83,6 @@ def parse_tasks(raw: str) -> list[str]:
 def remind(text, task):
     print(f"  ☐ {text}")
     print(f"     ↳ {task}")
-
-
-def parse_fanout_tasks(tasks: list) -> list:
-    """content 内嵌标注解析：[S] / [M|deps:1,3] → [{id,size,deps}]（序号=清单内 1 基位置）。"""
-    out = []
-    for i, c in enumerate(tasks, 1):
-        t = {"id": str(i)}
-        m = _ANNOTATION.match(str(c).strip())
-        if m:
-            t["size"] = m.group(1)
-            if m.group(2) is not None:  # deps: 空串 = 显式无依赖；缺失 = 未声明（保守串行）
-                t["deps"] = [d.strip() for d in m.group(2).split(",") if d.strip()]
-        out.append(t)
-    return out
-
-
-def emit_fanout_plan(tasks: list) -> None:
-    """闸内分流判定：一行结论式输出（2026-10-13 P0 重构：去门槛去轰炸）。
-    判定件缺失则跳过不炸；notes 仅异常级（成环/悬空/非法输入）。"""
-    if _fanout_make_plan is None or not tasks:
-        return
-    plan = _fanout_make_plan(parse_fanout_tasks(tasks))
-    waves = " → ".join(
-        ("∥" if w["parallel"] else "") + str(w["tasks"]) for w in plan["waves"])
-    decomp = [tid for tid, m in plan["breakdown"].items() if m == "decomposable"]
-    line = f"  ⇒ 分流：{plan['mode']} width={plan['parallel_width']} | {waves}"
-    if decomp:
-        line += f" | 可分解:{decomp}（先拆再执行）"
-    print(line)
-    for n in plan["notes"]:
-        print(f"     ⚠ {n}")
 
 
 def main() -> int:
@@ -155,30 +100,20 @@ def main() -> int:
     print(f"todo_write 前置提醒（会话 {session}，共 {len(tasks)} 项任务）:")
 
     if new_keys:
-        remind("清单含新任务 → 计划闸附身", "attached_plan 对新任务触发；重发（无新任务）豁免｜用户直给方案→plan_select.py --exempt \"<理由>\" --evidence \"<用户原文>\" 一次留痕即过、免候选池三件套（2026-10-14 REFORM-GATE 判A）")
+        remind("清单含新任务 → 计划闸附身", "attached_plan 对新任务触发；重发（无新任务）豁免")
     else:
         print("  ✓ 无新任务（重发豁免，不重复附身计划闸）")
-        # 完成处理禁令（2026-10-13 用户裁定·防越权，REFORM-GATE 判A fanout_anti_overreach_20261013）：
-        # 销号/完成处理时刻必现，防母 agent 在处理完成事件时夹带私货
-        print("  ⚠ 完成处理禁令（防越权）：")
-        print("     禁汇总罗列打印内容 / 禁发明外部通道（通知弹窗·终端窗口·流文件）/")
-        print("     禁等待姿态（阻塞·轮询）/ 禁统一销号（逐条销）/ 禁做任务没要求的动作")
 
     # 并行/多任务启发：任务数>1 且含并行意图
     multi = any(k in " ".join(keys) for k in ("并行", "多任务", "扇出", "多个"))
     if len(keys) > 1 or multi:
-        remind("多任务/并行 → 分流结论即放行", "按上方扇出拓扑直接执行（并行闸已退役，分流器单源真源）")
+        remind("多任务/并行 → 并行闸", "dispatch_switch（PARALLEL-GATE）+ todo_write 先登记，判定禁止手写")
 
     if args.new_turn:
         remind("新回合有未完成 todo → 重发", "todo_write 面板 turn 级清零，重发同步面板")
 
     if any(k in " ".join(keys) for k in ("改造", "重构", "机制", "规则")):
         remind("改造/机制/重构 → 收益闸", "REFORM-GATE 判 A 才动手，禁以'用户指令'跳闸")
-
-    # 闸内扇出分流判定（必定触发·恒有输出·不阻塞）；
-    # 关5 裁定（2026-10-13 用户终裁 fanout_gate5_off）：无新任务（重发/销号）跳过分流段——拓扑在新建时已定，销号不重算
-    if new_keys:
-        emit_fanout_plan(tasks)
 
     # seal 台账闭合（2026-10-13：原实现只读不写导致 seen 永空、重发豁免失效）——本次任务 keys 落台账
     try:
