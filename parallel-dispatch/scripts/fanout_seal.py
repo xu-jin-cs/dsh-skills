@@ -8,8 +8,10 @@ fanout_seal.py — 扇出收尾闸（2026-08-16 用户裁定"概率即扳手"原
 本闸机械化：终答前必须扳动，照抄输出。
 
 校验（全部基于当前 turn 的会话日志实证 + 开关留痕）：
-  1. 真扇出：本 turn 每有一次掷点 A 留痕，就必须存在 subagent/subagent_fork/workflow
-     的 tool/call 事件；否则判"只评估不执行"。
+  1. 真执行：本 turn 每有一次掷点 A 留痕，按留痕 mechanism 分流核验——
+     main_parallel（主agent并行，2026-10-14 用户终裁）→ todo 清单必须并行显示
+     （任一快照 in_progress≥2）；其余机制 → 必须存在 subagent/subagent_fork/workflow
+     的 tool/call 事件。否则判"只评估不执行"。
   2. 全销号：本 turn 最后一次 todo/write 的清单必须全部 completed；
      残留 pending/in_progress 逐条列出。
   3. 基线阅读：本 turn 掷点 A 留痕携带的 --baseline 基线文件，本 turn 每个子分身
@@ -97,12 +99,15 @@ def scan_current_turn(path):
 
 
 def collect_turn_a_throws(switch_log, turn_start_ms, session_id):
-    """收集本 turn 的掷点 A 留痕（次数 + 携带的基线路径）。带 session 字段的留痕
-    精确归属；无 session 字段的历史留痕按时间窗归入（过渡期兼容）。"""
+    """收集本 turn 的掷点 A 留痕（次数 + 携带的基线路径 + mechanism 清单）。
+    带 session 字段的留痕精确归属；无 session 字段的历史留痕按时间窗归入（过渡期兼容）。
+    mechanism 清单供校验1分流（2026-10-14 用户终裁：main_parallel=主agent并行，
+    真执行实证=todo 清单并行显示，不再要求 Agent 类扇出调用）。"""
     if turn_start_ms is None or not os.path.isfile(switch_log):
-        return 0, []
+        return 0, [], []
     count = 0
     baselines = []
+    mechanisms = []
     with open(switch_log, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -126,10 +131,11 @@ def collect_turn_a_throws(switch_log, turn_start_ms, session_id):
                 continue
             if entry_ms >= turn_start_ms:
                 count += 1
+                mechanisms.append(entry.get("mechanism"))
                 for b in entry.get("baseline") or []:
                     if b not in baselines:
                         baselines.append(b)
-    return count, baselines
+    return count, baselines, mechanisms
 
 
 def check_baseline_reads(children, baselines, sessions_root, session_log_path=None):
@@ -201,15 +207,25 @@ def seal(session_log=None, switch_log=DEFAULT_SWITCH_LOG, sessions_root=None, pr
         }, EXIT_CLARIFY
 
     session_id = os.environ.get("DSH_SESSION_ID")
-    a_throws, baselines = collect_turn_a_throws(switch_log, turn["turn_start_ms"], session_id)
+    a_throws, baselines, mechanisms = collect_turn_a_throws(
+        switch_log, turn["turn_start_ms"], session_id)
     violations = []
 
-    # ---- 校验 1：真扇出（禁止只评估不执行的机械牙齿）----
+    # ---- 校验 1：真执行（禁止只评估不执行的机械牙齿；2026-10-14 用户终裁分流）----
+    # main_parallel（主agent并行）实证 = todo 清单并行显示（任一快照 in_progress≥2）；
+    # subagent/workflow 机制实证 = 扇出工具调用。
     if a_throws > 0 and turn["fanout_calls"] == 0:
-        violations.append(
-            f"本 turn 有 {a_throws} 次掷点 A 留痕，但会话日志无扇出工具"
-            f"（{'/'.join(FANOUT_TOOLS)}）调用实证 → 只评估不执行"
-        )
+        if mechanisms and all(m == "main_parallel" for m in mechanisms):
+            if turn["max_inflight"] < 2:
+                violations.append(
+                    f"本 turn 有 {a_throws} 次掷点 A（main_parallel）留痕，但 todo 清单"
+                    "未并行显示（本 turn 无任一快照 in_progress≥2）→ 只评估不执行"
+                )
+        else:
+            violations.append(
+                f"本 turn 有 {a_throws} 次掷点 A 留痕，但会话日志无扇出工具"
+                f"（{'/'.join(FANOUT_TOOLS)}）调用实证 → 只评估不执行"
+            )
 
     # ---- 校验 2：全销号（禁止进度黑盒的机械牙齿）----
     todos = turn["todos"]
@@ -236,7 +252,9 @@ def seal(session_log=None, switch_log=DEFAULT_SWITCH_LOG, sessions_root=None, pr
         "log": path,
         "log_source": source,
         "a_throws": a_throws,
+        "mechanisms": mechanisms,
         "fanout_calls": turn["fanout_calls"],
+        "max_inflight": turn["max_inflight"],
         "todos": todo_stats,
         "children": turn["children"],
         "baselines": baselines,
