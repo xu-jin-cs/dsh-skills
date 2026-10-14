@@ -4,9 +4,10 @@
 
 设计锚点（终裁口径）：
   - 清单新任务数 ≥2 才启动"可否并行"判定；=1 不扳、零噪声。
-  - units=新任务数（机械取）；files=任务文本路径正则提取，提取不到兜底=1
-    （无路径证据即无并行面，2026-10-14 REFORM/LOGIC 双闸判A修复；原兜底=任务数会把
-    无路径串行任务误判成 N 文件并行面，强逼基线文件）；耦合语义钩子不可知，模型知情时人工重扳 --coupled/--dep-reason 修正。
+  - units=新任务数（机械取）；files=任务文本路径正则提取，提取不到兜底=2
+    （轻量免评估档：无路径证据按最小并行面计，2026-10-14 REFORM/LOGIC 双闸判A修复；
+    原兜底=任务数会把无路径串行任务误判成 N 文件并行面强逼基线文件；兜底=1 会撞
+    单文件特例强逼串行理由，故取 2）；耦合语义钩子不可知，模型知情时人工重扳 --coupled/--dep-reason 修正。
   - 销号/重发不重扳（独立 flip 台账，扳过的任务键不重扳——关5 教训：销号不重算）。
   - 闸本体 dispatch_switch 零改动：清单已落账，闸1 清单登记天然满足
     （zcode sqlite → session cache 物化先于 PostToolUse）。
@@ -123,7 +124,7 @@ def main():
 
     units = len(new_tasks)
     blob = "\n".join(new_tasks)
-    files = len(set(FILE_TOKEN_RE.findall(blob))) or 1  # 兜底=1：无路径证据即无并行面（2026-10-14 判A修复，原兜底=任务数会把串行步骤误判成并行面）
+    files = len(set(FILE_TOKEN_RE.findall(blob))) or 2  # 兜底=2（轻量免评估档）：无路径证据即按最小并行面计，不强逼基线/串行理由（2026-10-14 双闸判A修复；原兜底=任务数会把串行步骤误判成 N 文件并行面）
 
     try:
         proc = subprocess.run(
