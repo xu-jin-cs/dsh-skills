@@ -122,7 +122,7 @@ def main():
 
     units = len(new_tasks)
     blob = "\n".join(new_tasks)
-    files = len(set(FILE_TOKEN_RE.findall(blob))) or units  # 兜底=任务数（宁多触发基线闸）
+    files = len(set(FILE_TOKEN_RE.findall(blob))) or 1  # 兜底=1：无路径证据即无并行面（2026-10-14 判A修复，原兜底=任务数会把串行步骤误判成并行面）
 
     try:
         proc = subprocess.run(
