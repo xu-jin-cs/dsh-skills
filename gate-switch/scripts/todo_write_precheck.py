@@ -5,11 +5,10 @@
 对齐"todo_write 附身闸"：以前末尾追加完成步骤，本变种在【起始端】把 todo 清单可能要触发的规则扫一遍。
 在调用 todo_write 前运行，机械提醒"调用前要做的事"。数据源=本次 todo 清单 + 会话已见台账。
 
-提醒项：
-  ① 清单含【新任务】 → 计划闸附身（attached_plan：新任务才触发、重发豁免）
-  ② 出现【多任务/并行】→ 并行闸（dispatch_switch PARALLEL-GATE）
-  ③ 新回合有【未完成 todo】→ 需重发 todo_write（面板 turn 级清零）
-  ④ 若为【改造/机制/重构】→ 收益闸（REFORM-GATE）判 A 才动手
+提醒项（2026-10-14 用户终裁·双闸触发原理调换：计划闸移出 TodoWrite 链改声明式+交付闸连带，
+并行闸移 PostToolUse 钩子机械扳——本闸不再承担两闸提醒）：
+  ① 新回合有【未完成 todo】→ 需重发 todo_write（面板 turn 级清零）
+  ② 若为【改造/机制/重构】→ 收益闸（REFORM-GATE）判 A 才动手
 
 用法：
   python3 todo_write_precheck.py --tasks '["任务A","任务B"]' [--new-turn]
@@ -98,16 +97,6 @@ def main() -> int:
     new_keys = [k for k in keys if k and k not in seen]
 
     print(f"todo_write 前置提醒（会话 {session}，共 {len(tasks)} 项任务）:")
-
-    if new_keys:
-        remind("清单含新任务 → 计划闸附身", "attached_plan 对新任务触发；重发（无新任务）豁免")
-    else:
-        print("  ✓ 无新任务（重发豁免，不重复附身计划闸）")
-
-    # 并行/多任务启发：任务数>1 且含并行意图
-    multi = any(k in " ".join(keys) for k in ("并行", "多任务", "扇出", "多个"))
-    if len(keys) > 1 or multi:
-        remind("多任务/并行 → 并行闸", "dispatch_switch（PARALLEL-GATE）+ todo_write 先登记，判定禁止手写")
 
     if args.new_turn:
         remind("新回合有未完成 todo → 重发", "todo_write 面板 turn 级清零，重发同步面板")
