@@ -46,14 +46,34 @@ class WorkerAgent:
     def _heuristic_parse(self, text: str) -> dict:
         storages = []
         # 定义路由（服务端框架装饰器/注册，提供方证据）：FastAPI/Flask 装饰器 + Express 注册
-        defined = set(re.findall(r'@\w+\.(?:get|post|put|delete|patch|route)\(\s*["\']([^"\']+)["\']', text, re.I))
-        defined |= set(re.findall(r'(?:app|router)\.(?:get|post|put|delete|patch)\(\s*["\']([^"\']+)["\']', text, re.I))
+        # methods 为下游接口文档幂等键（method+url）必需字段：装饰器/注册动词即 HTTP 方法；
+        # Flask 泛型 route() 取 methods=[...] 实参（缺省即 Flask 语义 GET）；引用路由无 methods 键
+        defined: dict[str, set[str]] = {}
+        for verb, route, tail in re.findall(
+            r'@\w+\.(get|post|put|delete|patch|route)\(\s*["\']([^"\']+)["\']([^)]*)\)', text, re.I
+        ):
+            if verb.lower() == "route":
+                mm = re.search(r'methods\s*=\s*\[([^\]]*)\]', tail, re.I)
+                verbs = (
+                    {v.strip().strip('"\'').upper() for v in mm.group(1).split(",") if v.strip()}
+                    if mm else {"GET"}
+                )
+                defined.setdefault(route, set()).update(verbs)
+            else:
+                defined.setdefault(route, set()).add(verb.upper())
+        for verb, route in re.findall(
+            r'(?:app|router)\.(get|post|put|delete|patch)\(\s*["\']([^"\']+)["\']', text, re.I
+        ):
+            defined.setdefault(route, set()).add(verb.upper())
         # 引用路由（消费方证据；扣除自身已定义的）：
         # ① 引号包裹的 /api/ 路径或完整 URL ② 无引号裸 URL（curl 等脚本调用）
         referenced = set(re.findall(r'["\'](?:https?://[^"\'/\s]+)?(/api/[^"\'?\s]+)', text))
         referenced |= set(re.findall(r'https?://[^/\s"\'\)]+(/api/[^?\s"\'\)]+)', text))
-        referenced -= defined
-        apis = [{"route": r, "purpose": "heuristic", "shared": False, "kind": "defined"} for r in sorted(defined)]
+        referenced -= set(defined)
+        apis = [
+            {"route": r, "methods": sorted(ms), "purpose": "heuristic", "shared": False, "kind": "defined"}
+            for r, ms in sorted(defined.items())
+        ]
         apis += [{"route": r, "purpose": "heuristic", "shared": False, "kind": "referenced"} for r in sorted(referenced)]
         # 存储名称模式
         for m in set(re.findall(r'(?:redis|kafka|rabbitmq|mysql|postgres|mongodb|elasticsearch|table)["\']?\s*[:=]\s*["\']([^"\']+)["\']', text, re.I)):

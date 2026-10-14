@@ -24,7 +24,7 @@ class GranularityValidator:
 
     def check_api(self, module_id: str, api: dict) -> bool:
         ok = True
-        allowed = {"route", "purpose", "shared", "kind"}
+        allowed = {"route", "methods", "purpose", "shared", "kind"}
         extra = set(api.keys()) - allowed
         if extra:
             self.violations.append({
