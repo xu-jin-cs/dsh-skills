@@ -4,10 +4,10 @@
 
 设计锚点（终裁口径）：
   - 清单新任务数 ≥2 才启动"可否并行"判定；=1 不扳、零噪声。
-  - units=新任务数（机械取）；files=任务文本路径正则提取，提取不到兜底=2
-    （轻量免评估档：无路径证据按最小并行面计，2026-10-14 REFORM/LOGIC 双闸判A修复；
-    原兜底=任务数会把无路径串行任务误判成 N 文件并行面强逼基线文件；兜底=1 会撞
-    单文件特例强逼串行理由，故取 2）；耦合语义钩子不可知，模型知情时人工重扳 --coupled/--dep-reason 修正。
+  - units=新任务数（机械取）；files=任务文本路径正则提取。
+  - 无路径证据 → 轻量声明直出（2026-10-14 用户二次裁定：不调闸本体、零违规注入，
+    依赖判断归模型——互不依赖/依赖已完成即可并行，否则串行；判定秒级）；
+    有路径证据 → 机械扳 dispatch_switch 全链（units=新任务数，files=路径数）。
   - 销号/重发不重扳（独立 flip 台账，扳过的任务键不重扳——关5 教训：销号不重算）。
   - 闸本体 dispatch_switch 零改动：清单已落账，闸1 清单登记天然满足
     （zcode sqlite → session cache 物化先于 PostToolUse）。
@@ -17,6 +17,7 @@
 掷点结论以 additionalContext 注入，模型照抄 PARALLEL-GATE 声明执行；
 每次扳动由 dispatch_switch 自身落 dispatch_switch.jsonl 留痕。
 """
+import datetime
 import json
 import os
 import re
@@ -124,7 +125,29 @@ def main():
 
     units = len(new_tasks)
     blob = "\n".join(new_tasks)
-    files = len(set(FILE_TOKEN_RE.findall(blob))) or 2  # 兜底=2（轻量免评估档）：无路径证据即按最小并行面计，不强逼基线/串行理由（2026-10-14 双闸判A修复；原兜底=任务数会把串行步骤误判成 N 文件并行面）
+    path_hits = set(FILE_TOKEN_RE.findall(blob))
+
+    if not path_hits:
+        # 轻量声明（2026-10-14 用户二次裁定）：无文件证据不调闸本体、零违规注入；
+        # 依赖判断归模型：互不依赖/依赖已完成 → 可并行扇出；有未完成依赖 → 串行。
+        seal_flip(session, [k for k, _ in new_pairs if k])
+        try:
+            with open(os.path.expanduser("~/.agents/logs/dispatch_switch.jsonl"),
+                      "a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"ts": datetime.datetime.now(
+                    datetime.timezone.utc).isoformat(timespec="seconds"),
+                    "verdict": "LIGHT", "units": units, "files": 0,
+                    "session": session, "via": "todo_parallel_gate_hook"},
+                    ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        ctx = (f"[并行闸·轻量声明] 新任务 {units} 个，无文件路径证据。"
+               "依赖判断归模型：互不依赖或依赖已完成 → 可并行扇出；有未完成依赖 → 串行。"
+               "一句话说明判定即可，零阻断零强制。")
+        print(json.dumps({"additionalContext": ctx}, ensure_ascii=False))
+        return 0
+
+    files = len(path_hits)
 
     try:
         proc = subprocess.run(
