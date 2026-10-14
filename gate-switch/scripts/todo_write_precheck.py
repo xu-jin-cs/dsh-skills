@@ -155,7 +155,7 @@ def main() -> int:
     print(f"todo_write 前置提醒（会话 {session}，共 {len(tasks)} 项任务）:")
 
     if new_keys:
-        remind("清单含新任务 → 计划闸附身", "attached_plan 对新任务触发；重发（无新任务）豁免")
+        remind("清单含新任务 → 计划闸附身", "attached_plan 对新任务触发；重发（无新任务）豁免｜用户直给方案→plan_select.py --exempt \"<理由>\" --evidence \"<用户原文>\" 一次留痕即过、免候选池三件套（2026-10-14 REFORM-GATE 判A）")
     else:
         print("  ✓ 无新任务（重发豁免，不重复附身计划闸）")
         # 完成处理禁令（2026-10-13 用户裁定·防越权，REFORM-GATE 判A fanout_anti_overreach_20261013）：
