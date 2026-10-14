@@ -14,12 +14,13 @@ description: 并行调度与子分身机制总规则（2026-08-14 用户裁定�
 
 0. **PARALLEL-GATE 强制门禁（2026-08-16 用户裁定，最高优先；2026-08-15 增补单刀双掷开关机械执行）**：**只要出现多任务（≥2 个子任务/诉求，任何来源），首轮规划必须先输出结构化声明，再谈执行**：
    ```
-   [PARALLEL-GATE] 子任务数:N | 无依赖:M | 判定:parallel/sequential | 机制:subagent×M / workflow / 串行(依赖链理由)
+   [PARALLEL-GATE] 子任务数:N | 无依赖:M | 判定:parallel/sequential | 机制:主agent并行×M / workflow / 串行(依赖链理由)
    ```
    判定 `sequential` 必须写明依赖链理由，留空即违规。**本门禁无触发词依赖**——多任务出现即触发，不要求用户说"并行"；声明同步载于 `~/.agents/AGENTS.md` 调度裁定节（每会话在场，不依赖本技能是否被加载）。
 
    **分身闸定位与 A/B 殊途同归（2026-08-23 用户终裁）**：分身闸（单刀双掷 dispatch_switch）**是并行闸的最后一步程序**，无条件触发、单任务亦扳（开关自判串行/轻量）。闸内强制流程：任务量分析（文件数唯一量纲）→ 依赖链判定 → 分片条件判定（规模轴×数量轴）→ 掷点输出。**不管判 A 还是判 B，符合条件即生成子分身**——掷点 B 仅是串行拓扑（分片照切、分身照生，按依赖链顺序调度执行），不是免分身旁路；串行结论同样是分身判定全程跑完的产物，不是绕过判定的豁免通道。拓扑（依赖决定）与分身生成（分片条件决定）是两个独立维度。
    **触发时点锚定（2026-08-24 用户裁定；2026-10-14 用户终裁改判）**：~~方案制定完成后触发~~ → **改为 PostToolUse(TodoWrite) 钩子机械扳动**（`gate-switch/scripts/zcode_hooks/todo_parallel_gate_hook.py`，双闸触发原理调换终裁）：清单**新任务数 ≥2** 才启动"可否并行"判定（=1 不扳零噪声；销号/重发由 flip 台账滤除不重扳），units=新任务数机械取、files=任务文本路径正则提取（提取不到保守=任务数）。闸本体零改动，三前置闸照常；清单已落账故闸1 天然满足。钩不可知耦合/依赖语义——知情时必须人工重扳 `--coupled --dep-reason` 修正留痕。**并行判定与任务分解为两个独立维度（2026-10-14 重申 A/B 殊途同归）**：不管判 A 判 B，都不影响后续 task_break 分解动作——体量大（dispatch_switch 规模轴 >3 文件或耦合）即由母 agent 拆子群（子 agent=任务分片），母等全部子 agent 完成合并后才销号；多母 agent 并存互不影响、互不等待；完成一条销一条，禁止统一销号。
+   **数量轴机制终裁（2026-10-14 用户终裁，问题块 `~/.agents/logs/problem_blocks/parallel_main_agent_20261014.md`）**：并行多任务**由主 agent 执行**，todo 清单直接显示并行（各并行项同时置 in_progress），**禁止 spawn 子智能体**（general-purpose 等 Agent 分身）——子智能体仅在子母任务分解（task_breakdown 分片）场景启用。数量轴 2~9 档 mechanism 已改 `main_parallel`；fanout_seal 校验①同步分流：main_parallel 的真执行实证=todo 清单并行显示，不再要求 Agent 调用实证。
    **单刀双掷开关机械执行（2026-08-15 裁定）**：声明的判定**禁止手写**，必须扳动开关照抄输出：
    ```bash
    python3 scripts/dispatch_switch.py --files <文件数> --units <无依赖单元数> [--coupled [--dep-type contract|artifact]] [--batch] [--force-serial --dep-reason "依赖链理由"] --desc "<任务描述>"
@@ -35,7 +36,7 @@ description: 并行调度与子分身机制总规则（2026-08-14 用户裁定�
    ```bash
    python3 scripts/fanout_seal.py   # 自动经 DSH_SESSION_JSONL 定位当前会话；--session-log 可显式指定
    ```
-   三道机械校验：① **真扇出**——本 turn 每次掷点 A 留痕必须有 subagent/subagent_fork/workflow 调用实证，无实证即"只评估不执行"违规；② **全销号**——本 turn 最终 todo/write 清单必须全部 completed，残留 pending/in_progress 逐条列出；③ **基线阅读**——掷点 A 携带的基线文件，本 turn 每个子分身日志必须有其引用，未读分身逐个列出（"上下文脱基线"）。exit `0`=SEAL 方允许终答；`4`=VIOLATION 逐条整改后重扳；`3`=CLARIFY 补 `--session-log`。每次扳动留痕 `~/.agents/logs/dispatch_switch.jsonl`，B/A 比率纳入复盘审计——每月运行 `python3 scripts/dispatch_switch_audit.py`（分布与 B/A 比率/冒烟批剔除/注水嫌疑/ALERT 告警，`--strict` 时有 ALERT 则 exit 1，供月度复盘门禁）。
+   三道机械校验：① **真执行**——本 turn 每次掷点 A 留痕按 mechanism 分流核验：`main_parallel`（主agent并行）须有 todo 清单并行显示实证（任一快照 in_progress≥2），其余机制须有 subagent/subagent_fork/workflow 调用实证，无实证即"只评估不执行"违规；② **全销号**——本 turn 最终 todo/write 清单必须全部 completed，残留 pending/in_progress 逐条列出；③ **基线阅读**——掷点 A 携带的基线文件，本 turn 每个子分身日志必须有其引用，未读分身逐个列出（"上下文脱基线"）。exit `0`=SEAL 方允许终答；`4`=VIOLATION 逐条整改后重扳；`3`=CLARIFY 补 `--session-log`。每次扳动留痕 `~/.agents/logs/dispatch_switch.jsonl`，B/A 比率纳入复盘审计——每月运行 `python3 scripts/dispatch_switch_audit.py`（分布与 B/A 比率/冒烟批剔除/注水嫌疑/ALERT 告警，`--strict` 时有 ALERT 则 exit 1，供月度复盘门禁）。
 1. 任务分解产生 **≥2 个无依赖子任务** 时，**默认主动并行 spawn 子分身，无需用户显式指令**；只评估不执行视为故意串行化（对齐规则 35）。
 2. 是否用分身只看两条：① 任务量是否值得拆；② 当前场景是否支持分身（DSH 原生支持 subagent，默认满足）。**任务量量纲唯一化（2026-08-16 裁定）：只用文件数量评估，禁用小时/体感估算**（第三节矩阵）。
 3. 扇出前先行 **最小探针** 验证分身通道可用，探针失败直接串行（对齐 retro-pm-124）。
@@ -60,7 +61,7 @@ description: 并行调度与子分身机制总规则（2026-08-14 用户裁定�
 | 8 | 子任务需要基于当前会话已发生的上下文继续深挖（跟进分析/复审/续作） | 选 `subagent_fork`（继承会话），不选 `subagent` |
 | 9 | 用户显式要求 Ralph / fresh-agent 迭代 | 才允许走 `ralph`；其余场景禁止主动启用 |
 
-> **定义边界（2026-08-17 用户裁定）：多任务并行 ≠ 子分身。** **多任务并行**＝N 个**异构独立任务**（如"生成 PPT / 整理数据 / 画图 / 改造框架"，内容完全不同、互不依赖），每个任务一路，直接并行；**子分身**＝母 Agent 把**同一类内容切分**给多个分身执行**相同步骤**（同质批量，内容不同步骤相同）。映射到双维矩阵：异构多任务走数量轴 2~9 的 subagent 扇出；同质内容切分才走"批量同类"轴（≥10 切 workflow）。禁止把异构多任务误当子分身做内容切分，也禁止把同质切分误当异构多任务逐路人肉 spawn。
+> **定义边界（2026-08-17 用户裁定；2026-10-14 机制终裁修正）：多任务并行 ≠ 子分身。** **多任务并行**＝N 个**异构独立任务**（如"生成 PPT / 整理数据 / 画图 / 改造框架"，内容完全不同、互不依赖），每个任务一路，直接并行；**子分身**＝母 Agent 把**同一类内容切分**给多个分身执行**相同步骤**（同质批量，内容不同步骤相同）。映射到双维矩阵：异构多任务走数量轴 2~9 的 **main_parallel 主agent并行**（todo 清单并行显示，2026-10-14 终裁后不再 spawn 子智能体）；同质内容切分才走"批量同类"轴（≥10 切 workflow）。禁止把异构多任务误当子分身做内容切分，也禁止把同质切分误当异构多任务逐路人肉 spawn。
 
 ---
 
