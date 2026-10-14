@@ -57,7 +57,9 @@ def resolve_session_log(session_log=None):
 def scan_current_turn(path):
     """扫描会话日志，返回当前 turn 的实证切片；读取失败返回 None。
 
-    切片内容：turn 起始时间（ms）、最终 todo 清单、扇出工具调用计数、子分身。
+    切片内容：turn 起始时间（ms）、最终 todo 清单、扇出工具调用计数、子分身、
+    本 turn todo 清单 in_progress 峰值（2026-10-14 用户终裁：main_parallel 主agent
+    并行的实证=todo 清单并行显示，任一快照 in_progress≥2）。
     todos 投影随 turn 起点清空（last-write-wins），只认最后一个 turn 起点之后。
     Kimi 模式子分身由同 session 目录 agents/*/wire.jsonl 扫描补全。
     """
@@ -69,14 +71,19 @@ def scan_current_turn(path):
     todos = None
     fanout_calls = 0
     children = []
+    max_inflight = 0
     for ev in slog.iter_events(lines, kimi):
         if ev["kind"] == "turn_start":
             turn_start_ms = ev.get("time_ms")
             todos = None
             fanout_calls = 0
             children = []
+            max_inflight = 0
         elif ev["kind"] == "todo_write":
             todos = ev["todos"]
+            inflight = sum(1 for t in todos
+                           if isinstance(t, dict) and t.get("status") == "in_progress")
+            max_inflight = max(max_inflight, inflight)
         elif ev["kind"] == "fanout_call":
             fanout_calls += 1
         elif ev["kind"] == "tool_result" and ev.get("child_id"):
@@ -85,7 +92,8 @@ def scan_current_turn(path):
         # Kimi 子分身不解析结果文本，直接扫同 session 的 agents/ 目录
         children = [cid for cid, _ in slog.kimi_child_wires(path, turn_start_ms)]
     return {"turn_start_ms": turn_start_ms, "todos": todos,
-            "fanout_calls": fanout_calls, "children": children}
+            "fanout_calls": fanout_calls, "children": children,
+            "max_inflight": max_inflight}
 
 
 def collect_turn_a_throws(switch_log, turn_start_ms, session_id):
