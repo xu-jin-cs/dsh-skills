@@ -76,8 +76,8 @@ def main():
             "路径4 --fail无--reason→VIOLATION(exit 4)",
             ["python3", PLAN_SELECT, "--pool", REAL_POOL, "--fail", "1"], 4, "VIOLATION"))
         results.append(run_case(
-            "路径5 裸跑无参数→argparse(exit 2)",
-            ["python3", PLAN_SELECT], 2, None))
+            "路径5 裸跑无参数→VIOLATION(exit 4)（2026-10-14 豁免通道改版后裸跑引导走豁免/填池，契约期望随动）",
+            ["python3", PLAN_SELECT], 4, "VIOLATION"))
     finally:
         # ---- 账本零污染：截断恢复原内容 ----
         if ledger_backup is not None:
