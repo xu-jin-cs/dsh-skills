@@ -26,7 +26,7 @@ from typing import Callable, Optional
 
 from engine.flow.node_defs import FlowNodeMeta
 
-SUPPORTED_TRANSFORMER_VERSIONS = {"0.2.0"}
+SUPPORTED_CONTRACT_VERSIONS = {"sci/1"}  # 锚契约版本（语义承诺）；transformer_version 仅观测不参与判定
 CONTRACT_REQUIRED_KEYS = ("workflow_id", "topo_order", "stages", "stage_dirs")
 
 
@@ -45,9 +45,9 @@ def compile_workflow_json(path: str) -> dict:
     missing = [k for k in CONTRACT_REQUIRED_KEYS if k not in wf]
     if missing:
         raise CompileError(f"契约缺必填字段: {missing}")
-    tv = wf.get("transformer_version")
-    if tv not in SUPPORTED_TRANSFORMER_VERSIONS:
-        raise CompileError(f"契约版本不受支持: transformer_version={tv!r}（支持 {sorted(SUPPORTED_TRANSFORMER_VERSIONS)}）")
+    cv = wf.get("contract_version")
+    if cv not in SUPPORTED_CONTRACT_VERSIONS:
+        raise CompileError(f"契约版本不受支持: contract_version={cv!r}（支持 {sorted(SUPPORTED_CONTRACT_VERSIONS)}）")
 
     stages = wf["stages"]
     ids = [s["stage_id"] for s in stages]
