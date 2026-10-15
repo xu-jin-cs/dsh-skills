@@ -230,28 +230,6 @@ def make_stage_node(
             state.error_log.append(f"[{stage_id}] 打回: 语义闸判B {violations}")
             return state, _rollback_target(compiled, stage_id)
 
-        # 账本绑定：每件交付物一条 DeliverableRecord（角色名记 summary，枚举用 EXTERNAL）
-        for a in outs:
-            rel = os.path.join(stage_dir, f"{a['name']}_v1.{a.get('suffix', 'md')}")
-            fp = os.path.join(artifacts_root, rel)
-            if not os.path.isfile(fp):
-                continue
-            try:
-                from engine.flow.state import DeliverableRecord, NodeType
-                import datetime as _dt
-                rec = DeliverableRecord(
-                    content_type=a.get("suffix", "md"),
-                    summary=f"[external:{stage.get('agent', stage_id)}] {stage_id}/{a['name']}",
-                    agent_role=NodeType.EXTERNAL,
-                    file_path=fp,
-                    validated=True,
-                    validation_result="assemble+semantic_gate pass",
-                    created_at=_dt.datetime.now().isoformat(),
-                )
-                state.deliverables = state.deliverables + [rec]
-            except Exception as e:  # 账本绑定失败不阻断业务，留痕即可
-                state.error_log.append(f"[{stage_id}] WARN 账本绑定失败: {e}")
-
         # 步骤5：快照（gate.post 插件段；幂等）
         subprocess.run(
             ["python3", snapshot_cli, "snapshot", "--artifacts-root", artifacts_root,
@@ -300,14 +278,10 @@ def default_runner(prompt: str, stage_id: str) -> str:
 # ─── 图构建（零引擎改动：显式路由驱动，不碰全局注册表）─────────
 
 def _merge_branch_state(state, branch_state) -> None:
-    """分支状态合流：error_log 去重合并 + deliverables 账本按路径去重合并。"""
+    """分支状态合流：error_log 去重合并（账本绑定已按用户裁定拆除，2026-10-15）。"""
     for e in getattr(branch_state, "error_log", []):
         if e not in state.error_log:
             state.error_log.append(e)
-    have = {d.file_path for d in getattr(state, "deliverables", [])}
-    for d in getattr(branch_state, "deliverables", []):
-        if d.file_path not in have:
-            state.deliverables = state.deliverables + [d]
 
 
 def make_fanout_node(layer: str, members: list, compiled: dict,
