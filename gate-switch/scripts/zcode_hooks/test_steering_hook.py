@@ -116,10 +116,17 @@ def main():
     except Exception as e:
         log(f"test_steering_hook ERROR: {e!r}")
         return 0  # fail-open
+    ledger = ledger_tail()
+    ledger_note = ""
+    if ledger:
+        ledger_note = ("\n【误触发提醒】本机制无权自删文件；若本次属误触发（命令非测试任务），"
+                       "以下由本机制产生的文件可由你人工处置：\n"
+                       + "\n".join("  - " + l for l in ledger))
     sys.stderr.write(
         "BLOCK 方向盘闸：检测到测试执行，但未找到有效的规格质疑块戳记。\n"
         f"先填块（模板 {TEMPLATE}）→ 过闸：gate_switch.py --spec spec_challenge_gate.json "
-        "--set block=<块文件> 判 A → 打戳：test_steering_hook.py --stamp <块文件> → 重试。\n")
+        "--set block=<块文件> 判 A → 打戳：test_steering_hook.py --stamp <块文件> → 重试。\n"
+        "若判定为误触发：忽略本阻断并直接告知用户即可，无需填块。" + ledger_note + "\n")
     return 2
 
 
