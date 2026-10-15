@@ -99,17 +99,54 @@ def _atomic_write(path: str, text: str) -> None:
     os.replace(tmp, path)
 
 
+class GateReject(Exception):
+    """runner/门禁打回信号：节点捕获后按 depends_on 路由回上游重建。"""
+
+
+def _next_hop(compiled: dict, stage_id: str) -> str:
+    order = compiled["topo_order"]
+    i = order.index(stage_id)
+    return order[i + 1] if i + 1 < len(order) else "__end__"
+
+
+def _rollback_target(compiled: dict, stage_id: str) -> Optional[str]:
+    deps = compiled["stages"][stage_id].get("depends_on", [])
+    return deps[-1] if deps else None
+
+
+def _semantic_gate(stage: dict, deliverable_path: Optional[str]) -> Optional[str]:
+    """语义层挂载点：stage 声明 gate_spec 时扳对应 gate-switch spec（判定照抄不手写）。
+    返回 None=判A放行；否则返回 violations 文本（判B）。"""
+    spec = stage.get("gate_spec")
+    if not spec or not deliverable_path:
+        return None
+    gate = os.path.expanduser("~/.agents/skills/gate-switch/scripts/gate_switch.py")
+    r = subprocess.run(
+        ["python3", gate, "--spec", os.path.expanduser(spec),
+         "--set", f"block={deliverable_path}"],
+        capture_output=True, text=True)
+    try:
+        out = json.loads(r.stdout[r.stdout.find("{"):])
+        if out.get("verdict") == "A":
+            return None
+        return json.dumps(out.get("violations"), ensure_ascii=False)
+    except (ValueError, KeyError):
+        return f"gate_spec 输出不可解析(exit={r.returncode}): {(r.stderr or r.stdout)[-200:]}"
+
+
 def make_stage_node(
     stage_id: str,
     compiled: dict,
     artifacts_root: str,
     plugin_bin: str,
     runner: Callable[[str, str], str],
+    max_rollback: int = 3,
 ) -> Callable:
-    """生成 NodeFn 兼容节点：装配→执行委托→index_sync→快照 四步。
+    """生成 NodeFn 兼容节点：装配→执行委托→index_sync→语义闸→快照 五步+显式路由。
 
-    runner(prompt, stage_id) -> 交付物文本；LLM/spawn 桥接由调用方注入。
-    返回 (state, None)；装配 BLOCK 时把原因追加进 state.error_log 并短路返回。
+    runner(prompt, stage_id) -> 交付物文本；抛 GateReject 表示门禁打回。
+    路由：正常→拓扑下一环节（末环→__end__ 并触发 clean）；打回→depends_on 上游；
+    打回次数超 max_rollback → 冻结（熔断红线）。
     """
     stage = compiled["stages"][stage_id]
     stage_dir = compiled["stage_dirs"][stage_id]
@@ -118,6 +155,11 @@ def make_stage_node(
 
     def node(state):
         wf_id = compiled["workflow_id"]
+        rollback_count = sum(1 for e in state.error_log if e.startswith(f"[{stage_id}] 打回"))
+        if rollback_count >= max_rollback:
+            state.is_frozen = True
+            state.freeze_reason = f"[{stage_id}] 打回次数达熔断上限 {max_rollback}"
+            return state, None
         task = f"[{wf_id}/{stage_id}] {getattr(state, 'project_description', '') or '执行本环节任务'}"
         cfg = {
             "stage_id": stage_id,
@@ -136,24 +178,65 @@ def make_stage_node(
         os.unlink(cfg_path)
         if r.returncode != 0:
             state.error_log.append(f"[{stage_id}] 装配 BLOCK: {r.stderr.strip()}")
-            return state, None
+            target = _rollback_target(compiled, stage_id)
+            return state, target  # 装配失败=上游产物问题，路由回上游重建
+
         prompt = r.stdout
 
         # 步骤2：执行委托（LLM/spawn 桥接由 runner 注入）
-        deliverable = runner(prompt, stage_id)
+        try:
+            deliverable = runner(prompt, stage_id)
+        except GateReject as e:
+            state.error_log.append(f"[{stage_id}] 打回: {e}")
+            return state, _rollback_target(compiled, stage_id)
 
-        # 步骤3：index_sync（交付物落盘；版本取 manifest 声明的 v1 口径）
+        # 步骤3：index_sync（交付物落盘）
         outs = stage.get("output_artifacts", [])
+        deliverable_path = None
         if outs:
             a = outs[0]
             rel = os.path.join(stage_dir, f"{a['name']}_v1.{a.get('suffix', 'md')}")
-            _atomic_write(os.path.join(artifacts_root, rel), deliverable)
+            deliverable_path = os.path.join(artifacts_root, rel)
+            _atomic_write(deliverable_path, deliverable)
 
-        # 步骤4：快照（gate.post 的插件段；幂等，状态不变不新增）
+        # 步骤4：语义闸挂载点（gate.post 业务段，spec 由工作流声明）
+        violations = _semantic_gate(stage, deliverable_path)
+        if violations:
+            state.error_log.append(f"[{stage_id}] 打回: 语义闸判B {violations}")
+            return state, _rollback_target(compiled, stage_id)
+
+        # 步骤5：快照（gate.post 插件段；幂等）
         subprocess.run(
             ["python3", snapshot_cli, "snapshot", "--artifacts-root", artifacts_root,
              "--stage-dir", stage_dir, "--stage-id", stage_id, "--workflow-id", wf_id],
             capture_output=True, text=True)
-        return state, None
+
+        # 显式路由：末环完成→闭环清理→__end__
+        nxt = _next_hop(compiled, stage_id)
+        if nxt == "__end__" and stage_id in compiled["final_stages"] and compiled["cleanup_on_complete"]:
+            subprocess.run(
+                ["python3", snapshot_cli, "clean", "--artifacts-root", artifacts_root,
+                 "--stage-dir", "."],
+                capture_output=True, text=True)
+        return state, nxt
 
     return node
+
+
+# ─── 图构建（零引擎改动：显式路由驱动，不碰全局注册表）─────────
+
+def build_flow_graph(compiled: dict, artifacts_root: str, plugin_bin: str,
+                     runner: Callable[[str, str], str], checkpointer=None):
+    """把编译产物组装成可执行 FlowGraph。
+
+    节点显式 routing_key 驱动流转（graph.py step 第5步：显式路由覆盖 Edge），
+    不注册全局条件边、不调用 FlowGraph.compile()（避免注册引擎内置开发流节点）。
+    """
+    from engine.flow.graph import FlowGraph
+
+    g = FlowGraph()
+    for sid in compiled["topo_order"]:
+        g.register_node(sid, make_stage_node(sid, compiled, artifacts_root, plugin_bin, runner))
+    g._compiled = True  # 内核接入层同包内手工编译态：本图节点已全部注册
+    g._checkpointer = checkpointer
+    return g
