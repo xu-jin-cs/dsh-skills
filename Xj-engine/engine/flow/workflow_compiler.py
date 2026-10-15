@@ -230,16 +230,20 @@ def make_stage_node(
             state.error_log.append(f"[{stage_id}] 打回: 语义闸判B {violations}")
             return state, _rollback_target(compiled, stage_id)
 
-        # 账本绑定：外部角色交付物入 DeliverableRecord（角色名记 summary，枚举用 EXTERNAL）
-        if deliverable_path:
+        # 账本绑定：每件交付物一条 DeliverableRecord（角色名记 summary，枚举用 EXTERNAL）
+        for a in outs:
+            rel = os.path.join(stage_dir, f"{a['name']}_v1.{a.get('suffix', 'md')}")
+            fp = os.path.join(artifacts_root, rel)
+            if not os.path.isfile(fp):
+                continue
             try:
                 from engine.flow.state import DeliverableRecord, NodeType
                 import datetime as _dt
                 rec = DeliverableRecord(
-                    content_type=outs[0].get("suffix", "md"),
-                    summary=f"[external:{stage.get('agent', stage_id)}] {stage_id} 交付物",
+                    content_type=a.get("suffix", "md"),
+                    summary=f"[external:{stage.get('agent', stage_id)}] {stage_id}/{a['name']}",
                     agent_role=NodeType.EXTERNAL,
-                    file_path=deliverable_path,
+                    file_path=fp,
                     validated=True,
                     validation_result="assemble+semantic_gate pass",
                     created_at=_dt.datetime.now().isoformat(),
@@ -295,10 +299,15 @@ def default_runner(prompt: str, stage_id: str) -> str:
 
 # ─── 图构建（零引擎改动：显式路由驱动，不碰全局注册表）─────────
 
-def _merge_branch_error_log(state, branch_state) -> None:
+def _merge_branch_state(state, branch_state) -> None:
+    """分支状态合流：error_log 去重合并 + deliverables 账本按路径去重合并。"""
     for e in getattr(branch_state, "error_log", []):
         if e not in state.error_log:
             state.error_log.append(e)
+    have = {d.file_path for d in getattr(state, "deliverables", [])}
+    for d in getattr(branch_state, "deliverables", []):
+        if d.file_path not in have:
+            state.deliverables = state.deliverables + [d]
 
 
 def make_fanout_node(layer: str, members: list, compiled: dict,
@@ -331,7 +340,7 @@ def make_fanout_node(layer: str, members: list, compiled: dict,
                     futs.append(pool.submit(node_fn, state.model_copy(deep=True)))
                 for f in futs:
                     branch_state, _ = f.result()
-                    _merge_branch_error_log(state, branch_state)
+                    _merge_branch_state(state, branch_state)
         else:
             for m in members:  # 闸判串行/降级 → 顺序执行保语义
                 node_fn = make_stage_node(m, compiled, artifacts_root, plugin_bin, runner)
