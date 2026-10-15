@@ -249,6 +249,33 @@ def make_stage_node(
     return node
 
 
+# ─── runner 桥（执行委托的注入点）──────────────────────────────
+# runner 契约：runner(prompt: str, stage_id: str) -> str（交付物文本）；
+# 抛 GateReject = 门禁打回。生产桥接二选一：ZCode 子 Agent spawn（隔离语义已实测）
+# 或引擎内推理；默认实现走 SCI_RUNNER_CMD 环境变量声明的外部命令桥。
+
+def default_runner(prompt: str, stage_id: str) -> str:
+    """默认 runner：SCI_RUNNER_CMD 外部命令桥。
+    SCI_RUNNER_CMD 为命令模板，{prompt_file} 会被替换为 prompt 临时文件路径，
+    命令 stdout 即交付物文本。未配置即报错指路（禁止静默桩跑生产）。"""
+    cmd_tpl = os.environ.get("SCI_RUNNER_CMD")
+    if not cmd_tpl:
+        raise RuntimeError(
+            "runner 未配置：设 SCI_RUNNER_CMD（如 'my-llm-cli --file {prompt_file}'），"
+            "或向 build_flow_graph 显式注入 runner 桥（ZCode spawn / 引擎内推理）")
+    fd, pf = tempfile.mkstemp(suffix=".md", prefix=f"prompt_{stage_id}_")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(prompt)
+    try:
+        r = subprocess.run(cmd_tpl.format(prompt_file=pf), shell=True,
+                           capture_output=True, text=True, timeout=600)
+        if r.returncode != 0:
+            raise RuntimeError(f"runner 命令失败(exit={r.returncode}): {r.stderr[-200:]}")
+        return r.stdout
+    finally:
+        os.unlink(pf)
+
+
 # ─── 图构建（零引擎改动：显式路由驱动，不碰全局注册表）─────────
 
 def _merge_branch_error_log(state, branch_state) -> None:
@@ -266,6 +293,8 @@ def make_fanout_node(layer: str, members: list, compiled: dict,
 
     join_target = None
     order = compiled["topo_order"]
+    groups = compiled.get("parallel_groups", {})
+    member2group = {m: ly for ly, ms in groups.items() for m in ms}
     last_idx = max(order.index(m) for m in members)
     j = last_idx + 1
     while j < len(order) and order[j] in member2group and member2group[order[j]] == layer:
