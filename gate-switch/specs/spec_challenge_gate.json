@@ -1,0 +1,14 @@
+{
+  "gate": "spec_challenge_gate",
+  "directive": "方向盘闸（2026-10-15 用户裁定）：测试任务启动时必须出示判A的规格质疑块——测试绿灯只证明实现符合规格，规格站不站得住由本闸强制质疑。高危质疑必须转化为本次测试的机械判据（判据转化节）。",
+  "desc": "规格质疑块机械校验：测试启动前置。防'实现符合规格但规格本身有错'的系统性漏检，不依赖用户在线提醒。",
+  "checks": [
+    {"type": "grep_count", "pattern": "\\[SPEC-CHALLENGE\\]", "path": "{block}", "op": "min", "value": 1, "label": "块标识头"},
+    {"type": "grep_count", "pattern": "被测对象[:：]", "path": "{block}", "op": "min", "value": 1, "label": "被测对象必填"},
+    {"type": "grep_count", "pattern": "来源产物[:：]", "path": "{block}", "op": "min", "value": 1, "label": "假设来源产物必填（防空泛质疑）"},
+    {"type": "grep_count", "pattern": "假设\\d+[:：]", "path": "{block}", "op": "min", "value": 3, "label": "假设清单≥3条"},
+    {"type": "grep_count", "pattern": "质疑\\d+[:：]", "path": "{block}", "op": "min", "value": 3, "label": "每条假设必须配质疑"},
+    {"type": "grep_count", "pattern": "判据转化[:：]", "path": "{block}", "op": "min", "value": 1, "label": "高危质疑→测试判据转化≥1条（强制质疑落成断言）"},
+    {"type": "grep_count", "pattern": "终局判定[:：]", "path": "{block}", "op": "min", "value": 1, "label": "终局判定（放行/修复后放行/阻断）"}
+  ]
+}
