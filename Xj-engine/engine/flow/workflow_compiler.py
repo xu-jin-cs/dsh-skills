@@ -104,9 +104,17 @@ class GateReject(Exception):
 
 
 def _next_hop(compiled: dict, stage_id: str) -> str:
+    """拓扑下一跳（组感知）：下一环节若是并行组成员 → 该组 fanout 节点；否则本身。"""
     order = compiled["topo_order"]
-    i = order.index(stage_id)
-    return order[i + 1] if i + 1 < len(order) else "__end__"
+    groups = compiled.get("parallel_groups", {})
+    member2group = {m: layer for layer, ms in groups.items() for m in ms}
+    i = order.index(stage_id) + 1
+    if i >= len(order):
+        return "__end__"
+    cand = order[i]
+    if cand in member2group:
+        return f"fanout_{member2group[cand]}"
+    return cand
 
 
 def _rollback_target(compiled: dict, stage_id: str) -> Optional[str]:
@@ -225,18 +233,77 @@ def make_stage_node(
 
 # ─── 图构建（零引擎改动：显式路由驱动，不碰全局注册表）─────────
 
+def _merge_branch_error_log(state, branch_state) -> None:
+    for e in getattr(branch_state, "error_log", []):
+        if e not in state.error_log:
+            state.error_log.append(e)
+
+
+def make_fanout_node(layer: str, members: list, compiled: dict,
+                     artifacts_root: str, plugin_bin: str,
+                     runner: Callable[[str, str], str], graph_ref):
+    """并行组扇出节点：闸判定（judge_parallel_fanout）→ 真并发线程池执行各分支 → 合流。
+    每分支深拷贝 state 跑完整五步节点体；交付物按环节目录物理隔离天然无写冲突。"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    join_target = None
+    order = compiled["topo_order"]
+    last_idx = max(order.index(m) for m in members)
+    j = last_idx + 1
+    while j < len(order) and order[j] in member2group and member2group[order[j]] == layer:
+        j += 1
+    join_target = order[j] if j < len(order) else "__end__"
+    if join_target != "__end__" and join_target in member2group:
+        join_target = f"fanout_{member2group[join_target]}"  # 连续并行组：合流点指下一组的扇出
+
+    def fanout(state):
+        verdict = graph_ref.judge_parallel_fanout(members)
+        state.error_log.append(f"[fanout:{layer}] 并行判定 {verdict['verdict']} via {verdict['via']}")
+        if verdict["verdict"] == "parallel":
+            with ThreadPoolExecutor(max_workers=len(members)) as pool:
+                futs = []
+                for m in members:
+                    node_fn = make_stage_node(m, compiled, artifacts_root, plugin_bin, runner)
+                    futs.append(pool.submit(node_fn, state.model_copy(deep=True)))
+                for f in futs:
+                    branch_state, _ = f.result()
+                    _merge_branch_error_log(state, branch_state)
+        else:
+            for m in members:  # 闸判串行/降级 → 顺序执行保语义
+                node_fn = make_stage_node(m, compiled, artifacts_root, plugin_bin, runner)
+                state, _ = node_fn(state)
+        return state, join_target
+
+    return fanout
+
+
 def build_flow_graph(compiled: dict, artifacts_root: str, plugin_bin: str,
                      runner: Callable[[str, str], str], checkpointer=None):
     """把编译产物组装成可执行 FlowGraph。
 
     节点显式 routing_key 驱动流转（graph.py step 第5步：显式路由覆盖 Edge），
     不注册全局条件边、不调用 FlowGraph.compile()（避免注册引擎内置开发流节点）。
+    并行组（坐标含"分支"）折叠为 fanout_<层级> 合成节点，闸判定后真并发执行。
     """
     from engine.flow.graph import FlowGraph
 
     g = FlowGraph()
-    for sid in compiled["topo_order"]:
+    groups = compiled.get("parallel_groups", {})
+    member2group = {m: layer for layer, members in groups.items() for m in members}
+    order = compiled["topo_order"]
+    i = 0
+    while i < len(order):
+        sid = order[i]
+        if sid in member2group:
+            layer = member2group[sid]
+            members = sorted(groups[layer], key=lambda m: order.index(m))
+            g.register_node(f"fanout_{layer}",
+                            make_fanout_node(layer, members, compiled, artifacts_root,
+                                             plugin_bin, runner, g))
+            i = order.index(members[-1]) + 1  # 跳过整组（组内成员由扇出节点执行）
+            continue
         g.register_node(sid, make_stage_node(sid, compiled, artifacts_root, plugin_bin, runner))
+        i += 1
     g._compiled = True  # 内核接入层同包内手工编译态：本图节点已全部注册
     g._checkpointer = checkpointer
     return g
