@@ -118,8 +118,16 @@ def _next_hop(compiled: dict, stage_id: str) -> str:
 
 
 def _rollback_target(compiled: dict, stage_id: str) -> Optional[str]:
+    """打回目标（组感知）：上游是并行组成员 → 该组 fanout 节点（成员未单独注册）。"""
     deps = compiled["stages"][stage_id].get("depends_on", [])
-    return deps[-1] if deps else None
+    if not deps:
+        return None
+    target = deps[-1]
+    groups = compiled.get("parallel_groups", {})
+    for layer, members in groups.items():
+        if target in members:
+            return f"fanout_{layer}"
+    return target
 
 
 def _semantic_gate(stage: dict, deliverable_path: Optional[str]) -> Optional[str]:
@@ -198,14 +206,23 @@ def make_stage_node(
             state.error_log.append(f"[{stage_id}] 打回: {e}")
             return state, _rollback_target(compiled, stage_id)
 
-        # 步骤3：index_sync（交付物落盘）
+        # 步骤3：index_sync（交付物落盘；runner 返回 str=首件交付物，dict{name:content}=多件）
         outs = stage.get("output_artifacts", [])
         deliverable_path = None
+        written = {}
         if outs:
-            a = outs[0]
-            rel = os.path.join(stage_dir, f"{a['name']}_v1.{a.get('suffix', 'md')}")
-            deliverable_path = os.path.join(artifacts_root, rel)
-            _atomic_write(deliverable_path, deliverable)
+            if isinstance(deliverable, dict):
+                written = deliverable
+            else:
+                written = {outs[0]["name"]: deliverable}
+            for a in outs:
+                if a["name"] not in written:
+                    state.error_log.append(f"[{stage_id}] WARN 交付物缺件: {a['name']}（runner 未产出）")
+                    continue
+                rel = os.path.join(stage_dir, f"{a['name']}_v1.{a.get('suffix', 'md')}")
+                _atomic_write(os.path.join(artifacts_root, rel), written[a["name"]])
+                if deliverable_path is None:
+                    deliverable_path = os.path.join(artifacts_root, rel)
 
         # 步骤4：语义闸挂载点（gate.post 业务段，spec 由工作流声明）
         violations = _semantic_gate(stage, deliverable_path)
