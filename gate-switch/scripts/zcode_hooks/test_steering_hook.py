@@ -22,6 +22,7 @@ import time
 GATE = os.path.expanduser("~/.agents/skills/gate-switch/scripts/gate_switch.py")
 SPEC = os.path.expanduser("~/.agents/skills/gate-switch/specs/spec_challenge_gate.json")
 STAMP = os.path.expanduser("~/.agents/logs/spec_challenge_pass.json")
+CREATED_LEDGER = os.path.expanduser("~/.agents/logs/spec_challenge_created.log")
 LOG = os.path.expanduser("~/.agents/logs/zcode_hooks.log")
 TEMPLATE = os.path.expanduser("~/.agents/skills/gate-switch/templates/SPEC_CHALLENGE_TEMPLATE.md")
 STAMP_TTL = 4 * 3600  # 戳记有效期 4 小时
@@ -52,6 +53,24 @@ def block_passes(block_path):
         return False
 
 
+def ledger_created(path, kind):
+    """机制产生文件建账（机制无权自删，误触发时打印给用户人工处置）。"""
+    try:
+        with open(CREATED_LEDGER, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                                "kind": kind, "path": path}, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def ledger_tail(n=5):
+    try:
+        lines = open(CREATED_LEDGER, encoding="utf-8").read().strip().splitlines()
+        return lines[-n:] if lines else []
+    except OSError:
+        return []
+
+
 def stamp_valid():
     try:
         s = json.load(open(STAMP, encoding="utf-8"))
@@ -74,6 +93,8 @@ def do_stamp(block_path):
         json.dump({"block": os.path.abspath(block_path), "ts": time.time(),
                    "via": "test_steering_hook"}, f, ensure_ascii=False)
     os.replace(tmp, STAMP)
+    ledger_created(os.path.abspath(block_path), "challenge_block")
+    ledger_created(STAMP, "stamp")
     print(f"STAMP 打戳成功: {block_path}（4h 内测试命令族放行）")
     return 0
 
