@@ -93,6 +93,9 @@ class NodeType(str, Enum):
     SELF_HEAL_OUTPUT = "self_heal_output"      # 全局输出自愈
     SELF_HEAL_ROOT = "self_heal_root"          # 根源根治自愈
 
+    # 外部工作流环节（stage-context-isolation 契约编译产物，角色名不入枚举，记 summary）
+    EXTERNAL = "external"                 # 外部工作流环节
+
 
 class DeliverableType(str, Enum):
     """交付物类型——与 validators.py VALIDATORS 对齐"""

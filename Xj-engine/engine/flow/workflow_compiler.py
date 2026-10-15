@@ -213,6 +213,24 @@ def make_stage_node(
             state.error_log.append(f"[{stage_id}] 打回: 语义闸判B {violations}")
             return state, _rollback_target(compiled, stage_id)
 
+        # 账本绑定：外部角色交付物入 DeliverableRecord（角色名记 summary，枚举用 EXTERNAL）
+        if deliverable_path:
+            try:
+                from engine.flow.state import DeliverableRecord, NodeType
+                import datetime as _dt
+                rec = DeliverableRecord(
+                    content_type=outs[0].get("suffix", "md"),
+                    summary=f"[external:{stage.get('agent', stage_id)}] {stage_id} 交付物",
+                    agent_role=NodeType.EXTERNAL,
+                    file_path=deliverable_path,
+                    validated=True,
+                    validation_result="assemble+semantic_gate pass",
+                    created_at=_dt.datetime.now().isoformat(),
+                )
+                state.deliverables = state.deliverables + [rec]
+            except Exception as e:  # 账本绑定失败不阻断业务，留痕即可
+                state.error_log.append(f"[{stage_id}] WARN 账本绑定失败: {e}")
+
         # 步骤5：快照（gate.post 插件段；幂等）
         subprocess.run(
             ["python3", snapshot_cli, "snapshot", "--artifacts-root", artifacts_root,
