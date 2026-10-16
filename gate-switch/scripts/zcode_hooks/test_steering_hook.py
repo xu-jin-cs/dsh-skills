@@ -49,16 +49,20 @@ def log(msg):
 
 
 def block_passes(block_path):
-    """复核质疑块仍判A（防止戳记对应的块被改坏）。"""
+    """复核质疑块仍判A（两个闸规格任一通过即可：测试族/通用变更族）。"""
     if not os.path.isfile(block_path):
         return False
-    r = subprocess.run(["python3", GATE, "--spec", SPEC, "--set", f"block={block_path}"],
-                       capture_output=True, text=True, timeout=30)
-    try:
-        out = json.loads(r.stdout[r.stdout.find("{"):])
-        return out.get("verdict") == "A"
-    except Exception:
-        return False
+    specs = [SPEC, os.path.expanduser("~/.agents/skills/gate-switch/specs/intent_risk_gate.json")]
+    for spec in specs:
+        r = subprocess.run(["python3", GATE, "--spec", spec, "--set", f"block={block_path}"],
+                           capture_output=True, text=True, timeout=30)
+        try:
+            out = json.loads(r.stdout[r.stdout.find("{"):])
+            if out.get("verdict") == "A":
+                return True
+        except Exception:
+            continue
+    return False
 
 
 def ledger_created(path, kind):
