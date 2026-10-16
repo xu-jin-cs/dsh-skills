@@ -31,6 +31,14 @@ TEST_CMD_RE = re.compile(
     r"(pytest\b|python3?\s+\S*(test_|_test\.py)|acceptance_matrix\.py|npm\s+(run\s+)?test\b|"
     r"\.\/run_tests|bash\s+\S*test)")
 
+# 高危变更族（2026-10-16 用户双闸裁定·方案B兜底：LLM 自主变更动作）
+# 收窄判据：只拦高危变更命令族，不拦日常写操作（全写拦截=体系不可用，已否决）
+CHANGE_CMD_RE = re.compile(
+    r"(rm\s+-[rf]|rm\s+[^\n]*~?/\.|mv\s+\S+\s+\S+|git\s+push|git\s+reset\s+--hard|"
+    r"curl\s+[^\n]*-X\s*(POST|PUT|DELETE|PATCH)|>\s*[^\n]*(\.agents|/etc/|/usr/|prod)|"
+    r"pip3?\s+(install|uninstall)|brew\s+(install|uninstall)|docker\s+(rm|rmi|push)|"
+    r"kill\s+-9|chmod\s+-R|chown\s+-R)")
+
 
 def log(msg):
     try:
@@ -107,8 +115,13 @@ def main():
     except Exception:
         return 0
     command = (payload.get("tool_input") or {}).get("command") or ""
-    if not command.strip() or not TEST_CMD_RE.search(command):
+    if not command.strip():
         return 0
+    is_test = bool(TEST_CMD_RE.search(command))
+    is_change = bool(CHANGE_CMD_RE.search(command))
+    if not (is_test or is_change):
+        return 0
+    family = "测试执行" if is_test else "高危变更"
     try:
         if stamp_valid():
             log("test_steering_hook: 放行（戳记有效）")
@@ -123,9 +136,9 @@ def main():
                        "以下由本机制产生的文件可由你人工处置：\n"
                        + "\n".join("  - " + l for l in ledger))
     sys.stderr.write(
-        "BLOCK 方向盘闸：检测到测试执行，但未找到有效的规格质疑块戳记。\n"
-        f"先填块（模板 {TEMPLATE}）→ 过闸：gate_switch.py --spec spec_challenge_gate.json "
-        "--set block=<块文件> 判 A → 打戳：test_steering_hook.py --stamp <块文件> → 重试。\n"
+        f"BLOCK 方向盘闸：检测到{family}，但未找到有效的规格质疑块戳记。\n"
+        f"先填块（模板 {TEMPLATE}）→ 过闸：gate_switch.py --spec intent_risk_gate.json（测试场景用 spec_challenge_gate.json）"
+        " --set block=<块文件> 判 A → 打戳：test_steering_hook.py --stamp <块文件> → 重试。\n"
         "若判定为误触发：忽略本阻断并直接告知用户即可，无需填块。" + ledger_note + "\n")
     return 2
 

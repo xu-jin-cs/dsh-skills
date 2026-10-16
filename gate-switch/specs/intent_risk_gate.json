@@ -1,0 +1,63 @@
+{
+  "gate": "intent_risk_gate",
+  "directive": "通用意图联想校验闸（2026-10-16 用户双闸裁定）：显性（声明）/隐性（钩子）变更意图统一前置质疑：阻断动作→结构化风险补全→判A打戳（4h）→台账留痕。绿灯≠无风险，必须主动质疑预设判据。",
+  "desc": "变更类动作的风险质疑块机械校验：假设清单从契约/配置机械挖掘，高危项必须落成机械判据，防'规格没人问'。",
+  "checks": [
+    {
+      "type": "grep_count",
+      "pattern": "\\[SPEC-CHALLENGE\\]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "块标识头"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "被测对象[:：]|变更对象[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "对象必填"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "来源产物[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "来源产物必填"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "假设\\d+[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 3,
+      "label": "假设清单≥3条"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "质疑\\d+[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 3,
+      "label": "每假设配质疑"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "判据转化[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "高危质疑→机械判据≥1"
+    },
+    {
+      "type": "grep_count",
+      "pattern": "终局判定[:：]",
+      "path": "{block}",
+      "op": "min",
+      "value": 1,
+      "label": "终局判定"
+    }
+  ]
+}

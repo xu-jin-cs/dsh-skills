@@ -226,6 +226,31 @@
    "soft_reminders": [
     "仅读取已有测试报告/讨论测试概念不触发；动词形态（执行/写/跑+测试）才触发"
    ]
+  },
+  {
+   "id": "S-INTENT-STEERING",
+   "name": "通用变更执行意图（方向盘·意图联想双闸A）",
+   "match": [
+    "执行",
+    "生成",
+    "新建",
+    "改造",
+    "部署",
+    "安装",
+    "删除",
+    "发布",
+    "迁移",
+    "覆盖"
+   ],
+   "match_mode": "keyword",
+   "must_pull": [
+    "判定真实动作意图：词根与字面冲突时以真实意图为准（只读/阅览/讨论既有信息不触发）",
+    "触发则暂停原动作 → 填通用风险质疑块（模板 ~/.agents/skills/gate-switch/templates/SPEC_CHALLENGE_TEMPLATE.md）→ python3 ~/.agents/skills/gate-switch/scripts/gate_switch.py --spec ~/.agents/skills/gate-switch/specs/intent_risk_gate.json --set block=<块文件> 判 A → python3 ~/.agents/skills/gate-switch/scripts/zcode_hooks/test_steering_hook.py --stamp <块文件> 打戳（4h）→ 全链路留痕后继续"
+   ],
+   "soft_reminders": [
+    "绿灯≠无风险：状态全绿时必须仍主动质疑预设判据，不等外部提醒",
+    "词根优先、语义兜底；讨论/复盘/阅读/分析已有信息不触发"
+   ]
   }
  ],
  "soft_signals": [
