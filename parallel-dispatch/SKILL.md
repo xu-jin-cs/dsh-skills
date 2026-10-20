@@ -55,6 +55,14 @@ description: 并行调度与子分身机制总规则（2026-08-14 用户裁定�
 
 **环境现状注记（2026-10-20 三路探针实证）**：当前 ZCode 环境 ① subagent 工具清单无 Agent 派生入口（两次探针实证）；② subagent 的 CreateWorkflow 仅编译不执行（dynamic-workflows 契约明写 "No nesting. Subagents cannot call CreateWorkflow"）；③ 主 agent 层 CreateWorkflow 扇出已实测可行（run dwfrun-073330d6 两子 agent 成功往返）。**原生"母自扇"嵌套待平台开放**；过渡期同构实现=主层 workflow 编排（脚本逐阶段评量、按条件 fan-out 子 agent、max_concurrency 封顶），拓扑语义与本节模型一致，仅扇出动作上移一层。平台若开放 subagent 派生通道，即回归原生模型、废除上移层。
 
+**通道不可用时的兜底映射（2026-10-20 判A 落地，REFORM 块 reform_block_pfix_20261020.md）**：母判"应分解"但无扇出通道时，禁止自由裁量，按下表机械分流——
+| 自评体量 | 分流动作 |
+|---|---|
+| ≤母独力可成（经验默认 ≤2000 字/≤3 篇章，待标定） | 母自写，回报须明说"我判断应分解但通道不可用，故由我先全写" |
+| 超出上档 | 母只产出分片任务书回流主 agent → 主层 workflow 编排执行（无人值守场景同此路，workflow 天然无人接力） |
+分片任务书为机器可消费 JSON，禁散文：`{"slices":[{"slice_id":"s1","title":"…","min_chars":400,"output_path":"…"}],"merge":{"final_path":"…","accept":"grep -c '^## ' =N 且总字符 ≥M"}}`。
+**扇出声明对账契约**：任何"已扇出 N 子"的回报必须附 `child_agent_ids` 清单；无 id 清单的扇出声明视为未扇出，由 fanout_seal 机械对账（声明 id ⊆ 会话实际子 agent）。
+
 ---
 
 ## 二、场景自动匹配触发表
