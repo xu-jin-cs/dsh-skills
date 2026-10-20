@@ -34,6 +34,7 @@ import datetime
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -49,6 +50,8 @@ DEFAULT_SWITCH_LOG = os.path.expanduser("~/.agents/logs/dispatch_switch.jsonl")
 FRESH_SECONDS = 900
 FANOUT_TOOLS = slog.DSH_FANOUT_TOOLS + slog.KIMI_FANOUT_TOOLS
 TOP_RESIDUE_PATTERNS = ("_partial_*", "_gov_*")  # 顶层残渣 tripwire（校验4）
+CLAIM_RE = re.compile(r"已扇出|已派生\s*\d*\s*个子?agent|已派生\s*\d*\s*子")  # 校验5 扇出声明
+AGENT_ID_RE = re.compile(r"(?:agent_)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
 def resolve_session_log(session_log=None):
@@ -74,6 +77,7 @@ def scan_current_turn(path):
     fanout_calls = 0
     children = []
     max_inflight = 0
+    claim_texts = []
     for ev in slog.iter_events(lines, kimi):
         if ev["kind"] == "turn_start":
             turn_start_ms = ev.get("time_ms")
@@ -81,8 +85,10 @@ def scan_current_turn(path):
             fanout_calls = 0
             children = []
             max_inflight = 0
+            claim_texts = []
         elif ev["kind"] == "todo_write":
             todos = ev["todos"]
+            claim_texts.extend(t.get("content", "") for t in todos if isinstance(t, dict))
             inflight = sum(1 for t in todos
                            if isinstance(t, dict) and t.get("status") == "in_progress")
             max_inflight = max(max_inflight, inflight)
@@ -95,7 +101,7 @@ def scan_current_turn(path):
         children = [cid for cid, _ in slog.kimi_child_wires(path, turn_start_ms)]
     return {"turn_start_ms": turn_start_ms, "todos": todos,
             "fanout_calls": fanout_calls, "children": children,
-            "max_inflight": max_inflight}
+            "max_inflight": max_inflight, "claim_texts": claim_texts}
 
 
 def collect_turn_a_throws(switch_log, turn_start_ms, session_id):
@@ -169,6 +175,27 @@ def check_baseline_reads(children, baselines, sessions_root, session_log_path=No
         text = "\n".join(lines)
         if not any(name in text for name in names):
             violations.append(f"子分身 {child} 全程未引用基线文件（{'、'.join(names)}）→ 上下文脱基线")
+    return violations
+
+
+def check_fanout_claims(claim_texts, children):
+    """校验5 扇出声明对账（2026-10-20 判A，REFORM 块 reform_block_pfix_20261020.md）：
+    本 turn 销号/回报文本（todo 内容等归一化日志可见通道）中出现"已扇出/已派生 N 子"
+    类完成态声明时，声明邻近的 agentId 必须 ⊆ 本 turn 实际子分身集合；
+    声明未附 id 清单即违例（按对账契约视为未扇出）。未出现声明则静默通过。"""
+    violations = []
+    actual = {c.replace("agent_", "") for c in children}
+    for text in claim_texts:
+        for m in CLAIM_RE.finditer(text or ""):
+            claimed = {x.replace("agent_", "") for x in AGENT_ID_RE.findall(text)}
+            if not claimed:
+                violations.append(
+                    f"扇出声明未附 child_agent_ids（{text[:60]}…）→ 对账契约视为未扇出，"
+                    "须补 id 清单或改为如实说明")
+            elif not claimed <= actual:
+                violations.append(
+                    f"扇出声明对账不符（{text[:60]}…）：声明子 agent "
+                    f"{sorted(claimed - actual)} 不在本 turn 实际子分身集合 → 疑似伪造扇出")
     return violations
 
 
@@ -247,6 +274,9 @@ def seal(session_log=None, switch_log=DEFAULT_SWITCH_LOG, sessions_root=None, pr
     # ---- 校验 4：顶层残渣 tripwire（2026-08-20 根源治理 v2）----
     residue, residue_violations = check_top_residue(project_root or os.getcwd())
     violations.extend(residue_violations)
+
+    # ---- 校验 5：扇出声明对账（2026-10-20 判A）----
+    violations.extend(check_fanout_claims(turn["claim_texts"], turn["children"]))
 
     evidence = {
         "log": path,
