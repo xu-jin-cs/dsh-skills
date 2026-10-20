@@ -187,7 +187,9 @@ def check_fanout_claims(claim_texts, children):
     actual = {c.replace("agent_", "") for c in children}
     for text in claim_texts:
         for m in CLAIM_RE.finditer(text or ""):
-            claimed = {x.replace("agent_", "") for x in AGENT_ID_RE.findall(text)}
+            # 声明 id 只认 agent_ 前缀（run id/dwfrun 等裸 uuid 不计，防误读为伪造）
+            claimed = {x[len("agent_"):] for x in AGENT_ID_RE.findall(text)
+                       if x.startswith("agent_")}
             if not claimed:
                 violations.append(
                     f"扇出声明未附 child_agent_ids（{text[:60]}…）→ 对账契约视为未扇出，"

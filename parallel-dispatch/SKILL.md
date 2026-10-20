@@ -271,6 +271,7 @@ python3 scripts/merge_check.py --manifest <分身A清单.json> <分身B清单.js
 11. 禁止分身进度黑盒（2026-08-14 archmap 项目复盘裁定）：分身任务书必须固定两条——①开工先自建 todo 清单并随进展更新；②最终汇报必须附任务清单完成状态。母体须把各分身子任务拆进自己的 todo，保证母体/分身/用户三方进度透明，禁止只有一个"进行中"黑盒。**母体侧已机械固化（2026-08-16 裁定）：`dispatch_switch.py` 掷点 A 前置强制校验本 turn todo/write 实证（条目数 ≥ 扇出单元数），未登记即拒扳；`fanout_seal.py` 收尾闸强制校验最终清单全部 completed，漏销号逐条列出并拒答。概率触发问题由扳手接管。**
 12. **禁止多任务出现时不输出 `[PARALLEL-GATE]` 声明**（2026-08-16 裁定）：≥2 个子任务/诉求即触发，无触发词依赖；判定 `sequential` 而依赖链理由留空，视同违规。
 13. **禁止用小时/体感评估任务量**（2026-08-16 量纲裁定）：唯一量纲为文件数量；禁止单文件内多修改点拆分身（文件级写冲突风险）。
+14. **禁止闸脚本变更未过白盒基线即收尾**（2026-10-20 判A）：`dispatch_switch.py` / `dispatch_probe.py` / `fanout_seal.py` 任何变更后，必跑 `~/.zcode/workspace/default/wb_parallel/test_parallel_rules.py` 全绿（58+ 分支基线）方可终答；本条款同步纳入复盘检查项。
 
 ---
 
