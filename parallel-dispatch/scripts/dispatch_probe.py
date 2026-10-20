@@ -109,6 +109,17 @@ def decide(files, units, coupled, batch, desc):
         topology = "mixed"
         reasons.append("存在耦合 → 依赖链部分串行、无依赖部分并行（混合拓扑）")
 
+    # ---- 规模轴接线（2026-10-20 REFORM-GATE 判A · reform_block_rewire_20261020.md）：
+    #      机制路径漏接修复——batch→workflow、S(light)→数量轴、n≤1→sequential 三路不变；
+    #      非批量且规模超 S 档分解门槛（breakdown/engine）→ breakdown_handoff：
+    #      先 task_breakdown 定档，M/L 档 enable_clone 引擎级分身（子母分解豁免） ----
+    if not batch and mechanism != "sequential" and scale in ("breakdown", "engine"):
+        mechanism = "breakdown_handoff"
+        reasons.append(
+            f"规模轴 {scale}（超 S 档分解门槛）→ breakdown_handoff：先 task_breakdown 定档，"
+            "M/L 档 enable_clone 引擎级分身（多子智能体一同执行，子母分解豁免）"
+        )
+
     # ---- 单文件特例 ----
     if f == 1 and fanout > 1:
         mechanism = "sequential"
@@ -123,7 +134,8 @@ def decide(files, units, coupled, batch, desc):
     gate = None
     if fanout >= 1:
         mech_text = {"main_parallel": f"主agent并行×{fanout}(清单并行显示)",
-                     "workflow": "workflow"}.get(mechanism, mechanism)
+                     "workflow": "workflow",
+                     "breakdown_handoff": "task_breakdown定档→M/L引擎级分身(enable_clone)"}.get(mechanism, mechanism)
         gate = (f"[PARALLEL-GATE] 子任务数:{n} | 无依赖:{fanout} | "
                 f"判定:parallel | 机制:{mech_text}")
     elif n is not None and n >= 2:

@@ -260,6 +260,14 @@ def flip(files, units, coupled, batch, desc, dep_reason, force_serial, session_l
                 "（2026-10-14 用户终裁：子智能体仅子母分解 task_breakdown 场景启用）；"
                 "每路 settle 后立即销号对应 todo"
             )
+        elif probe["mechanism"] == "breakdown_handoff":
+            directive = (
+                "照抄 gate_declaration 输出后：先 task_breakdown 定档——S 档轻量执行；"
+                "M/L 档产出 task_slice_plan.json（enable_clone=true + slice_list），"
+                "按层级化并行分解为多个子智能体一同执行（子母分解豁免：2026-10-14 终裁"
+                "子智能体仅子母分解 task_breakdown 场景启用；接线修复 2026-10-20 判A）；"
+                "每路 settle 后立即销号对应 todo"
+            )
         return {
             "verdict": "A",
             "throw": "A",
