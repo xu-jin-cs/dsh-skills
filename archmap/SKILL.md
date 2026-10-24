@@ -408,6 +408,40 @@ diff / lite 模式产出或刷新 `diff_impact.json` 后，对模式 I 双产物
 
 与既有模式关系：本模式为**纯增量**能力，不改动 full / lite / sync / diff / whitebox-pack 任何既有行为与产物结构，仅消费既有产物做机械聚合。
 
+### 模式 J：需求文件词库巡检（req-check，2026-10-25 用户裁定新增）
+
+识别项目内**会生成需求或测试需要的需求文件**，按标准交互词库做黑白灰合规巡检——不合词库的需求文件会直接拉低下游测试 Agent（ui-test-engineer）的解析率与用例生成比例，本模式把检测面前移到测绘期。**纯文本规程模式**（同模式 H/I 先例）：零新增脚本、零新扫描、零 LLM，判定逻辑**薄调用唯一真源**（禁止在 archmap 内自建词表副本或自写正则——判定口径必须与生成侧同源，否则巡检结论与测试 Agent 结论分叉）。
+
+触发：
+
+```
+/archmap <项目路径> req-check
+```
+
+执行规程：
+
+1. **需求文件识别**：扫描项目内需求类文件——文件名含 `需求|PRD|prd|requirement|交互` 的 `.md/.docx/.pdf/.txt`，以及 `requirements*/docs/` 目录下同类文件；`archmap/` 自身产物目录与 `node_modules/dist/build/test` 排除。识别清单落 `req_files[]`（路径+文件名证据）；**超过 200 个文件截断置 WARN**（DIM-050，阈值入档：上限 200 为防全量扫描膨胀的护栏常量，可按项目规模在调用时显式放宽并留痕）
+2. **逐文件判定（薄调用单一真源）**：每个文件按「# 标题 / ## 模块」切节，逐模块文本调判定纯函数——
+   ```bash
+   python3 -c "import sys; sys.path.insert(0, '$HOME/agent-harness'); \
+   from uiat_ai.appium_semantics import triage_requirement, VOCAB_VERSION; \
+   import json, pathlib; \
+   print(json.dumps({'vocab_version': VOCAB_VERSION, \
+   'judge': triage_requirement(pathlib.Path('<需求文件路径>').read_text(encoding='utf-8')[:8000])}, ensure_ascii=False))"
+   ```
+   （真源=`~/agent-harness/uiat_ai/appium_semantics.py`，词库版本与前端控件字典绑定；调用失败=真源不可达，WARN 留痕跳过判定，**禁止降级为自写正则**）
+3. **聚合三态计数**：`gold / gray / blacklist` 模块数分开计数（禁止合并单一分数，DIM-068）；blacklist 文件清单列为 WARN 级问题项（含判定理由，人工可回跳 DIM-064）；gray 文件列 miss_field 清单
+4. **产物双件**：`<项目路径>/archmap/req_vocab_report.json`（机器读：vocab_version 锚/req_files[]/modules[]{path, judge_type, miss_field, reasons}/三态计数）+ `11_需求词库巡检.md`（人读：三态比例、黑名单清单、灰样本补全清单）；原子写（tmp+os.replace）
+5. **告警线（冷启动默认，只告警不阻断——DIM-072 精神，跑 2-3 轮真实项目后校准）**：黄金比例 < 60% 或 blacklist 占比 > 20% → 巡检报告头部 WARN
+
+边界（铁律）：
+
+- **只报告不整改**：archmap=纯分析方（2026-08-15 用户裁定），不合规需求文件的整改权责在 DPM/产品侧（消费 `docs/prd_ui_interaction_vocab_20261025.md` 词库约束），巡检报告只做检测面
+- **页面级特殊黑名单**：前端《页面控件清单》标 `automation: false` 的页面（存量未整改页）→ 对应需求按"约束不可自动化"备注，不计入黑名单质量口径
+- 本模式不改动任何既有模式行为与产物结构
+
+与既有模式关系：纯增量检测能力；消费方=ui-test-engineer（消费方按报告预判解析率）与 DPM（按 miss_field 清单补全需求）。
+
 ## 底层调用
 
 包装脚本位置（安装后位于技能发现根下，默认 `~/.dsh/skills/archmap/`）：
