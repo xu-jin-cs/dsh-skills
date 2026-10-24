@@ -177,6 +177,21 @@ def main():
     if not contents:
         return 0
 
+    # todo 轮级清零机械兜底（2026-10-24 补缺口轮判A）：全量快照落盘（含状态），
+    # 供回合起点 prompt_scan_hook 提醒"上回合清单 N 项未完成 → 重发"。
+    # 写失败不阻断；快照=任务态，不入裁定台账（白名单隔离）。
+    try:
+        snap_dir = os.path.expanduser("~/.agents/logs/todo_snapshot")
+        os.makedirs(snap_dir, exist_ok=True)
+        snap = {"ts": datetime.datetime.now().isoformat(timespec="seconds"),
+                "todos": [{"content": str((t.get("content") or t.get("title") or "") if isinstance(t, dict) else str(t)),
+                           "status": str((t.get("status") or "pending") if isinstance(t, dict) else "pending")}
+                          for t in todos if isinstance(t, dict)]}
+        with open(os.path.join(snap_dir, f"{session_id()}.json"), "w", encoding="utf-8") as f:
+            json.dump(snap, f, ensure_ascii=False, indent=1)
+    except Exception:
+        pass
+
     session = session_id()
     seen = load_flip_seen(session)
     new_pairs = [(normalize(c), c) for c in contents]

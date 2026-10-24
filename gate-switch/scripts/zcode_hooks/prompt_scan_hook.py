@@ -78,6 +78,27 @@ def compact_line(hits, component_hits, soft):
     return text
 
 
+def todo_snapshot_reminder(session_id: str):
+    """todo 轮级清零机械兜底（2026-10-24 补缺口轮判A）：回合起点读快照，
+    有未完成项→提醒重发全量清单（SOFT-TODO-RESEND 的机械依据）。
+    快照缺失/损坏→静默跳过不炸主流程。"""
+    try:
+        sid = session_id or "default-session"
+        p = os.path.expanduser(f"~/.agents/logs/todo_snapshot/{sid}.json")
+        snap = json.load(open(p, encoding="utf-8"))
+        pending = [t for t in (snap.get("todos") or [])
+                   if str(t.get("status")) in ("pending", "in_progress")]
+        if not pending:
+            return None
+        preview = "；".join(str(t.get("content", ""))[:40] for t in pending[:3])
+        return (f"[todo 快照提醒] 回合起点检测到上回合清单 {len(pending)} 项未完成"
+                f"（面板 turn 级清零）：{preview}"
+                + ("…" if len(pending) > 3 else "")
+                + " → 重发 todo_write 全量清单同步面板。")
+    except Exception:
+        return None
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
@@ -109,6 +130,10 @@ def main():
         text = full_panel(hits, component_hits, soft)
     else:
         text = compact_line(hits, component_hits, soft)
+    reminder = todo_snapshot_reminder(
+        str(payload.get("session_id") or payload.get("sessionId") or ""))
+    if reminder:
+        text = text + "\n" + reminder
     print(json.dumps({"additionalContext": text}, ensure_ascii=False))
     return 0
 
