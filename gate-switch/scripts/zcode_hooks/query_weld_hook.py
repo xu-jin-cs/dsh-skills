@@ -42,7 +42,7 @@ GUIDANCE = (
     "[QUERY-WELD·事前阻断] 本 turn 首次检索（Read/Grep/Glob）前必须先扳声明闸：\n"
     "python3 ~/.agents/skills/dual-gates/scripts/dual_gates.py declare "
     "--raw \"<用户输入原文>\"\n"
-    "（is_query 续扳 query 闸——知识库优先；not_query 直接推进）"
+    "（is_query 续扳 query 闸——会话锚点定向溯源检索；not_query 直接推进）"
     "扳完重试本操作即穿透放行。")
 
 
