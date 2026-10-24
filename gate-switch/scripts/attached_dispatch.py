@@ -14,14 +14,53 @@
 （host/desc/files/units/掷点），供复盘区分"附身普检"与"信号路/手动"扳动。
 """
 import argparse
+import hashlib
 import json
 import os
 import subprocess
 import sys
 import datetime
+import time
 
 DISPATCH_SWITCH = os.path.expanduser("~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py")
 ATTACHED_LOG = os.path.expanduser("~/.agents/logs/attached_dispatch.jsonl")
+DEDUP_LOG = os.path.expanduser("~/.agents/logs/dispatch_dedup.jsonl")
+DEDUP_WINDOW_SEC = int(os.environ.get("DISPATCH_DEDUP_WINDOW_SEC", "600"))
+
+
+def dispatch_dedup_seen(key: str) -> bool:
+    """附身掷点去重（2026-10-24 触发链风暴防线）：同 (files,units) 量纲在时间窗内
+    只掷一次。窗口内有记录→跳过；无→记录本次并放行。追加账+整档重写有竞态窗口，
+    定位为尽力去重（并发同键可能双掷，可由 dispatch_switch.jsonl 复盘发现）。"""
+    now = time.time()
+    rows, seen = [], False
+    try:
+        with open(DEDUP_LOG, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except Exception:
+                    continue
+                if now - float(r.get("ts", 0)) <= DEDUP_WINDOW_SEC:
+                    rows.append(r)
+                    if r.get("key") == key:
+                        seen = True
+    except FileNotFoundError:
+        pass
+    except Exception:
+        return False  # 去重账故障不放行去重语义，照常掷点
+    if not seen:
+        rows.append({"ts": now, "key": key, "window_sec": DEDUP_WINDOW_SEC})
+        try:
+            with open(DEDUP_LOG, "w", encoding="utf-8") as f:
+                for r in rows:
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+    return seen
 
 
 def resolve_inputs(args):
@@ -52,6 +91,22 @@ def main():
     args = ap.parse_args()
 
     files, units, desc = resolve_inputs(args)
+    dedup_key = hashlib.sha256(f"{files}|{units}".encode()).hexdigest()[:16]
+    if dispatch_dedup_seen(dedup_key):
+        print(json.dumps({
+            "attached": True, "host": args.host, "dedup": True,
+            "dedup_key": dedup_key, "window_sec": DEDUP_WINDOW_SEC,
+            "note": f"同一量纲（files={files},units={units}）{DEDUP_WINDOW_SEC}s 窗口内已掷点，本次去重跳过。",
+        }, ensure_ascii=False))
+        try:
+            with open(ATTACHED_LOG, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"ts": datetime.datetime.now().isoformat(timespec="seconds"),
+                                    "host": args.host, "desc": desc, "files": files,
+                                    "units": units, "verdict": "DEDUP_SKIP",
+                                    "key": dedup_key}, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        return 0
     try:
         r = subprocess.run(
             [sys.executable, DISPATCH_SWITCH, "--files", str(files),

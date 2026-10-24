@@ -18,11 +18,13 @@
 每次扳动由 dispatch_switch 自身落 dispatch_switch.jsonl 留痕。
 """
 import datetime
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+import time
 
 DISPATCH_SWITCH = os.path.expanduser(
     "~/.agents/skills/parallel-dispatch/scripts/dispatch_switch.py")
@@ -32,6 +34,65 @@ FLIP_SEAL_DIR = os.environ.get(
     "TODO_FLIP_SEAL_DIR",
     os.path.expanduser("~/.agents/logs/todo_flip_seal"),
 )
+# 边③互斥（2026-10-24，hooks_wiring_impl 判A）：激活工作流实例标记。
+# assemble_stage_context 每次装配自动刷新（必经链路治理点）；freshness 2h，
+# 过期/缺失/损坏一律按无编排照章掷点，不炸主流程。
+WORKFLOW_MARKER = os.path.expanduser("~/.agents/logs/active_workflow_instance.json")
+# 附身掷点去重（触发链风暴防线）：同 (files,units) 量纲窗口内只掷一次，跨路径共用账。
+DEDUP_LOG = os.path.expanduser("~/.agents/logs/dispatch_dedup.jsonl")
+DEDUP_WINDOW_SEC = int(os.environ.get("DISPATCH_DEDUP_WINDOW_SEC", "600"))
+
+
+def workflow_active():
+    """边③互斥：编排声明 > 会话掷点。激活工作流实例存在时，并行掷点降级为
+    登记不裁定。依据 env WORKFLOW_INSTANCE_ID 或标记文件（2h 内新鲜）。"""
+    if os.environ.get("WORKFLOW_INSTANCE_ID", "").strip():
+        return "env:WORKFLOW_INSTANCE_ID"
+    try:
+        with open(WORKFLOW_MARKER, encoding="utf-8") as f:
+            m = json.load(f)
+        ts = datetime.datetime.fromisoformat(m.get("ts") or "")
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=datetime.timezone.utc)
+        if m.get("instance_id") and \
+                (datetime.datetime.now(datetime.timezone.utc) - ts) < datetime.timedelta(hours=2):
+            return f"file:{m.get('instance_id')}"
+    except Exception:
+        pass
+    return None
+
+
+def dispatch_dedup_seen(key: str) -> bool:
+    """同 (files,units) 量纲时间窗内只掷一次（与 attached_dispatch 共账共窗）。"""
+    now = time.time()
+    rows, seen = [], False
+    try:
+        with open(DEDUP_LOG, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except Exception:
+                    continue
+                if now - float(r.get("ts", 0)) <= DEDUP_WINDOW_SEC:
+                    rows.append(r)
+                    if r.get("key") == key:
+                        seen = True
+    except FileNotFoundError:
+        pass
+    except Exception:
+        return False
+    if not seen:
+        rows.append({"ts": now, "key": key, "window_sec": DEDUP_WINDOW_SEC})
+        try:
+            with open(DEDUP_LOG, "w", encoding="utf-8") as f:
+                for r in rows:
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+    return seen
 
 FILE_TOKEN_RE = re.compile(r"(?:~|/|[\w.-]+/)[\w./~()-]*\.(?:py|md|json|jsonl|sh|js|ts|yaml|yml)")
 
@@ -149,6 +210,31 @@ def main():
         return 0
 
     files = len(path_hits)
+
+    # 边③互斥（2026-10-24）：激活工作流实例 → 编排已声明并行结构，
+    # 会话掷点降级为登记不裁定（编排声明 > 会话闸）。
+    orch = workflow_active()
+    if orch:
+        log(f"todo_parallel_gate_hook SKIP dispatch: via=orchestrated({orch}) units={units} files={files}")
+        try:
+            with open(os.path.expanduser("~/.agents/logs/dispatch_switch.jsonl"),
+                      "a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"ts": datetime.datetime.now(
+                    datetime.timezone.utc).isoformat(timespec="seconds"),
+                    "verdict": "ORCHESTRATED_SKIP", "units": units, "files": files,
+                    "orch": orch, "session": session, "via": "todo_parallel_gate_hook"},
+                    ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        seal_flip(session, [k for k, _ in new_pairs if k])
+        return 0
+
+    # 附身掷点去重（触发链风暴防线）：窗口内同量纲已掷 → 跳过（不 seal，
+    # 窗口过期后的重发仍可正常掷点）。
+    dedup_key = hashlib.sha256(f"{files}|{units}".encode()).hexdigest()[:16]
+    if dispatch_dedup_seen(dedup_key):
+        log(f"todo_parallel_gate_hook SKIP dispatch: via=dedup key={dedup_key}")
+        return 0
 
     try:
         proc = subprocess.run(

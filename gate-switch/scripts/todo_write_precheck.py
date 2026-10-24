@@ -84,6 +84,12 @@ def remind(text, task):
     print(f"     ↳ {task}")
 
 
+# 边②互斥（2026-10-24，hooks_wiring_impl 判A）：状态同步型更新识别——
+# 引擎/工作流进度镜像类 todo（[SYNC] 前缀、instance_id=/stage_id= 标记、
+# 进度回写/状态同步字样）跳过新任务审查只留痕，防"进度回写被当新任务审查"噪声。
+STATE_SYNC_RE = re.compile(r"\[SYNC\]|instance_id=|stage_id=|进度回写|状态同步")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="todo_write 前置提醒脚本")
     ap.add_argument("--tasks", required=True, help="本次 todo_write 任务清单（JSON 数组/逗号分隔）")
@@ -92,6 +98,29 @@ def main() -> int:
 
     tasks = parse_tasks(args.tasks)
     session = session_id()
+
+    # 边②互斥（2026-10-24）：全部任务均为状态同步型 → 跳过审查只留痕
+    if tasks and all(STATE_SYNC_RE.search(t) for t in tasks):
+        print("[前置闸·状态同步] 检测到进度镜像更新（边②互斥），跳过新任务审查，仅留痕。")
+        try:
+            os.makedirs(SEAL_DIR, exist_ok=True)
+            with open(os.path.join(SEAL_DIR, f"{session}.jsonl"), "a", encoding="utf-8") as f:
+                for t in tasks:
+                    f.write(json.dumps({"task_key": normalize(t)}, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        try:
+            os.makedirs(os.path.dirname(PRECHECK_LOG), exist_ok=True)
+            with open(PRECHECK_LOG, "a", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "ts": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
+                    "session_id": session, "n_tasks": len(tasks),
+                    "via": "state_sync_skip",
+                }, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        return 0
+
     seen = load_seen(session)
     keys = [normalize(t) for t in tasks]
     new_keys = [k for k in keys if k and k not in seen]

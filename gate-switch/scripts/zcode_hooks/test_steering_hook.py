@@ -39,6 +39,14 @@ CHANGE_CMD_RE = re.compile(
     r"pip3?\s+(install|uninstall)|brew\s+(install|uninstall)|docker\s+(rm|rmi|push)|"
     r"kill\s+-9|chmod\s+-R|chown\s+-R)")
 
+# 引擎中介识别（2026-10-24 边①互斥，hooks_wiring_impl_20261024 判A）：
+# 引擎自有测试门禁（et_test_gates + content_issue 签发）兜底的链路内测试命令，
+# 宿主方向盘闸豁免放行留痕（元方法族：已有硬约束兜底的点禁止重复设防）；
+# 高危变更族不豁免（fail-closed 保留）。
+ENGINE_MEDIATED_RE = re.compile(
+    r"(^|[\s;&|(\"'])xj-engine\b|SCI_RUNNER_CMD|from\s+engine[.\s]|engine\.kernel|"
+    r"engine\.flow|engine\.audit|AGENT_ENGINE_SECRET")
+
 
 def log(msg):
     try:
@@ -124,6 +132,10 @@ def main():
     is_test = bool(TEST_CMD_RE.search(command))
     is_change = bool(CHANGE_CMD_RE.search(command))
     if not (is_test or is_change):
+        return 0
+    # 边①互斥（2026-10-24）：仅引擎中介的测试族豁免；高危变更族无论是否涉引擎照拦。
+    if is_test and not is_change and ENGINE_MEDIATED_RE.search(command):
+        log(f"test_steering_hook: 引擎中介测试命令豁免放行留痕: {command[:160]}")
         return 0
     family = "测试执行" if is_test else "高危变更"
     try:
