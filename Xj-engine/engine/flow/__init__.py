@@ -26,6 +26,8 @@ LangGraph 状态机融合层 — 自研 agent-harness 的 LangGraph 嵌入方案
   4. 唯一数据源 = LangGraph State（运行时），Harness 仅镜像备份
 """
 
+import os as _os
+
 from engine.flow.state import (
     FlowState, FlowStatus, BugLevel, NodeType,
     TestResult, DeliverableRecord, BugRecord, ViolationRecord,
@@ -51,15 +53,31 @@ from engine.flow.edges import (
     GOVERNANCE_EDGES,
 )
 from engine.flow.graph import FlowGraph, get_flow_graph
-from engine.flow.callback import (
-    harness_sync_callback, CallbackManager,
-)
+if _os.environ.get("XJFRAME_STRICT_NO_HOST") != "1":
+    try:
+        from engine.flow.callback import (
+            harness_sync_callback, CallbackManager,
+        )
+    except Exception:  # noqa: BLE001 — 无宿主时降级
+        harness_sync_callback = None
+        CallbackManager = None
+else:
+    harness_sync_callback = None
+    CallbackManager = None
 from engine.flow.checkpoint import (
     SqliteCheckpointer, get_checkpointer,
 )
-from engine.flow.harness_client import (
-    HarnessClient, get_harness_client,
-)
+if _os.environ.get("XJFRAME_STRICT_NO_HOST") != "1":
+    try:
+        from engine.flow.harness_client import (
+            HarnessClient, get_harness_client,
+        )
+    except Exception:  # noqa: BLE001
+        HarnessClient = None
+        get_harness_client = None
+else:
+    HarnessClient = None
+    get_harness_client = None
 from engine.flow.integration import (
     state_to_json, json_to_state,
     assign_thread_id, build_initial_state,
