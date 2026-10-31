@@ -1,0 +1,10 @@
+{
+  "gate": "stage_isolation",
+  "desc": "pm stage 隔离收尾对账：14 环节必须各有一条 assemble + spawn 留痕（stage_exec.py 写入），缺失即判 B，禁止以单会话全历史模式冒充隔离执行。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "python3 ~/.agents/skills/pm/scripts/stage_exec.py status --workflow pm --strict",
+     "expect": 0,
+     "label": "14 环节 assemble+spawn 对账"}
+  ]
+}
