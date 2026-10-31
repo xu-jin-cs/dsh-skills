@@ -61,6 +61,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Xj-engine 运行留痕校验")
     ap.add_argument("--workflow", required=True)
     ap.add_argument("--workflow-json", default="")
+    ap.add_argument("--artifacts-root", default="")
     ap.add_argument("--run-ledger", default=RUN_LEDGER)
     ap.add_argument("--stage-ledger", default=STAGE_LEDGER)
     ap.add_argument("--strict-stages", action="store_true")
@@ -87,7 +88,7 @@ def main() -> int:
         print(f"BLOCK workflow.json 不存在: {wf_path}", file=sys.stderr)
         return 2
     stages = [s.get("stage_id") for s in compiled.get("stages", [])]
-    root = os.path.join(os.path.dirname(os.path.abspath(wf_path)), "project_artifacts")
+    root = args.artifacts_root or os.path.join(os.path.dirname(os.path.abspath(wf_path)), "project_artifacts")
     rows = _rows(args.stage_ledger)
     missing = []
     for st in stages:
