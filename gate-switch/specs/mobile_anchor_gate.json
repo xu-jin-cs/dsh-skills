@@ -1,7 +1,12 @@
 {
   "gate": "mobile_anchor_gate",
-  "desc": "移动端 accessibility-id 锚点注入完整性实证（2026-10-31 六项实施 S5，复刻 frontend_testid.json 先例）：①控件清单 JSON 结构性校验（page_key/control_list/platform 必填、条目非空）为判 A 硬项；②page_source 样张可解析且提取条目>0 为硬项；③清单↔源码 accessibility-id 集合差为 best-effort（regex 待真实项目校准，IOS-22 语义），差集非空判 B 但单独列 violations 供甄别",
+  "desc": "移动端 accessibility-id 锚点注入完整性实证（2026-10-31 六项实施 S5，复刻 frontend_testid.json 先例）：①控件清单 JSON 结构性校验（page_key/control_list/platform 必填、条目非空）为判 A 硬项；②page_source 样张可解析且提取条目>0 为硬项（page_source_source=unavailable 时传 --source-unavailable 走合法通过态，IOS-25 语义）；③清单↔源码 accessibility-id 集合差为 best-effort（regex 待真实项目校准，IOS-22 语义），差集非空判 B 但单独列 violations 供甄别",
   "checks": [
-    {"type": "script_exit", "cmd": "python3 $HOME/.agents/skills/frontend-development/scripts/mobile_anchor_diff.py --control-list {control_list} --src {src} --samples {samples}", "expect": 0, "label": "移动端锚点三段机考（结构+样张+集合差 best-effort）"}
+    {
+      "type": "script_exit",
+      "cmd": "python3 $HOME/.agents/skills/frontend-development/scripts/mobile_anchor_diff.py --control-list {control_list} --src {src} --samples {samples}",
+      "expect": 0,
+      "label": "移动端锚点三段机考（结构+样张+集合差 best-effort）"
+    }
   ]
 }
