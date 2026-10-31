@@ -153,6 +153,8 @@ def compile_workflow_json(path: str) -> dict:
         "cleanup_on_complete": bool(wf.get("cleanup_on_complete", False)),
         "stage_dirs": dict(wf["stage_dirs"]),
         "stages": {s["stage_id"]: s for s in stages},
+        "enforcement": wf.get("enforcement") or {},
+        "plugin_bin": wf.get("plugin_bin") or "",
     }
 
 
