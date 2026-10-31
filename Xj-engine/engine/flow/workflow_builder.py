@@ -90,7 +90,7 @@ def _skeleton(stages: list[dict], order: list[str], dir_of: dict[str, str],
     rows = []
     for sid in order:
         for a in by[sid].get("output_artifacts", []):
-            rows.append(f"| {sid} | v1 | active | {dir_of[sid]}/{a['name']}_v1.{a.get('suffix','md')} |")
+            rows.append(f"| {sid} | v1 | pending | {dir_of[sid]}/{a['name']}_v1.{a.get('suffix','md')} |")
     index_text = (f"# 项目台账（workflow: {workflow_id}，builder v{BUILDER_VERSION} 生成）\n\n"
                   "| 环节 | 版本 | 状态 | 产物路径 |\n| --- | --- | --- | --- |\n"
                   + "\n".join(rows) + "\n")
