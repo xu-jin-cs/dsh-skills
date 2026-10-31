@@ -1,0 +1,10 @@
+{
+  "gate": "engine_entry",
+  "desc": "工作流收尾必须经 Xj-engine 跑完：engine_flow_runs.jsonl 有 run_complete，且全部 stage 有 assemble+spawn 留痕。用法：--set workflow=<id>。未走引擎/手工单会话执行一律判 B。",
+  "checks": [
+    {"type": "script_exit",
+     "cmd": "python3 /Users/xujin/dsh-skills/Xj-engine/scripts/verify_engine_run.py --workflow {workflow} --strict-stages",
+     "expect": 0,
+     "label": "engine run_complete + stage 留痕全量对账"}
+  ]
+}

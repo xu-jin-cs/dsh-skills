@@ -18,6 +18,7 @@ V0.1 边界（诚实声明）：
 """
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import subprocess
@@ -27,6 +28,72 @@ from typing import Callable, Optional
 from engine.flow.node_defs import FlowNodeMeta
 
 SUPPORTED_CONTRACT_VERSIONS = {"sci/1"}  # 锚契约版本（语义承诺）；transformer_version 仅观测不参与判定
+
+# ─── 执行留痕（引擎节点自写；宿主不可绕过）──────────────────────
+DEFAULT_STAGE_LEDGER = "~/.agents/logs/stage_isolation.jsonl"
+DEFAULT_RUN_LEDGER = "~/.agents/logs/engine_flow_runs.jsonl"
+
+
+def _ledger_path(kind: str = "stage") -> str:
+    if kind == "stage":
+        return os.path.expanduser(os.environ.get("STAGE_ISOLATION_LEDGER") or DEFAULT_STAGE_LEDGER)
+    return os.path.expanduser(os.environ.get("ENGINE_FLOW_RUN_LEDGER") or DEFAULT_RUN_LEDGER)
+
+
+def _append_jsonl(path: str, rec: dict) -> None:
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def _stage_event(event: str, wf: str, stage: str, root: str,
+                 ok: bool = True, chars: int = 0, note: str = "") -> None:
+    _append_jsonl(_ledger_path("stage"), {
+        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "event": event, "ok": bool(ok), "workflow_id": wf,
+        "stage_id": stage, "artifacts_root": root,
+        "chars": int(chars or 0), "note": note[:200],
+    })
+
+
+def _run_event(event: str, wf: str, **extra) -> None:
+    _append_jsonl(_ledger_path("run"), {
+        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "event": event, "workflow_id": wf, **extra,
+    })
+
+
+def _global_base() -> str:
+    """子代理不继承 AGENTS.md；把全局提示词基线随 stage prompt 前置。"""
+    try:
+        text = open(os.path.expanduser("~/AGENTS.md"), encoding="utf-8").read()
+    except OSError:
+        return ""
+    start, end = "<!-- GLOBAL-PROMPT-DIGEST:START -->", "<!-- GLOBAL-PROMPT-DIGEST:END -->"
+    if start not in text or end not in text:
+        return ""
+    return text.split(start, 1)[1].split(end, 1)[0].strip()
+
+
+def _stage_has(event: str, wf: str, stage: str, root: str) -> bool:
+    path = _ledger_path("stage")
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if (e.get("event") == event and e.get("ok")
+                        and e.get("workflow_id") == wf and e.get("stage_id") == stage
+                        and e.get("artifacts_root") == root):
+                    return True
+    except OSError:
+        pass
+    return False
 CONTRACT_REQUIRED_KEYS = ("workflow_id", "topo_order", "stages", "stage_dirs")
 
 
@@ -198,11 +265,19 @@ def make_stage_node(
             return state, target  # 装配失败=上游产物问题，路由回上游重建
 
         prompt = r.stdout
+        base = _global_base()
+        if base:
+            prompt = base + "\n\n" + prompt
+        _stage_event("assemble", compiled["workflow_id"], stage_id, artifacts_root,
+                     True, len(prompt))
 
         # 步骤2：执行委托（LLM/spawn 桥接由 runner 注入）
+        _stage_event("spawn", compiled["workflow_id"], stage_id, artifacts_root, True)
         try:
             deliverable = runner(prompt, stage_id)
         except GateReject as e:
+            _stage_event("spawn_fail", compiled["workflow_id"], stage_id, artifacts_root,
+                         False, note=str(e))
             state.error_log.append(f"[{stage_id}] 打回: {e}")
             return state, _rollback_target(compiled, stage_id)
 
@@ -235,10 +310,20 @@ def make_stage_node(
             ["python3", snapshot_cli, "snapshot", "--artifacts-root", artifacts_root,
              "--stage-dir", stage_dir, "--stage-id", stage_id, "--workflow-id", wf_id],
             capture_output=True, text=True)
+        _stage_event("snapshot", wf_id, stage_id, artifacts_root, True)
 
         # 显式路由：末环完成→闭环清理→__end__
         nxt = _next_hop(compiled, stage_id)
         if nxt == "__end__" and stage_id in compiled["final_stages"] and compiled["cleanup_on_complete"]:
+            missing = [sid for sid in compiled["stages"]
+                       if not (_stage_has("assemble", wf_id, sid, artifacts_root)
+                               and _stage_has("spawn", wf_id, sid, artifacts_root))]
+            if missing:
+                state.is_frozen = True
+                state.freeze_reason = f"stage 隔离留痕缺失: {','.join(missing)}"
+                return state, None
+            _run_event("run_complete", wf_id, stages=len(compiled["stages"]),
+                       instance_id=getattr(state, "instance_id", ""))
             subprocess.run(
                 ["python3", snapshot_cli, "clean", "--artifacts-root", artifacts_root,
                  "--stage-dir", "."],
@@ -353,4 +438,5 @@ def build_flow_graph(compiled: dict, artifacts_root: str, plugin_bin: str,
         i += 1
     g._compiled = True  # 内核接入层同包内手工编译态：本图节点已全部注册
     g._checkpointer = checkpointer
+    _run_event("run_start", compiled["workflow_id"], stages=len(compiled["stages"]))
     return g
