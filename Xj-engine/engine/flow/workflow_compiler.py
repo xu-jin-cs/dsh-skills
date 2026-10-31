@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import re
 import subprocess
 import tempfile
 from typing import Callable, Optional
@@ -64,6 +65,27 @@ def _run_event(event: str, wf: str, **extra) -> None:
         "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "event": event, "workflow_id": wf, **extra,
     })
+
+
+def _update_index_status(artifacts_root: str, stage_id: str,
+                         status: str = "active") -> None:
+    """交付物落盘后回写 INDEX 状态（pending → active）。"""
+    path = os.path.join(artifacts_root, "INDEX.md")
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError:
+        return
+    pat = re.compile(rf"^(\|\s*{re.escape(stage_id)}\s*\|\s*v\d+\s*\|)\s*[^|]*\s*(\|.*)$")
+    changed = False
+    lines = []
+    for line in text.splitlines():
+        m = pat.match(line)
+        if m:
+            line = f"{m.group(1)} {status} {m.group(2)}"
+            changed = True
+        lines.append(line)
+    if changed:
+        _atomic_write(path, "\n".join(lines) + "\n")
 
 
 def _global_base() -> str:
@@ -300,6 +322,8 @@ def make_stage_node(
                 _atomic_write(os.path.join(artifacts_root, rel), written[a["name"]])
                 if deliverable_path is None:
                     deliverable_path = os.path.join(artifacts_root, rel)
+            if written:
+                _update_index_status(artifacts_root, stage_id, "active")
 
         # 步骤4：语义闸挂载点（gate.post 业务段，spec 由工作流声明）
         violations = _semantic_gate(stage, deliverable_path)

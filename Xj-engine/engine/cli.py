@@ -70,6 +70,8 @@ def _cmd_workflow_validate(path: str, as_json: bool) -> int:
 
 
 def _cmd_flow_run(args) -> int:
+    if not getattr(args, "allow_host", False):
+        os.environ.setdefault("XJFRAME_STRICT_NO_HOST", "1")
     try:
         from engine.flow.workflow_compiler import (
             build_flow_graph, compile_workflow_json, default_runner,
@@ -112,6 +114,7 @@ def _cmd_flow_run(args) -> int:
     )
     print(json.dumps({
         "workflow_id": wf,
+        "strict_host": os.environ.get("XJFRAME_STRICT_NO_HOST") == "1",
         "frozen": bool(getattr(state, "is_frozen", False)),
         "freeze_reason": getattr(state, "freeze_reason", ""),
         "errors": (getattr(state, "error_log", []) or [])[-5:],
@@ -159,6 +162,8 @@ def main(argv=None) -> int:
     flo_run.add_argument("--instance-id", default="engine-flow")
     flo_run.add_argument("--description", default="")
     flo_run.add_argument("--evidence-root", default="")
+    flo_run.add_argument("--allow-host", action="store_true",
+                         help="允许加载 agent-harness 集成（默认 strict 无宿主）")
 
     args = parser.parse_args(argv)
     if args.cmd == "health":

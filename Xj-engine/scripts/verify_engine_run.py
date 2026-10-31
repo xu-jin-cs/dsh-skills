@@ -16,6 +16,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import sys
 
 RUN_LEDGER = os.environ.get(
@@ -89,8 +90,12 @@ def main() -> int:
         return 2
     stages = [s.get("stage_id") for s in compiled.get("stages", [])]
     root = args.artifacts_root or os.path.join(os.path.dirname(os.path.abspath(wf_path)), "project_artifacts")
+    try:
+        index_text = open(os.path.join(root, "INDEX.md"), encoding="utf-8").read()
+    except OSError:
+        index_text = ""
     rows = _rows(args.stage_ledger)
-    missing = []
+    missing = []; pending = []
     for st in stages:
         ok_a = any(r.get("event") == "assemble" and r.get("ok")
                    and r.get("workflow_id") == args.workflow and r.get("stage_id") == st
@@ -100,8 +105,14 @@ def main() -> int:
                    and r.get("artifacts_root") == root for r in rows)
         if not (ok_a and ok_s):
             missing.append(st)
+        m = re.search(rf"^\|\s*{re.escape(st)}\s*\|\s*v\d+\s*\|\s*([^|]*?)\s*\|", index_text, re.MULTILINE)
+        if not m or m.group(1).strip() != "active":
+            pending.append(st)
     if missing:
         print(f"BLOCK {args.workflow} stage 留痕缺失: {','.join(missing)}", file=sys.stderr)
+        return 2
+    if pending:
+        print(f"BLOCK {args.workflow} INDEX 状态未回写 active: {','.join(pending)}", file=sys.stderr)
         return 2
     print(f"OK {args.workflow} engine run_complete + {len(stages)} stage 留痕完整")
     return 0
