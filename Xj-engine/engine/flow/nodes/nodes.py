@@ -1,3 +1,18 @@
+# ═══════════════════════════════════════════════════════════════
+# 【冻结声明 · FROZEN-2026-11-04】双法合流裁定（两视角独立评审一致推荐，候选 B）
+#   管辖范围：仅本引擎仓副本（/Users/xujin/dsh-skills/Xj-engine）。
+#   冻结起算点：2026-11-04（此前本文件仍有 auto-publish 提交在案）。
+#   冻结语义：headless 备用通道资产停止新特性开发，仅允许缺陷修复回填。
+#   降级依据（逐字引用 ~/.agents/skills/pm/SKILL.md:36）："仅用于无宿主环境的
+#   无人值守图执行场景……**实证（台账 R-063）：pm 在该通道零运行留痕，日常禁止
+#   走此通道产交付物。**"（2026-11-01 工作流通道正名，图执行通道降级 headless 备用）
+#   双副本归属：宿主镜像副本（agent-harness/backend/engine/flow/nodes/）为活代码
+#   且有独立节点回归；引擎副本=冻结快照，缺陷修复单向自宿主回填并留痕——本文件
+#   2026-11-04 已回填宿主 2026-09-27 环1 三处修复（regen_flag 赋值与重试写标记 /
+#   PMNode._calc_rate 替代 self._calc_rate / deepcopy 防跨任务串数据）。
+#   ALL_NODES 注册表完整性由 tests/test_nodes_registry.py 机械守护（金样本逐键）。
+#   定性注记：本文件混载业务角色与治理/基础设施节点，勿以"纯业务角色"行文。
+# ═══════════════════════════════════════════════════════════════
 """
 Flow Nodes — Agent 角色独立执行单元。
 
@@ -15,6 +30,7 @@ Flow Nodes — Agent 角色独立执行单元。
 
 import logging
 import os
+import copy
 import json
 from datetime import datetime
 from typing import Callable, Optional
@@ -77,7 +93,8 @@ class PMNode:
     def gate_bridge_checklist(state: FlowState) -> dict:
         """生成 GATE_BRIDGE_CHECKLIST（链式测试启动前 PM 强制填写）"""
         from engine.flow.edges import CHECKLIST_TEMPLATE
-        checklist = dict(CHECKLIST_TEMPLATE)
+        # 深拷贝：直接改嵌套 dict 会污染 edges.py 的模块级共享模板，跨任务串数据（宿主 2026-09-27 环1 修复，2026-11-04 同步进引擎副本）
+        checklist = copy.deepcopy(CHECKLIST_TEMPLATE)
 
         if state.prd_doc and state.deliverables:
             prd_related = [d for d in state.deliverables if d.content_type in (
@@ -87,7 +104,7 @@ class PMNode:
             checklist["1️⃣ PRD验收标准覆盖率"]["覆盖率"] = f"{coverage}%"
 
         if state.smoke_test:
-            checklist["2️⃣ 自测报告真实性"]["自测通过率"] = self._calc_rate(
+            checklist["2️⃣ 自测报告真实性"]["自测通过率"] = PMNode._calc_rate(
                 state.smoke_test.pass_count, state.smoke_test.fail_count
             )
 
@@ -930,6 +947,10 @@ class DeepSeekInferNode:
         gov_path = os.path.join(temp_dir, "_last_governance.json")
         raw_path = os.path.join(temp_dir, "_last_raw_input.txt")
         retry_count = 0
+        # 治理 JSON 重生标记（宿主 2026-09-27 环1 修复 A1/C5，2026-11-04 同步进引擎副本：
+        # 此前 regen_flag 未定义，校验通过路径走通必崩；且重试原地重读同一文件=空转）。
+        # 重试时创建本标记，向外部生成者发"重新生成治理JSON"信号；校验通过后清除。
+        regen_flag = os.path.join(temp_dir, ".regen_requested")
 
         # 读取原始输入供重新生成使用
         raw_input_text = ""
@@ -943,6 +964,7 @@ class DeepSeekInferNode:
                 logger.warning("治理 JSON 文件不存在（第 %d 轮/共 %d 轮）: 模型输出未包含 ```json 治理块", retry_count + 1, self.MAX_RETRIES)
                 if retry_count < self.MAX_RETRIES:
                     retry_count += 1
+                    open(regen_flag, "a", encoding="utf-8").close()  # 请求外部重新生成
                     continue
                 state.add_violation(
                     vtype="COMPLIANCE_FAILURE",
@@ -962,6 +984,7 @@ class DeepSeekInferNode:
                 if retry_count < self.MAX_RETRIES:
                     retry_count += 1
                     logger.warning("治理 JSON 解析失败（第 %d 轮重试）: %s", retry_count, e)
+                    open(regen_flag, "a", encoding="utf-8").close()  # 请求外部重新生成
                     continue
                 state.add_violation(
                     vtype="COMPLIANCE_FAILURE",
@@ -985,6 +1008,7 @@ class DeepSeekInferNode:
                         retry_count, self.MAX_RETRIES, err_log,
                     )
                     os.remove(gov_path)
+                    open(regen_flag, "a", encoding="utf-8").close()  # 请求外部重新生成
                     continue
                 # 3 轮重试耗尽：写入违规、冻结流程
                 has_isolation_violation = any(
