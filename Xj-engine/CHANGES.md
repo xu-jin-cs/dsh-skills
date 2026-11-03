@@ -79,5 +79,5 @@
 - 删除零引用死代码：integration.py 4 弃用函数（save_state_to_db/load_state_from_db/check_harness_guards/execute_harness_transition）+ build_sync_repair_updates（缺 return 缺陷）+ harness_client.py 脉象 4 函数（ENG-018 backlog 归档至本条目）
 
 ### 测试与工具
-- 新增 tests/test_kernel_gates.py：内核四钩子回归（≥10 用例，tmp_path 隔离库）
+- 新增 tests/test_kernel_gates.py（19 用例）+ tests/test_checkpoint_dir.py（4 用例）+ tests/conftest.py（XJ_ENGINE_DB_URL 会话级隔离，不触碰生产 data/engine.db）；全仓 27 用例 pytest 全绿
 - 新增 scripts/reconcile_sync_failed.py：sync_failed ↔ 宿主 deliverables 对账

@@ -178,7 +178,7 @@ def custom_agent_subgraph(state: FlowState, workflow: WorkflowDefinition) -> tup
 
 
 def custom_agent_node(state: FlowState, workflow: WorkflowDefinition | None = None) -> tuple[FlowState, str | None]:
-    """标准 LangGraph Node 签名：接收 FlowState 与可选 WorkflowDefinition，返回 (state, routing_key)。"""
+    """标准 Flow Node 签名：接收 FlowState 与可选 WorkflowDefinition，返回 (state, routing_key)。"""
     if workflow is None:
         state.metadata["custom_agent_error"] = "missing workflow definition"
         return state, "completed_fail"
