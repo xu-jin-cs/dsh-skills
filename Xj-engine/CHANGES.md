@@ -55,3 +55,29 @@
 > 完成是"追加步骤"不是 hook；不引入 `task_complete_hook.py`、`xj-engine complete` 机制
 > （引擎 `task.complete` 仅可选权威记录，非必需）。`Xj-engine/gate/task_complete_attach_gate.py`
 > + `attached_complete.py` 保留。
+
+## 2026-11-04 双法合流审核修复轮（用户授权执行）
+
+### 裁定补录（此前缺失的变更日志）
+- 2026-09-13：flow 图层平迁落地——langgraph FlowGraph 迁入 Xj-engine 为正式图编排层（自研 FlowGraph），原过渡组件 xjframe_flow 双跑一致性验收后退役
+- 2026-10-13：节点执行器协议落地（REFORM-GATE 判A，node_executor_protocol_20261013.md），engine/executors 三件套
+- 2026-11-01：工作流通道正名——pm 正通道=宿主 stage 隔离 spawn；引擎图执行通道降级 headless 备用
+
+### langgraph 残迹清零（2026-11-04 用户裁定）
+- logger 命名 langgraph.* → logging.getLogger(__name__)；User-Agent → xj-engine-harness-client/1.0
+- checkpoint 默认目录 .langgraph → .xjengine（resolve_default_checkpoint_dir 带 legacy 回退，engine/.langgraph 存量 147KB 数据不断链；env 历史别名 LANGGRAPH_CHECKPOINT_DIR 暂兼容并 WARN）
+- requirements-optional.txt 移除 langgraph>=0.2（全仓零 import 实证）；子图框架改执行器作者自备
+- 自愈分类值 langgraph_script → script_filter（纯内部字符串，模块内闭环，零外部引用实证）；死路径 backend/langgraph/* → engine/flow/*
+- 全部误导性 docstring 按现状重写（state/edges/callback/node_defs/parallel/file_utils/custom_agent/graph/harness_client/integration/prompt_manager/nodes 等）；历史来源记载保留于本文件与各文件头
+
+### 口径漂移修正
+- harness_client.py 头注释"静默降级"→实测口径"指数退避重试 3 次+sync_failed 留痕不阻塞"（附对账脚本指引）
+- node_executor_contract.md"引擎 16 态"→状态机 allowed_pairs（FlowStatus 枚举实测 17 值）
+
+### 潜伏缺陷与死代码
+- json_to_state 同名双定义拆分：恢复版改名 state_from_json（graph.py 导入同步修正、flow/__init__ 导出新增），json_to_state 单义指向治理版（nodes.py 调用签名不变）
+- 删除零引用死代码：integration.py 4 弃用函数（save_state_to_db/load_state_from_db/check_harness_guards/execute_harness_transition）+ build_sync_repair_updates（缺 return 缺陷）+ harness_client.py 脉象 4 函数（ENG-018 backlog 归档至本条目）
+
+### 测试与工具
+- 新增 tests/test_kernel_gates.py：内核四钩子回归（≥10 用例，tmp_path 隔离库）
+- 新增 scripts/reconcile_sync_failed.py：sync_failed ↔ 宿主 deliverables 对账
