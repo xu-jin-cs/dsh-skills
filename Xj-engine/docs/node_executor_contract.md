@@ -1,7 +1,7 @@
 # 节点执行器契约（node_executor_contract）
 
 > 落地依据：2026-10-13 REFORM-GATE 判A（块文件 `~/.agents/logs/reform_blocks/node_executor_protocol_20261013.md`）。
-> 定位：**框架无关的节点内部编排协议**。LangGraph 是首选实现框架，但协议不绑定任何框架。
+> 定位：**框架无关的节点内部编排协议**。协议不绑定任何子图框架（2026-11-04 起：langgraph 已移出引擎依赖清单，框架由执行器作者自备）。
 > 形态：A 方案（节点内执行器）——引擎内核零改动，执行器只替换"节点内部怎么干活"。
 
 ## 1. 解决什么问题
@@ -37,23 +37,25 @@
 
 1. **引擎裁决不可绕过**：执行器产物必须满足 flow.yml deliverables Schema 并照常过
    flow_kernel + ET 门禁——执行器没有绿色通道，`validate_result` 通过 ≠ 可流转。
-2. **两层状态机不混**：执行器内部控制流（如 LangGraph 条件边）是"干活流程"；
-   引擎 16 态 allowed_pairs 是"合法流转"——禁止在执行器内触发状态机跃迁
+2. **两层状态机不混**：执行器内部控制流（如子图条件边）是"干活流程"；
+   引擎状态机 allowed_pairs（FlowStatus 枚举实测 17 值，engine/flow/state.py）是"合法流转"——禁止在执行器内触发状态机跃迁
    （例如子图里直接推进"部署"即越权）。
-3. **执行轨迹必须落盘**：trace_path 指向子图运行轨迹（LangGraph checkpoint/trace 或自实现日志），
+3. **执行轨迹必须落盘**：trace_path 指向子图运行轨迹（所选框架 checkpoint/trace 或自实现日志），
    写入 output_delivery/<节点>/，供证据链门禁（md5 防复用/audit）核验；无轨迹 = 证据链断。
 
-## 5. LangGraph 适配指引
+## 5. 子图编排适配指引（框架无关）
 
-**状态（2026-10-13 合并完成）**：langgraph≥0.2 已安装（requirements-optional.txt 登记），
-最小三路并行子图冒烟通过（START 扇出 → aggregate 聚合 → END）。
+**状态（2026-10-13 合并完成；2026-11-04 依赖清退）**：引擎**不捆绑**任何子图框架——
+requirements-optional.txt 已移除 langgraph（全仓零 import 实证），执行器作者若选用
+需自行声明并安装。下方 langgraph 示例仅为历史验证过的范例（当年最小三路并行子图
+冒烟通过：START 扇出 → aggregate 聚合 → END）。
 
 ```python
 from engine.executors import ExecutorContext, ExecutorResult, NodeExecutor
 
 class TestFullExecutor(NodeExecutor):
     def run(self, ctx: ExecutorContext) -> ExecutorResult:
-        from langgraph.graph import StateGraph          # 惰性导入，不装包不影响引擎
+        from langgraph.graph import StateGraph          # 惰性导入，框架依赖由执行器作者自备
         graph = build_test_full_graph()                  # 三路扇出/回流/聚合子图
         final = graph.invoke({"inputs": ctx.inputs, "workdir": ctx.workdir})
         return self.validate_result(ctx, ExecutorResult(
@@ -64,11 +66,11 @@ class TestFullExecutor(NodeExecutor):
         ))
 ```
 
-**并行写入坑（2026-10-13 实测）**：并行分支写同一 state key 必须用 reducer 声明，
+**并行写入坑（2026-10-13 实测，langgraph 使用者注意）**：并行分支写同一 state key 必须用 reducer 声明，
 否则 `InvalidUpdateError: Can receive only one value per step`——
 `class S(TypedDict): results: Annotated[list, operator.add]`。首个子图作者务必注意。
 
-LangGraph 为可选依赖（参照 `engine/claude_engine.py` 的可选先例），
+子图框架均为执行器作者自备依赖（引擎零捆绑，2026-11-04 用户裁定）；
 未安装时仅 executor 声明节点不可用，引擎与其余节点不受影响。
 
 ## 6. 验收口径

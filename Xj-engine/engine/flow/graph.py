@@ -43,7 +43,7 @@ from engine.flow.checkpoint import (
     SqliteCheckpointer, get_checkpointer,
 )
 from engine.flow.integration import (
-    state_to_json, json_to_state,
+    state_to_json,
 )
 try:  # 宿主门禁（NodeGateET）：有 backend 时启用；无宿主降级为空门禁（2026-09-13 钩子化）
     from backend.services.node_gate_et import get_node_gate  # type: ignore

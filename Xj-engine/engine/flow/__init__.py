@@ -80,7 +80,7 @@ else:
     HarnessClient = None
     get_harness_client = None
 from engine.flow.integration import (
-    state_to_json, json_to_state,
+    state_to_json, state_from_json, json_to_state,
     assign_thread_id, build_initial_state,
     state_to_file_cache,
 )
@@ -115,7 +115,7 @@ __all__ = [
     # Harness Client
     "HarnessClient", "get_harness_client",
     # Integration
-    "state_to_json", "json_to_state",
+    "state_to_json", "state_from_json", "json_to_state",
     "assign_thread_id", "build_initial_state",
     "state_to_file_cache",
 ]
