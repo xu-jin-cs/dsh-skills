@@ -1,15 +1,17 @@
 """
-Harness HTTP 客户端 — LangGraph ↔ Agent-Harness 数据桥接。
+Harness HTTP 客户端 — FlowGraph ↔ agent-harness 数据桥接。
 
 职责：
-  LangGraph 所有外部持久化通过本客户端以 HTTP 回调方式上报到 Harness。
-  Harness 是唯一的持久化存证平台，LangGraph 不做直接数据库写入。
+  图层（FlowGraph）所有外部持久化通过本客户端以 HTTP 回调方式上报到宿主。
+  宿主仅做镜像存证，图层不做直接数据库写入。
 
-设计原则（来自全局融合方案）：
-  1. 单一权威数据源：运行时唯一可信数据为 LangGraph State，Harness 仅做镜像备份
-  2. 写入顺序：LangGraph 先更新本地 Checkpoint，再异步上报 Harness
+设计原则（来自全局融合方案；④为 2026-11-04 实测口径修正）：
+  1. 单一权威数据源：运行时唯一可信数据为 FlowGraph State，宿主仅做镜像备份
+  2. 写入顺序：图层先更新本地 Checkpoint，再异步上报宿主
   3. 统一事件标准：所有同步事件共用一套 JSON 格式
-  4. 无网络依赖：Harness 不可用时静默降级，不阻塞 LangGraph 执行
+  4. 同步失败口径（以 _request/_safe_sync 实际行为为准）：指数退避重试 3 次，
+     耗尽后记 sync_failed 留痕进 execution_trace，不阻塞执行——
+     非静默降级（留痕可对账，见 scripts/reconcile_sync_failed.py），亦不阻断流程
 
 统一事件 JSON 格式（Harness 单接口统一接收）：
   {
@@ -36,7 +38,7 @@ try:
 except ImportError:
     HAS_REQUESTS = False
 
-logger = logging.getLogger("langgraph.harness")
+logger = logging.getLogger(__name__)
 
 
 class HarnessSyncError(Exception):
@@ -81,7 +83,7 @@ class HarnessClient:
         self._session = requests.Session()
         self._session.headers.update({
             "Content-Type": "application/json",
-            "User-Agent": "langgraph-harness-client/1.0",
+            "User-Agent": "xj-engine-harness-client/1.0",
         })
         # 默认超时：连接 5s，读取 10s
         self._session.timeout = (5, 10)

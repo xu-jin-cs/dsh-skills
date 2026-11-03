@@ -3,12 +3,13 @@
 新建工作流/agent 获得子图编排能力的方式：
   1. flow.yml 节点声明 `executor: <module>:<Class>`（可选字段，未声明维持 LLM 自编排）；
   2. 节点 Agent 进节点后用 Bash 调起执行器（或宿主代码按字段反射加载）；
-  3. 执行器跑内部编排（可用 LangGraph/纯 Python/任意框架实现 run()），
+  3. 执行器跑内部编排（纯 Python/任意子图框架实现 run()，框架依赖由执行器
+     作者自备，引擎不捆绑任何子图框架），
      产物按 flow.yml deliverables Schema 落盘；
   4. 照常走 flow_kernel advance + ET 裁决——执行器产物无任何绿色通道。
 
-LangGraph 适配：继承本基类，run() 内惰性 `import langgraph` 并 invoke 子图即可；
-基类不依赖 langgraph 包，不装也能导入本模块。
+框架适配：继承本基类，run() 内惰性 import 所选框架并 invoke 子图即可；
+基类零框架依赖，不装任何框架也能导入本模块。
 """
 
 from __future__ import annotations

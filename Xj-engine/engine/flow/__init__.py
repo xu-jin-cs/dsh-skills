@@ -8,22 +8,23 @@
 #   原 langgraph 过渡组件（xjframe_flow）按双跑一致性验收后退役。
 # ══════════════════════════════════════════════════════════════════════
 """
-LangGraph 状态机融合层 — 自研 agent-harness 的 LangGraph 嵌入方案。
+Xj-engine 图编排层（ENGINE.FLOW）— 组合 Nodes + Edges 的可执行状态机。
 
-架构层（来自全局融合方案）：
-  LangGraph Orchestration Layer                    Agent-Harness
+架构（2026-11-01 通道正名后的现状）：
+  FlowGraph Orchestration Layer                     agent-harness（宿主）
   ┌─────────────────────────────────────┐          ┌──────────────┐
   │ Node(Agent) ←→ State(唯一数据源)     │  callback  │ HTTP API     │
-  │         ↓ Edge(条件路由)             │ ────────→ │ DB 持久化     │
-  │         ↓ Checkpoint(本地 SQLite)    │           │ HMAC 签名    │
+  │         ↓ Edge(条件路由)             │ ────────→ │ 镜像存证      │
+  │         ↓ Checkpoint(本地 SQLite)    │           │ 状态迁移留痕  │
   │         ↓ Callback(全局钩子)         │           │ 可视化面板    │
   └─────────────────────────────────────┘          └──────────────┘
 
-融合原则：
-  1. LangGraph = 实时任务运行内核
-  2. Agent-Harness = 持久化存证与可视化管控平台
-  3. 数据桥接 = 统一事件回调（不修改两套底层逻辑）
-  4. 唯一数据源 = LangGraph State（运行时），Harness 仅镜像备份
+原则：
+  1. FlowGraph = 实时任务运行内核（2026-09-13 自 langgraph FlowGraph 平迁，依赖已清零）
+  2. agent-harness = 宿主（可选平台，不是引擎），仅镜像存证与可视化
+  3. 数据桥接 = 统一事件回调；上报失败重试 3 次后留 sync_failed 痕迹，不阻塞执行
+  4. 唯一数据源 = FlowState（运行时），宿主仅镜像备份
+  5. 2026-11-01 起：图执行通道为 headless 备用；pm 正通道 = 宿主 stage 隔离 spawn
 """
 
 import os as _os

@@ -1,4 +1,4 @@
-"""LangGraph 节点包：复用原 backend.langgraph.nodes 模块并新增 CUSTOM_AGENT 节点。"""
+"""流程节点包：2026-09-13 自原平台节点模块迁入 Xj-engine，并新增 CUSTOM_AGENT 节点。"""
 
 from engine.flow.nodes.nodes import (  # noqa
     PMNode, SPMNode, DPMNode, UIDesignerNode,

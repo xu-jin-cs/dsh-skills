@@ -1,5 +1,5 @@
 """
-LangGraph 本地 SQLite Checkpoint — 多版本快照存储，支持定点回滚。
+Flow 本地 SQLite Checkpoint — 多版本快照存储，支持定点回滚。
 
 改造说明（2026-07-01，P1 多版本改造）：
   原有单版本覆盖存储，thread_id 唯一主键，每次 save 覆盖旧状态。
@@ -12,7 +12,7 @@ LangGraph 本地 SQLite Checkpoint — 多版本快照存储，支持定点回�
 
 分层存储策略（同原有设计）：
   ┌──────────────────────────────────────────────┐
-  │ LangGraph 本地 SQLite Checkpoint（第 1 优先） │ ← 短期运行缓存
+  │ 本地 SQLite Checkpoint（第 1 优先）           │ ← 短期运行缓存
   ├──────────────────────────────────────────────┤
   │ Harness 主数据库（第 2 优先）                  │ ← 永久全量归档
   └──────────────────────────────────────────────┘
@@ -51,13 +51,47 @@ from typing import Optional
 
 from engine.flow.state import FlowState, FlowStatus
 
-logger = logging.getLogger("langgraph.checkpoint")
+logger = logging.getLogger(__name__)
 
-# 默认 Checkpoint 目录
-DEFAULT_CHECKPOINT_DIR = os.environ.get(
-    "LANGGRAPH_CHECKPOINT_DIR",
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".langgraph"),
-)
+# 引擎包根目录（checkpoint.py 位于 engine/flow/ 下，上两级即 engine/）
+_ENGINE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def resolve_default_checkpoint_dir(engine_root: Optional[str] = None) -> str:
+    """解析默认 checkpoint 目录（2026-11-04 langgraph 残迹清零：.langgraph → .xjengine）。
+
+    优先级：
+      1. env XJENGINE_CHECKPOINT_DIR（现行）
+      2. env LANGGRAPH_CHECKPOINT_DIR（历史别名，deprecated，命中即 WARN）
+      3. 新目录 <engine_root>/.xjengine 已有 checkpoints.db → 用新目录
+      4. 旧目录 <engine_root>/.langgraph 已有 checkpoints.db → 回退旧目录
+         （存量数据不断链，WARN 提示迁移；后续版本将移除回退）
+      5. 都没有 → 新目录（首次使用落新名）
+    """
+    root = engine_root or _ENGINE_ROOT
+    env_new = os.environ.get("XJENGINE_CHECKPOINT_DIR")
+    if env_new:
+        return env_new
+    env_legacy = os.environ.get("LANGGRAPH_CHECKPOINT_DIR")
+    if env_legacy:
+        logger.warning(
+            "LANGGRAPH_CHECKPOINT_DIR 已更名为 XJENGINE_CHECKPOINT_DIR"
+            "（历史别名暂兼容），当前值: %s", env_legacy)
+        return env_legacy
+    new_dir = os.path.join(root, ".xjengine")
+    legacy_dir = os.path.join(root, ".langgraph")
+    if os.path.isfile(os.path.join(new_dir, "checkpoints.db")):
+        return new_dir
+    if os.path.isfile(os.path.join(legacy_dir, "checkpoints.db")):
+        logger.warning(
+            "检测到旧 checkpoint 目录 %s 仍有数据，暂回退使用；"
+            "请迁移至 %s（后续版本将移除回退）", legacy_dir, new_dir)
+        return legacy_dir
+    return new_dir
+
+
+# 兼容常量：import 期按当前环境解析一次（新增代码请用 resolve_default_checkpoint_dir()）
+DEFAULT_CHECKPOINT_DIR = resolve_default_checkpoint_dir()
 
 
 def generate_snap_id() -> str:
@@ -83,7 +117,7 @@ class SqliteCheckpointer:
     """
 
     def __init__(self, db_path: Optional[str] = None):
-        self.db_path = db_path or os.path.join(DEFAULT_CHECKPOINT_DIR, "checkpoints.db")
+        self.db_path = db_path or os.path.join(resolve_default_checkpoint_dir(), "checkpoints.db")
         self._lock = threading.Lock()
 
         # 确保目录存在

@@ -1,5 +1,5 @@
 """
-LangGraph Prompt Manager — 桥接 Prompt Store 与 FlowState。
+Flow Prompt Manager — 桥接 Prompt Store 与 FlowState。
 
 职责：
   1. 根据 FlowState + 角色名渲染完整 System Prompt
@@ -23,7 +23,7 @@ from typing import Callable, Optional
 
 from engine.flow.state import FlowState, ViolationType
 
-logger = logging.getLogger("langgraph.prompt_manager")
+logger = logging.getLogger(__name__)
 
 
 # 增量优化202607：治理 JSON 标准 Schema 定义

@@ -12,7 +12,7 @@ from engine.flow.parallel.branch_store import (
 )
 from engine.flow.state import FlowState
 
-logger = logging.getLogger("langgraph.parallel.branch_executor")
+logger = logging.getLogger(__name__)
 
 
 def run_branch_node(

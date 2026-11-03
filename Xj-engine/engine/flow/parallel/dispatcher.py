@@ -11,7 +11,7 @@ from engine.flow.parallel.branch_executor import (
     merge_branch_state_delta,
 )
 
-logger = logging.getLogger("langgraph.parallel.dispatcher")
+logger = logging.getLogger(__name__)
 
 
 def parallel_dispatcher(state: FlowState) -> tuple[FlowState, Optional[str]]:

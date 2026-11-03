@@ -6,11 +6,11 @@
 #   新代码引用本包时请注意此替换预期，编排逻辑尽量走 FlowNodeMeta 声明式。
 # ══════════════════════════════════════════════════════════════════════
 """
-LangGraph Graph — 组合 Nodes + Edges 的可执行图。
+Flow Graph — 组合 Nodes + Edges 的可执行图（2026-09-13 自 langgraph FlowGraph 平迁）。
 
 设计（来自全局融合方案）：
-  LangGraph 定位：实时任务运行内核
-  Agent-Harness 定位：持久化存证与可视化管控平台
+  FlowGraph 定位：实时任务运行内核（自研，零框架依赖）
+  agent-harness 定位：宿主镜像存证与可视化（可选平台，非引擎）
 
 数据写入顺序保障：
   1. Node 执行（纯 State 操作，无 DB 依赖）
@@ -56,12 +56,12 @@ except Exception:  # noqa: BLE001
 # 原 SupervisorGuard / OrchestratorGate / validate_deliverable_state 导入与 USE_LAYERED_RULES 开关一并移除，
 # 旧模块归档于 _backups/20260817_legacy_engine_retirement/engine/。
 
-logger = logging.getLogger("langgraph.graph")
+logger = logging.getLogger(__name__)
 
 
 class FlowGraph:
     """
-    完整 LangGraph 流程图。
+    完整流程图。
 
     使用方法：
       # 阶段1：独立运行（无 Harness）

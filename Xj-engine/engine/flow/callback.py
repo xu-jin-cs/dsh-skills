@@ -26,7 +26,7 @@ from typing import Any, Callable, Optional
 from engine.flow.state import FlowState, FlowStatus, NodeType
 from engine.flow.harness_client import HarnessClient, get_harness_client
 
-logger = logging.getLogger("langgraph.callback")
+logger = logging.getLogger(__name__)
 
 # Callback 类型：接收 (state_before, state_after, node_key, node_kwargs)
 # 返回 None（纯副作用，不修改 State）

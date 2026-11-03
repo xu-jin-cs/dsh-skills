@@ -1,5 +1,5 @@
 """
-LangGraph Nodes — Agent 角色独立执行单元。
+Flow Nodes — Agent 角色独立执行单元。
 
 设计原则（来自全局融合方案）：
   1. 一个 Node 只做一件事 — 精细化拆分，不多职责混杂
@@ -19,7 +19,7 @@ import json
 from datetime import datetime
 from typing import Callable, Optional
 
-logger = logging.getLogger("langgraph.nodes")
+logger = logging.getLogger(__name__)
 
 from engine.flow.state import (
     FlowState, FlowStatus, NodeType, BugLevel,

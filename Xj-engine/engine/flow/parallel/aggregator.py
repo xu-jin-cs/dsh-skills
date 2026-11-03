@@ -8,7 +8,7 @@ from engine.flow.node_defs import PARALLEL_START_NODE
 from engine.flow.parallel.branch_store import list_instance_branches_sync
 from engine.flow.parallel.topology import get_ready_parallel_nodes
 
-logger = logging.getLogger("langgraph.parallel.aggregator")
+logger = logging.getLogger(__name__)
 
 
 def parallel_aggregator(state: FlowState) -> tuple[FlowState, Optional[str]]:
