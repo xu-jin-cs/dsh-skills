@@ -122,9 +122,6 @@
   "选择": [
    "选择"
   ],
-  "执行": [
-   "执行"
-  ],
   "功能": [
    "功能"
   ],
@@ -341,7 +338,6 @@
   "调整": "18/2174",
   "需要": "249/2174",
   "选择": "24/2174",
-  "执行": "474/2174",
   "功能": "103/2174",
   "路径": {
    "df_pct": "14.53%",
@@ -384,5 +380,5 @@
    "bug": "2.05%"
   }
  },
- "version_note": "2026-08-22 v2：用户指令扩编 SOFT-MULTITASK 变体族（并行/分身/两个 破例收编+cap_deviation 留痕），total_msgs=2148；M3b NP 标定裁决落地，准入词 cap_deviation 留痕 ｜ 2026-08-22 用户指令调增6成分（怎么/调整/需要/选择/执行/功能，df见证落df_witness段，格式已对齐纯列表）；M3b NP 标定裁决落地，准入词 cap_deviation 留痕"
+ "version_note": "2026-08-22 v2：用户指令扩编 SOFT-MULTITASK 变体族（并行/分身/两个 破例收编+cap_deviation 留痕），total_msgs=2148；M3b NP 标定裁决落地，准入词 cap_deviation 留痕 ｜ 2026-08-22 用户指令调增6成分（怎么/调整/需要/选择/执行/功能，df见证落df_witness段，格式已对齐纯列表）；M3b NP 标定裁决落地，准入词 cap_deviation 留痕 ｜ 2026-11-04 用户裁定：裸词“执行”撤销准入（trigger_signals.json S-INTENT-STEERING.match 与本表成分词+df_witness 同步删除；质疑块 ~/.agents/logs/steering_blocks/remove_zhixing_trigger_20261104.md 判A放行）"
 }
