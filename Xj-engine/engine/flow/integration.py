@@ -1,9 +1,9 @@
 """
-LangGraph ↔ agent-harness 数据桥接层。
+FlowGraph ↔ agent-harness 数据桥接层。
 
 设计（来自全局融合方案 §7）：
-  单一权威数据源：运行过程中唯一可信数据为 LangGraph State，
-  Harness 仅做镜像备份。所有持久化通过 callback 机制异步上报。
+  单一权威数据源：运行过程中唯一可信数据为 FlowGraph State，
+  宿主仅做镜像备份。所有持久化通过 callback 机制异步上报。
 
 数据流转链路：
   Node 执行 → FlowGraph.step()
@@ -13,10 +13,10 @@ LangGraph ↔ agent-harness 数据桥接层。
     └─ 4. Edge 条件路由 → 下一节点
 
 本模块职责：
-  1. state_to_json / json_to_state — State ↔ JSON（用于 checkpoint 序列化）
-  2. assign_thread_id — 线程 ID 生成
-  3. build_initial_state — 从 Harness DB 重建初始 State（阶段 3+ 启用）
-  4. 向后兼容的 load_state_from_db / save_state_to_db — 保留签名但不推荐使用
+  1. state_to_json / state_from_json — State ↔ JSON（用于 checkpoint 序列化）
+  2. json_to_state — 治理 JSON 块解析填充（governance 域，勿与 1 混用）
+  3. assign_thread_id — 线程 ID 生成
+  4. build_initial_state — 新任务初始 State 构建
 """
 
 import json
@@ -37,8 +37,12 @@ def state_to_json(state: FlowState) -> str:
     return state.model_dump_json(indent=2)
 
 
-def json_to_state(json_str: str) -> FlowState:
-    """JSON 字符串 → FlowState（用于 checkpoint 恢复 / Harness 导入）"""
+def state_from_json(json_str: str) -> FlowState:
+    """JSON 字符串 → FlowState（用于 checkpoint 恢复 / 宿主导入）。
+
+    2026-11-04 由 json_to_state 改名：原同名双定义中本函数（恢复版）被
+    下方治理版覆盖，属潜伏签名陷阱；改名后 json_to_state 单义指向治理版。
+    """
     return FlowState.model_validate_json(json_str)
 
 
@@ -88,10 +92,6 @@ def build_initial_state(
         updated_at=now,
     )
 
-
-# ═══════════════════════════════════════════════════════════════
-# 向后兼容函数（保留签名，内容简化）
-# ═══════════════════════════════════════════════════════════════
 
 # ═══════════════════════════════════════════════════════════════
 # 治理 JSON ↔ FlowState 双向转换
@@ -164,53 +164,6 @@ def state_to_file_cache(state: FlowState) -> dict:
     return {"governance_path": gov_path, "meta_path": meta_path}
 
 
-def save_state_to_db(state: FlowState, db=None) -> None:
-    """
-    （已弃用）直接 SQLAlchemy 写入方式已由 callback → HTTP 替代。
-    保留签名避免导入报错，内部仅做日志占位。
-    新代码请使用 callback.harness_sync_callback() 或 harness_client.py。
-    """
-    import logging
-    logger = logging.getLogger("langgraph.integration")
-    logger.debug(
-        "save_state_to_db 已弃用（instance=%s status=%s），"
-        "持久化请使用 callback 机制",
-        state.instance_id, state.current_status.value,
-    )
-
-
-def load_state_from_db(instance_id: str, db=None) -> Optional[FlowState]:
-    """
-    （已弃用）直接 SQLAlchemy 读取方式已由 checkpoint → Harness API 替代。
-    保留签名避免导入报错。
-    """
-    import logging
-    logger = logging.getLogger("langgraph.integration")
-    logger.debug(
-        "load_state_from_db 已弃用（instance=%s），"
-        "断点恢复请使用 checkpoint.get_checkpointer().load()",
-        instance_id,
-    )
-    return None
-
-
-def check_harness_guards(state, target_status, operator="system", db=None):
-    """
-    （已弃用）Guards 校验已迁移至 FlowGraph 内联逻辑。
-    保留签名。
-    """
-    return True, "Guards 校验已迁移至内联逻辑"
-
-
-def execute_harness_transition(state, from_status, to_status, operator="system", db=None, comment=""):
-    """
-    （已弃用）状态流转已由 callback → HarnessClient.transition() 替代。
-    保留签名。
-    """
-    state.current_status = to_status
-    return state
-
-
 # ═══════════════════════════════════════════════════════════════
 # 增量优化202607：状态对比工具函数
 # ═══════════════════════════════════════════════════════════════
@@ -221,7 +174,7 @@ def compare_state_fields(local: dict, online: dict, compare_fields: list[str] = 
 
     Args:
         local: 本地缓存的治理字典（如 _last_governance.json 内容）
-        online: LangGraph API 返回的 State dict
+        online: FlowGraph API 返回的 State dict
         compare_fields: 需要对比的字段列表，默认基础治理字段
 
     Returns:
@@ -238,20 +191,6 @@ def compare_state_fields(local: dict, online: dict, compare_fields: list[str] = 
             diffs[field] = (lv, ov)
 
     return {"diffs": diffs, "in_sync": len(diffs) == 0}
-
-
-def build_sync_repair_updates(local_gov: dict, target: dict) -> dict:
-    """
-    构建需要推送到在线的增量更新字典。
-    只推送有变化的字段，不推送完整 State。
-    """
-    updates = {}
-    scalar_fields = ["clean_input", "char_count", "is_long_text", "show_summary"]
-    for field in scalar_fields:
-        lv = local_gov.get(field)
-        tv = target.get(field)
-        if lv is not None and lv != tv:
-            updates[field] = lv
 
 
 # ═══════════════════════════════════════════════════════════════
