@@ -81,3 +81,21 @@
 ### 测试与工具
 - 新增 tests/test_kernel_gates.py（19 用例）+ tests/test_checkpoint_dir.py（4 用例）+ tests/conftest.py（XJ_ENGINE_DB_URL 会话级隔离，不触碰生产 data/engine.db）；全仓 27 用例 pytest 全绿
 - 新增 scripts/reconcile_sync_failed.py：sync_failed ↔ 宿主 deliverables 对账
+
+## 2026-11-04 双法合流裁定执行轮（两视角独立子代理评审 → 宿主合流）
+
+### 项① 环境层 langgraph 清零（合流裁定：自族四包卸载 + 底座族留账豁免）
+- 卸载：langgraph 1.2.9 / langgraph-prebuilt 1.1.0 / langgraph-checkpoint 4.1.1 / langgraph-sdk 0.4.2（importlib.metadata 反查互为闭环，卸后全孤儿；posthog 对 langgraph/langchain-core 依赖均为 extra，卸后 import 实测正常）
+- 豁免留账：langchain-core 1.4.9 / langchain-protocol 0.0.18 / langsmith 0.10.2（通用底座族，非 langgraph 残迹；未来执行器作者装回 langgraph 时 pip 自动解析带回；清理另立动作）
+- 勘误（双视角独立证伪证据包错误表述）：langgraph-prebuilt 硬依赖的是 langgraph-checkpoint，**不依赖 langgraph 本体**——卸 prebuilt 依据是残迹清零政策，非依赖断裂
+- pip 卸载后 site-packages 残留零文件 namespace 空壳树 langgraph/{checkpoint,cache,store}（4 空目录 0 文件，删除前实测复核），已删；终验 `import langgraph` → ModuleNotFoundError
+- 卸后验证：引擎全量导入零 langgraph/langchain 模块加载 PASS；pytest 34 passed；posthog import OK；xj-engine health ok；宿主侧 /api/engine/health ok
+- 本环境 python3/pip 同属 ~/.browser-use-env（browser-use 插件 venv）；pip check 现存 omlx 断裂系既有问题（omlx requires 无 lang* 项，与本次无关）
+
+### 项② nodes.py 处置（合流裁定：候选 B 冻结+回归，双视角排序一致 B＞C/A；候选 A 双视角一致否决）
+- 否决拆离插件包的依据：派生新主干（graph.py:35 顶层导入/pyproject packages/装载契约）+ 伤害"备用通道随引擎走"承诺 + 宿主镜像副本已漂移（2,227 行 vs 2,218 行，MD5 不同）拆离会恶化成三副本
+- 前置骑士（视角二发现活体缺陷驱动）：宿主 2026-09-27 环1 三处修复回填引擎副本——①regen_flag 赋值+3 处重试写标记（此前校验通过路径 NameError 必崩，AST 实证）②PMNode._calc_rate 替代 staticmethod 内 self._calc_rate ③CHECKLIST_TEMPLATE 浅拷贝→copy.deepcopy（防跨任务串数据）；平台路径差异（backend.*↔engine.*）不移植
+- 冻结声明落盘：nodes.py 头部 FROZEN-2026-11-04（管辖范围=引擎仓副本；起算点 2026-11-04；逐字引用 ~/.agents/skills/pm/SKILL.md:36 降级裁定原文；双副本归属=引擎副本冻结快照、缺陷单向自宿主回填留痕）；nodes/__init__.py 同步注记
+- 回归固化：新增 tests/test_nodes_registry.py（7 用例：ALL_NODES 金样本 29 键逐键全等、可调用/显式降级 None、环1 三处修复源级钉死、HOST-ONLY 降级语义、冻结声明在场）
+- 引用勘误（视角二发现）：工作流通道正名节实际位于 /Users/xujin/AGENTS.md:28-31（非 ~/.agents/AGENTS.md）；R-063 实证原文位于 ~/.agents/skills/pm/SKILL.md:36
+- 定性勘误（视角一发现）：nodes.py 混载业务角色与治理/基础设施节点，勿以"纯业务角色"行文；此前证据包行数口径 10,732/7,641 为含 __pycache__ 误差，实测 10,598/7,506/70.8%
