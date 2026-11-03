@@ -1,4 +1,4 @@
-"""LangGraph 内部动态拓扑并行支持包。"""
+"""FlowGraph 内部动态拓扑并行支持包。"""
 
 # 分支状态常量
 BRANCH_PENDING = "pending"

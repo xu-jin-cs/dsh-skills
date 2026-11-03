@@ -1623,9 +1623,9 @@ class GlobalOutputValidatorNode:
         # GOV-OUT-009: 8001 端口检测
         import socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        langgraph_available = sock.connect_ex(("127.0.0.1", 8001)) == 0
+        harness_available = sock.connect_ex(("127.0.0.1", 8001)) == 0
         sock.close()
-        if not langgraph_available and state.config_version:
+        if not harness_available and state.config_version:
             # 降级标记：该节点仍可运行，但记录降级
             state.metadata["degraded_mode"] = True
             issues.append({"rule_id": "GOV-OUT-009", "desc": "8001 端口不可用，文件 IO 降级模式"})
@@ -1793,7 +1793,7 @@ class SelfHealRootCauseNode:
 
     职责：
       1. 接收自愈触发事件（来自 GlobalOutputValidatorNode 或外部调用）
-      2. 溯源定位违规源头（三类：skill_node / flow_node / langgraph_script）
+      2. 溯源定位违规源头（三类：skill_node / flow_node / script_filter）
       3. 执行对应场景的根源修复动作
       4. 长效回归校验：模拟调用源头节点，验证是否仍输出代码
       5. 全量上报 Harness（含 temp_remediate + root_remediate 双字段）
@@ -1802,7 +1802,7 @@ class SelfHealRootCauseNode:
       → 在技能输出约束区追加过滤条款，同步更新 CLAUDE.md
     修复场景 B：来自 Flow 流程节点
       → 修改 Prompt 模板约束、流程私有规则追加拦截子规则
-    修复场景 C：来自 LangGraph 内置脚本
+    修复场景 C：来自引擎内置脚本
       → 增强 output-filter.sh/graph_exec.sh 代码块拦截正则，重载规则缓存
     """
     node_type = "self_heal_root"
@@ -1941,13 +1941,13 @@ fi
 
         # 方法2：通过 violation 内容模式推断
         if "npx playwright" in violation or "TestClient" in violation:
-            return "langgraph_script", "backend/langgraph/nodes.py", "LangGraph 内置节点执行测试代码后直接输出了完整代码"
+            return "script_filter", "engine/flow/nodes.py", "引擎内置节点执行测试代码后直接输出了完整代码"
 
         if "```" in violation and ("yaml" in violation or "json" in violation):
             return "skill_node", ".claude/rules/global_output_rules.yaml", "技能/规则节点输出配置代码到对话"
 
         if "def " in violation or "class " in violation or "import " in violation:
-            return "flow_node", "backend/langgraph/state.py", "Flow 节点生成了 Python 代码并直接展示"
+            return "flow_node", "engine/flow/state.py", "Flow 节点生成了 Python 代码并直接展示"
 
         return None, None, "无法自动定位违规源头"
 
@@ -1971,7 +1971,7 @@ fi
         elif source_node == "flow_node":
             return SelfHealRootCauseNode._fix_flow_source(today, iteration)
 
-        elif source_node == "langgraph_script":
+        elif source_node == "script_filter":
             return SelfHealRootCauseNode._fix_script_source(today, iteration)
 
         return "未识别源头，跳过根源修复", ""
@@ -2130,7 +2130,7 @@ fi
                     content = f.read()
                 checks.append("PM-011" in content or "代码输出拦截" in content)
 
-        elif source_node == "langgraph_script":
+        elif source_node == "script_filter":
             rules_path = os.path.expanduser("~/.claude/rules/global_output_rules.yaml")
             if os.path.exists(rules_path):
                 with open(rules_path, "r", encoding="utf-8") as f:

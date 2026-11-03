@@ -4,7 +4,7 @@
 import os as _os_hostcheck
 if _os_hostcheck.environ.get("XJFRAME_STRICT_NO_HOST") == "1":
     raise ImportError("CUSTOM_AGENT_NODE_HOST_ONLY: 宿主集成件在无宿主模式禁用")
-"""LangGraph CUSTOM_AGENT 执行节点。
+"""FlowGraph CUSTOM_AGENT 执行节点。
 
 职责：按 WorkflowDefinition 顺序执行自定义 Agent 节点，
 支持 max_retry 重试、completed_pass/completed_fail 分支路由，

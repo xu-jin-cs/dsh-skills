@@ -1,5 +1,5 @@
 """
-LangGraph 文件引用读写工具 — 文档/日志写入磁盘，State 只存 FilePathRef。
+Flow 文件引用读写工具 — 文档/日志写入磁盘，State 只存 FilePathRef。
 
 写入规范：
   Agent 产出完整文档/日志后，统一写入 evidence_root_dir 下：

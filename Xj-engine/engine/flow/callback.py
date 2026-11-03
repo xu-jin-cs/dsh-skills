@@ -1,8 +1,8 @@
 """
-LangGraph 全局回调钩子系统。
+Flow 全局回调钩子系统。
 
 设计（来自全局融合方案）：
-  LangGraph 状态变更后自动触发回调 → 调用 Harness HTTP 接口上报数据。
+  FlowGraph 状态变更后自动触发回调 → 调用宿主 HTTP 接口上报数据。
   不修改两套系统底层逻辑，通过回调钩子解耦。
 
 回调签名：
@@ -15,7 +15,7 @@ LangGraph 全局回调钩子系统。
   graph.execute(state, callbacks=[harness_sync_callback])
 
 写入顺序保障：
-  1. LangGraph 先更新本地 Checkpoint（第一优先级）
+  1. FlowGraph 先更新本地 Checkpoint（第一优先级）
   2. 再异步上报 Harness（第二优先级，失败不阻塞）
 """
 

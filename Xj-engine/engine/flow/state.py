@@ -1,5 +1,5 @@
 """
-LangGraph 统一全局状态容器（Pydantic）。
+Flow 统一全局状态容器（Pydantic）。
 
 设计原则：
   1. 唯一数据源 — 所有 Node 只读写本 State，杜绝各自缓存、幻读
@@ -63,7 +63,7 @@ class BugLevel(str, Enum):
 
 
 class NodeType(str, Enum):
-    """LangGraph Node 类型——对应 CLAUDE.md 全部角色"""
+    """Flow Node 类型——对应 CLAUDE.md 全部角色"""
     PM = "pm"                      # 项目经理
     SPM = "spm"                    # 大产品经理
     DPM = "dpm"                    # 细节产品经理
@@ -183,7 +183,7 @@ class NodeExecution(BaseModel):
 
 class FlowState(BaseModel):
     """
-    全局统一 State——整个 LangGraph 流程的唯一数据源。
+    全局统一 State——整个 FlowGraph 流程的唯一数据源。
 
     所有 Node 只读写这个 State。Edge 只读 State 里的门禁标记做条件路由。
     大文本不入 State，全部存入磁盘文件，State 只存 FilePathRef(path+md5)。
