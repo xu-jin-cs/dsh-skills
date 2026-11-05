@@ -102,6 +102,15 @@ def _cmd_flow_run(args) -> int:
     binp = compiled.get("plugin_bin") or os.path.join(
         os.path.expanduser("~/.zcode/workspace/default/plugins/stage-context-isolation/bin"))
     graph = build_flow_graph(compiled, root, binp, runner)
+    if getattr(args, "observe_callback", ""):
+        import importlib
+        from functools import partial
+        from engine.flow.callback import CallbackManager
+        mod_name, attr = args.observe_callback.split(":", 1)
+        fn = getattr(importlib.import_module(mod_name), attr)
+        graph._callback_mgr = CallbackManager([partial(fn, artifacts_root=root,
+                                                       stage_dirs=compiled.get("stage_dirs", {}),
+                                                       workflow_id=compiled.get("workflow_id", ""))])
     state = graph.execute(
         build_initial_state(
             instance_id=args.instance_id,
@@ -162,6 +171,8 @@ def main(argv=None) -> int:
     flo_run.add_argument("--instance-id", default="engine-flow")
     flo_run.add_argument("--description", default="")
     flo_run.add_argument("--evidence-root", default="")
+    flo_run.add_argument("--observe-callback", default="",
+                         help="module:attr，节点执行后回调（观测上报用）")
     flo_run.add_argument("--start-node", default="",
                          help="从指定 stage 起重跑（P3 重新执行用；缺省从首环节开始）")
     flo_run.add_argument("--allow-host", action="store_true",
