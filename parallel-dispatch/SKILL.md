@@ -4,7 +4,7 @@ description: 并行调度与子分身机制总规则（2026-08-14 用户裁定�
 observe:
   contractVersion: '1.0'
   assetKey: skill:parallel-dispatch
-  sourceHash: sha256:55d1555f300efc26
+  sourceHash: 'sha256:2d0d5a22b70a5577'
   runtime: host
   report:
     sink: platform
