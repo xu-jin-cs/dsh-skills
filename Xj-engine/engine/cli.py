@@ -110,7 +110,7 @@ def _cmd_flow_run(args) -> int:
             evidence_root=args.evidence_root or os.path.join(
                 args.project, "workspace/evidence", args.instance_id),
         ),
-        start_node=compiled["topo_order"][0],
+        start_node=(getattr(args, "start_node", "") or compiled["topo_order"][0]),
     )
     print(json.dumps({
         "workflow_id": wf,
@@ -162,6 +162,8 @@ def main(argv=None) -> int:
     flo_run.add_argument("--instance-id", default="engine-flow")
     flo_run.add_argument("--description", default="")
     flo_run.add_argument("--evidence-root", default="")
+    flo_run.add_argument("--start-node", default="",
+                         help="从指定 stage 起重跑（P3 重新执行用；缺省从首环节开始）")
     flo_run.add_argument("--allow-host", action="store_true",
                          help="允许加载 agent-harness 集成（默认 strict 无宿主）")
 
