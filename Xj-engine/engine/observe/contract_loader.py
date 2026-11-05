@@ -53,6 +53,28 @@ class ContractError(Exception):
 
 
 # ── 读取 ────────────────────────────────────────────────────────
+SOURCE_LINE = re.compile(r"^(\s*sourceHash:\s*).*$", re.M)
+
+
+def compute_source_hash(path: Path, carrier: str) -> str:
+    """sourceHash 唯一口径：`sha256:` + sha256(载体内容, 自身 sourceHash 置空)[:16]。
+
+    - 置空自身取值，避免"哈希含哈希"的自指
+    - workflow_json：对 JSON 做规范化（sort_keys + 紧凑分隔符）后哈希整份文件
+    - skill_md：对全文哈希（覆盖正文，不只节点标题）
+    """
+    import hashlib
+    if carrier == "workflow_json":
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
+        if isinstance(d.get("observe"), dict):
+            d["observe"] = {**d["observe"], "sourceHash": ""}
+        raw = json.dumps(d, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    else:
+        text = Path(path).read_text(encoding="utf-8")
+        raw = SOURCE_LINE.sub(lambda m: m.group(1).rstrip() + " ''", text, count=1)
+    return "sha256:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
 def _read_frontmatter(text: str):
     if not text.startswith("---\n"):
         return None
@@ -142,12 +164,16 @@ def scan(root: Path = SKILL_ROOT) -> dict:
         except ContractError as e:
             errors.append(e)
             continue
+        actual = compute_source_hash(path, carrier)
+        declared = ob.get("sourceHash", "")
         registry[key] = {
             "assetKey": key,
             "assetType": key.split(":", 1)[0],
             "carrier": carrier,
             "runtime": ob["runtime"],
-            "graphVersion": ob.get("sourceHash", ""),
+            "graphVersion": declared,
+            "graphVersionActual": actual,
+            "hashDrift": bool(declared) and declared != actual,
             "nodeTotal": len(ob["nodes"]),
             "pausableTotal": sum(1 for n in ob["nodes"] if n["capabilities"]["supportPause"]),
             "frozen": bool(_frozen_reason(key)),
@@ -155,6 +181,10 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             "nodes": ob["nodes"],
             "report": ob.get("report"),
         }
+        if declared and declared != actual:
+            warnings.append({"assetKey": key, "code": "STALE_HASH",
+                             "message": f"sourceHash 漂移：声明 {declared}，实际 {actual}"
+                                        f"（运行 observe_hash.py --write 回写）"})
         if _frozen_reason(key):
             warnings.append({"assetKey": key, "code": "FROZEN", "message": _frozen_reason(key)})
 
@@ -177,14 +207,21 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                 except ContractError as e:
                     errors.append(e)
                     continue
+                a_actual = compute_source_hash(ap, "skill_md")
+                a_declared = aob.get("sourceHash", "")
                 registry[akey] = {
                     "assetKey": akey, "assetType": "agent", "carrier": "skill_md",
-                    "runtime": aob["runtime"], "graphVersion": aob.get("sourceHash", ""),
+                    "runtime": aob["runtime"], "graphVersion": a_declared,
+                    "graphVersionActual": a_actual,
+                    "hashDrift": bool(a_declared) and a_declared != a_actual,
                     "nodeTotal": len(aob["nodes"]),
                     "pausableTotal": sum(1 for n in aob["nodes"] if n["capabilities"]["supportPause"]),
                     "frozen": False, "frozenReason": "", "nodes": aob["nodes"],
                     "report": aob.get("report"),
                 }
+                if a_declared and a_declared != a_actual:
+                    warnings.append({"assetKey": akey, "code": "STALE_HASH",
+                                     "message": f"sourceHash 漂移：声明 {a_declared}，实际 {a_actual}"})
     return {"registry": registry, "warnings": warnings, "errors": [str(e) for e in errors]}
 
 
