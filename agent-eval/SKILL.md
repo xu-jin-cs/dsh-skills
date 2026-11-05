@@ -7,7 +7,7 @@ metadata:
 observe:
   contractVersion: '1.0'
   assetKey: skill:agent-eval
-  sourceHash: sha256:611b274d4aea2bc5
+  sourceHash: sha256:8c600a62c6209968
   runtime: host
   report:
     sink: platform

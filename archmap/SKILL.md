@@ -5,7 +5,7 @@ aliases: ["/archmap"]
 observe:
   contractVersion: '1.0'
   assetKey: skill:archmap
-  sourceHash: sha256:dbe0389725fc1afd
+  sourceHash: sha256:888044742976c997
   runtime: host
   report:
     sink: platform

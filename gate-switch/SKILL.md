@@ -4,7 +4,7 @@ description: 通用概率执行门禁骨架（实证族 L2 引擎）。任何"�
 observe:
   contractVersion: '1.0'
   assetKey: skill:gate-switch
-  sourceHash: sha256:c43a9e3a2ee2560f
+  sourceHash: sha256:e83fc730093bce55
   runtime: host
   report:
     sink: platform
