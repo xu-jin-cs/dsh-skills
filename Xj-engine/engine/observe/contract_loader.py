@@ -32,8 +32,9 @@ DELIVERABLE_TYPES = {"text", "structured", "binary", "none"}
 EVENTS = {"node_start", "node_end", "node_failed", "input_ready", "task_end"}
 
 # P1 冻结白名单（见 v3/05 §三）：入库但只读展示，不作执行演示
+# 2026-11-05 移出 ppt：原冻结理由是"图谱对应已退役 12 节点流程"，现 SKILL.md 已自带
+# 4 节点 observe 契约并接一行式 observe_step.py（退役图不再作为载体），冻结理由失效。
 FROZEN_IDS = {
-    "ppt": "图谱对应已退役流程（SKILL.md 明示 2026-08-23 退役）",
     "pptx": "纯母版不出片",
     "ppt-direct": "只覆盖直出分支，复刻分支未入图",
     "resume": "SKILL.md 称 12 节点，图为 11",
