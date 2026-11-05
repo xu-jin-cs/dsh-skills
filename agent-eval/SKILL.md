@@ -4,6 +4,98 @@ description: "Agent/Skills 专项能力评估与可视化报告技能（2026-09-
 metadata:
   version: "1.0.0"
   author: agent-eval
+observe:
+  contractVersion: '1.0'
+  assetKey: skill:agent-eval
+  sourceHash: sha256:611b274d4aea2bc5
+  runtime: host
+  report:
+    sink: platform
+    endpoint: /api/observe/nodes/runtime
+    onEvents:
+    - node_start
+    - node_end
+    - node_failed
+    fields:
+    - taskId
+    - runId
+    - agentId
+    - nodeId
+    - seq
+    - status
+    - startedAt
+    - endedAt
+    - durationMs
+    - artifactPath
+    - sha256
+    - sizeBytes
+    - version
+    - errorCode
+  nodes:
+  - nodeId: n1
+    agentId: main
+    title: 执行评估**（默认内部自研 9 维模式）：
+    seq: 1
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n2
+    agentId: main
+    title: 核对控制台三行回执**：`[采集]`（有效技能数/脚本数/关键技能缺失/retro 水位/路径漂移数）、`saved
+    seq: 2
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n3
+    agentId: main
+    title: 交付**：向用户报告本轮 round 目录路径、体系综合分/评级、Top3、阻断/高风险短板条数，并附两张图与 re
+    seq: 3
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n4
+    agentId: main
+    title: 全程只读**：采集只 glob/读文件/HTTP GET/pgrep，禁止改动任何被评估技能文件。
+    seq: 4
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n5
+    agentId: main
+    title: 证据锚点制**：一切分数来自机械信号与冻结基线加减，禁止凭印象改分；调整口径必须落在脚本代码里。
+    seq: 5
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n6
+    agentId: main
+    title: 范围纪律**：本技能只评 Agent/Skills；RAG/引擎/规则闸/平台评估走 auto_eval.py（ms
+    seq: 6
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n7
+    agentId: main
+    title: 产出全部原子写（tmp+os.replace）；round 目录按日期落 ~/Desktop/。
+    seq: 7
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+
 ---
 
 # agent-eval — Agent/Skills 专项能力评估·可视化报告

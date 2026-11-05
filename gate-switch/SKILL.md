@@ -1,6 +1,44 @@
 ---
 name: gate-switch
 description: 通用概率执行门禁骨架（实证族 L2 引擎）。任何"声称 X 已满足/已写入/已生成/已同步/已验收"的场景，把 X 写成检查项 spec JSON，引擎逐项机械核验：全过→掷点 A 放行，任一失败→掷点 B 阻断并列出违例（B 档理由自动生成）。治 LLM 三类顽疾：该做的没做、缺斤短两、伪造声称。检查原语：file_exists/file_min_size/json_field/glob_count/grep_count/mtime_after/script_exit。四态退出码（0=A/2=B/3=CLARIFY/4=VIOLATION），全程留痕。触发：验收判定、写入实证、证据核验、模式分流、交付完整性检查、部署准入等需要"机械可判的 0/1 门禁"场景。
+observe:
+  contractVersion: '1.0'
+  assetKey: skill:gate-switch
+  sourceHash: sha256:c43a9e3a2ee2560f
+  runtime: host
+  report:
+    sink: platform
+    endpoint: /api/observe/nodes/runtime
+    onEvents:
+    - node_start
+    - node_end
+    - node_failed
+    fields:
+    - taskId
+    - runId
+    - agentId
+    - nodeId
+    - seq
+    - status
+    - startedAt
+    - endedAt
+    - durationMs
+    - artifactPath
+    - sha256
+    - sizeBytes
+    - version
+    - errorCode
+  nodes:
+  - nodeId: n1
+    agentId: main
+    title: gate-switch
+    seq: 1
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+
 ---
 
 # gate-switch — 通用概率执行门禁骨架（实证族 L2 引擎）

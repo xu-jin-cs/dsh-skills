@@ -2,6 +2,188 @@
 name: archmap
 description: 架构测绘 Agent。零参调用自动分流（无基线→full 全量初始化，有基线→lite 极简增量），full/lite 显式词强制兜底；项目路径+需求文本做增量影响面分析；+sync 同步变更并重生成全套报告；+diff 产出行级差异影响面与测试选择（diff_impact.json）并留痕变更历史（时间+修改内容，复盘前固定卡点）。实现精准开发、节约tokens。
 aliases: ["/archmap"]
+observe:
+  contractVersion: '1.0'
+  assetKey: skill:archmap
+  sourceHash: sha256:dbe0389725fc1afd
+  runtime: host
+  report:
+    sink: platform
+    endpoint: /api/observe/nodes/runtime
+    onEvents:
+    - node_start
+    - node_end
+    - node_failed
+    fields:
+    - taskId
+    - runId
+    - agentId
+    - nodeId
+    - seq
+    - status
+    - startedAt
+    - endedAt
+    - durationMs
+    - artifactPath
+    - sha256
+    - sizeBytes
+    - version
+    - errorCode
+  nodes:
+  - nodeId: n1
+    agentId: main
+    title: 评估依据备注（2026-08-16 用户裁定，供后续评估直接援引，无需执行）
+    seq: 1
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n2
+    agentId: main
+    title: 模式 A：全量分析（只输入项目路径）
+    seq: 2
+    deliverableType: binary
+    capabilities:
+      canReplace: false
+      supportPause: false
+      supportRerun: false
+  - nodeId: n3
+    agentId: main
+    title: 模块粒度设计裁定（2026-08-15 用户裁定）
+    seq: 3
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n4
+    agentId: main
+    title: 模式 B：增量影响面分析（项目路径 + 需求文本）
+    seq: 4
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n5
+    agentId: main
+    title: 模式 C：同步更新（项目路径 + sync）
+    seq: 5
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n6
+    agentId: main
+    title: 模式 D：ETL 底层规则探查（自动触发）
+    seq: 6
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n7
+    agentId: main
+    title: 可被测试设计消费的产物
+    seq: 7
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n8
+    agentId: main
+    title: 测试设计输入标准格式
+    seq: 8
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n9
+    agentId: main
+    title: 增量场景下的消费方式
+    seq: 9
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n10
+    agentId: main
+    title: 与 test-case-designer 的对接契约
+    seq: 10
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n11
+    agentId: main
+    title: 模式 F：diff 影响面分析（项目路径 + diff，2026-08-12 新增）
+    seq: 11
+    deliverableType: binary
+    capabilities:
+      canReplace: false
+      supportPause: false
+      supportRerun: false
+  - nodeId: n12
+    agentId: main
+    title: 模式 G：lite 极简增量（零参调用且有基线时自动进入，或显式 `lite`，2026-08-12 新增）
+    seq: 12
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n13
+    agentId: main
+    title: 模式 H：whitebox 数据支撑包（whitebox_data_pack，2026-09-21 REFORM-GAT
+    seq: 13
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n14
+    agentId: main
+    title: 模式 I：API 接口文档集合（api-doc，2026-09-22 用户裁定新增）
+    seq: 14
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n15
+    agentId: main
+    title: 模式 J：需求文件词库巡检（req-check，2026-10-25 用户裁定新增）
+    seq: 15
+    deliverableType: text
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n16
+    agentId: main
+    title: SLOT-1 · 专家建议槽（挂载点：解析触发参数后、调用引擎前）
+    seq: 16
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+  - nodeId: n17
+    agentId: main
+    title: SLOT-2 · 技能内化槽（挂载点：产物交付后、任务收尾前）
+    seq: 17
+    deliverableType: structured
+    capabilities:
+      canReplace: true
+      supportPause: false
+      supportRerun: false
+
 ---
 
 # ArchMap 架构测绘 Agent
