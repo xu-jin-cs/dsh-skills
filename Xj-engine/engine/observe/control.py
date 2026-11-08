@@ -36,7 +36,8 @@ def pause_plan(control: dict | None, nodes: list[dict] | None, task_status: str)
 
 def rerun_plan(control: dict | None, nodes: list[dict] | None,
                target_node_id: str, task_status: str,
-               session_id: str = "", launcher_ready: bool = True) -> dict:
+               session_id: str = "", launcher_ready: bool = True,
+               consumer_dead: bool = False) -> dict:
     """返回 {allowed, channel, mode, reason}。
 
     mode：
@@ -58,7 +59,9 @@ def rerun_plan(control: dict | None, nodes: list[dict] | None,
         return {"allowed": False, "channel": ch, "mode": None,
                 "reason": f"节点「{target.get('title') or target_node_id}」未声明可重跑"
                           f"（capabilities.supportRerun=false）"}
-    if task_status in LIVE_STATUSES:
+    # consumer_dead=True 表示暂停阻塞窗口已到点、宿主进程已退出：此时"继续"没有消费者，
+    # 必须走会话续跑，否则目标节点会永久停在 waiting_input（2026-11-08 评审 P0）。
+    if task_status in LIVE_STATUSES and not consumer_dead:
         return {"allowed": True, "channel": ch, "mode": "continue", "reason": ""}
     if ch == "session-resume":
         if not session_id:
