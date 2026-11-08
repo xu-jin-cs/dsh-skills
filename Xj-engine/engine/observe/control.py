@@ -74,3 +74,19 @@ def rerun_plan(control: dict | None, nodes: list[dict] | None,
         return {"allowed": False, "channel": ch, "mode": None,
                 "reason": "引擎轨未就绪：未配置 SCI_RUNNER_CMD，无法拉起 flow"}
     return {"allowed": True, "channel": ch, "mode": "flow-run", "reason": ""}
+
+
+def asset_caps(control: dict | None, nodes: list[dict] | None) -> dict:
+    """**UI 置灰用的能力布尔**（唯一派生）。
+
+    前端只读 `pause` / `rerun` 两个布尔，不再自己比对枚举值
+    （避免前端成为控制枚举的第二份副本）。
+    """
+    ctl = control or {}
+    nodes = nodes or []
+    return {
+        "pause": (ctl.get("pause") in PAUSE_CHANNELS
+                  and any((n.get("capabilities") or {}).get("supportPause") is True for n in nodes)),
+        "rerun": (ctl.get("rerun") in RERUN_CHANNELS
+                  and any((n.get("capabilities") or {}).get("supportRerun") is True for n in nodes)),
+    }
