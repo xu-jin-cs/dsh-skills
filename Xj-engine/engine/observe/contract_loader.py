@@ -30,6 +30,9 @@ CONTRACT_VERSION = "1.0"
 NODE_STATUSES = {"pending", "running", "waiting_input", "completed", "failed", "skipped", "stale", "voided"}
 DELIVERABLE_TYPES = {"text", "structured", "binary", "none"}
 EVENTS = {"node_start", "node_end", "node_failed", "input_ready", "task_end"}
+# 控制通道枚举（唯一口径）：pause 由谁执行 / rerun 由谁拉起
+CONTROL_PAUSE = {"boundary-block", "sigstop", "none"}
+CONTROL_RERUN = {"session-resume", "flow-run", "none"}
 
 # P1 冻结白名单（见 v3/05 §三）：入库但只读展示，不作执行演示
 # 2026-11-05 移出 ppt：原冻结理由是"图谱对应已退役 12 节点流程"，现 SKILL.md 已自带
@@ -153,6 +156,17 @@ def validate_observe(asset_key: str, ob: dict) -> None:
     ev = set(rep.get("onEvents") or [])
     if not ev or not ev <= EVENTS:
         raise ContractError(asset_key, "observe.report.onEvents", f"非法事件 {sorted(ev - EVENTS)}")
+    # 控制通道声明（2026-11-08 用户裁定 A：节点控制落点写进 workflow.json）
+    # 只声明"每种动作由谁执行"，不重复声明 runtime（runtime 唯一真源仍在上面的 observe.runtime）
+    ctl = ob.get("control")
+    if ctl is not None:
+        if not isinstance(ctl, dict):
+            raise ContractError(asset_key, "observe.control", "不是对象")
+        for k, allowed in (("pause", CONTROL_PAUSE), ("rerun", CONTROL_RERUN)):
+            v = ctl.get(k)
+            if v is not None and v not in allowed:
+                raise ContractError(asset_key, f"observe.control.{k}",
+                                    f"非法值 {v!r}（支持 {sorted(allowed)}）")
 
 
 # ── 扫描 ────────────────────────────────────────────────────────
@@ -192,6 +206,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             "frozenReason": _frozen_reason(key),
             "nodes": ob["nodes"],
             "report": ob.get("report"),
+            "control": ob.get("control") or {},
         }
         if declared and declared != actual:
             warnings.append({"assetKey": key, "code": "STALE_HASH",
