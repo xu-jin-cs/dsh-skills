@@ -38,20 +38,24 @@ def derive_progress(nodes: list[dict], runtime: list[dict]) -> dict:
     """
     seq_of_node, seq_of_agent = node_seq_maps(nodes)
     last_seq = max((n.get("seq") or 0 for n in nodes), default=0)
-    ords, completed = [], set()
+    ords, completed, recorded = [], set(), set()
     for x in runtime:
         if x.get("nodeId") == TASK_NODE:
             continue
         o = seq_of_node.get(x.get("nodeId")) or seq_of_agent.get(x.get("agentId"))
         if not o:
             continue
+        recorded.add(o)                     # 有上报记录的节点（含 running/failed）
         if x.get("status") in ("completed", "running", "failed"):
             ords.append(o)
         if x.get("status") == "completed":
             completed.add(o)
     frontier = max(ords) if ords else 0
-    return {"frontier": frontier, "completedSeqs": completed,
-            "lastSeq": last_seq, "done": bool(last_seq) and last_seq in completed}
+    # done 语义：**全部声明节点**都完成才算完成（不再只看末节点）。
+    # 否则会出现"末节点完成=任务通过，但前面还有节点 running"的矛盾态。
+    all_done = bool(nodes) and all((n.get("seq") or 0) in completed for n in nodes)
+    return {"frontier": frontier, "completedSeqs": completed, "recordedSeqs": recorded,
+            "lastSeq": last_seq, "done": all_done}
 
 
 def next_rerun_target(nodes: list[dict], runtime: list[dict]) -> str | None:
