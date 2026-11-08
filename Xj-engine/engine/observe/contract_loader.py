@@ -216,6 +216,16 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             warnings.append({"assetKey": key, "code": "FROZEN", "message": _frozen_reason(key)})
         # 声明-事实一致性：声明了节点级事件，却没有任何节点级上报通道（SKILL.md 未调
         # observe_step.py）。这类资产在平台上会"任务有行、节点全 pending"，属声明层说谎。
+        # 控制声明与节点能力一致性（机制层唯一判定，此处只做声明体检）
+        _ctl = ob.get("control") or {}
+        if _ctl.get("pause") and not any(
+                (n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]):
+            warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
+                             "message": "声明了 control.pause，但没有任何节点 supportPause=true"})
+        if _ctl.get("rerun") and not any(
+                (n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]):
+            warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
+                             "message": "声明了 control.rerun，但没有任何节点 supportRerun=true"})
         if set((ob.get("report") or {}).get("onEvents") or []) & EVENTS and not _node_channel(d):
             warnings.append({"assetKey": key, "code": "CONTRACT_MISMATCH",
                              "message": "声明了节点级事件但 SKILL.md 未调用 observe_step.py"
