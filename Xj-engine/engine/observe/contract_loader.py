@@ -45,6 +45,18 @@ def _frozen_reason(asset_key: str) -> str:
     return FROZEN_IDS.get(asset_key.split(":", 1)[-1], "")
 
 
+def _node_channel(asset_dir: Path) -> bool:
+    """该资产是否真有**节点级**上报通道（SKILL.md 正文调用 observe_step.py）。
+
+    声明 `report.onEvents` 里有 node_* 只证明"声明方说要报"，不证明"有东西真的在报"。
+    """
+    sk = asset_dir / "SKILL.md"
+    try:
+        return "observe_step.py" in sk.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+
 class ContractError(Exception):
     def __init__(self, asset_key: str, field: str, message: str, line: int = 0):
         self.asset_key, self.field, self.message, self.line = asset_key, field, message, line
@@ -187,6 +199,12 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                                         f"（运行 observe_hash.py --write 回写）"})
         if _frozen_reason(key):
             warnings.append({"assetKey": key, "code": "FROZEN", "message": _frozen_reason(key)})
+        # 声明-事实一致性：声明了节点级事件，却没有任何节点级上报通道（SKILL.md 未调
+        # observe_step.py）。这类资产在平台上会"任务有行、节点全 pending"，属声明层说谎。
+        if set((ob.get("report") or {}).get("onEvents") or []) & EVENTS and not _node_channel(d):
+            warnings.append({"assetKey": key, "code": "CONTRACT_MISMATCH",
+                             "message": "声明了节点级事件但 SKILL.md 未调用 observe_step.py"
+                                        "（节点级上报无通道，面板会显示节点全 pending）"})
 
         # agent 资产（同目录 agents/*.md）
         ad = d / "agents"
