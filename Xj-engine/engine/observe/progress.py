@@ -9,6 +9,8 @@ backend 一律 import 本模块，禁止本地再抄一份。
 from __future__ import annotations
 
 TASK_NODE = "__task__"
+# 兼容历史：observe_agent 旧版用 node_id="task" 记任务级行（同义，必须一并排除）
+TASK_LEVEL_NODES = ("__task__", "task")
 
 
 def node_seq_maps(nodes: list[dict]) -> tuple[dict, dict]:
@@ -37,7 +39,7 @@ def derive_progress(nodes: list[dict], runtime: list[dict]) -> dict:
     last_seq = max((n.get("seq") or 0 for n in nodes), default=0)
     ords, completed = [], set()
     for x in runtime:
-        if x.get("nodeId") == TASK_NODE:
+        if x.get("nodeId") in TASK_LEVEL_NODES:
             continue
         o = seq_of_node.get(x.get("nodeId")) or seq_of_agent.get(x.get("agentId"))
         if not o:
