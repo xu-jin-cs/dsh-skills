@@ -384,6 +384,11 @@ def _validate_context_policy(asset_key: str, cp: dict, lex: dict) -> None:
                                         "enabled=true 时必填")
 
 
+def check_context_policy(asset_key: str, cp: dict) -> None:
+    """公开入口：范式层 CLI（paradigm_match.py）复用同一校验实现，禁止客户端再写一份。"""
+    _validate_context_policy(asset_key, cp, paradigm_lexicon())
+
+
 def context_policy_warnings(asset_key: str, ob: dict) -> list[dict]:
     """第 13 段的运行期体检告警（不阻断入库，但必须在 sync 响应里当场看见）。"""
     cp = ob.get("contextPolicy")
