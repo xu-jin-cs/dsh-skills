@@ -620,3 +620,46 @@ def test_node_transitions_are_guarded():
     assert not is_valid_transition("voided", "running")         # 终态不可复活
     assert not is_valid_transition("nonsense", "running")       # 未知状态一律 False
     assert {"paused", "aborted", "incomplete"} <= NODE_STATUSES
+
+
+# ── 第四轮补：口径守卫（observationCodes / 执行器常量 / vector.status） ──
+def test_vector_status_reserved_conflicts_with_enabled():
+    cp = _ctx()
+    cp["memory"]["vector"].update({"status": "reserved", "enabled": True,
+                                   "collection": "kb", "embeddingModel": "bge-m3", "dim": 1024})
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "reserved" in str(e.value)
+
+
+def test_vector_status_illegal_value():
+    cp = _ctx()
+    cp["memory"]["vector"]["status"] = "live"
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "vector.status" in str(e.value)
+
+
+def test_emitted_warning_codes_are_registered():
+    """observationCodes 的唯一消费者：发出的码必须都在登记表内（防第二份码表）。"""
+    import re
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "engine" / "observe" / "contract_loader.py"
+    emitted = set(re.findall(r'"code":\s*"([A-Z_]+)"', src.read_text(encoding="utf-8")))
+    registered = set((load_paradigms_doc().get("observationCodes") or {}).get("codes") or [])
+    assert emitted <= registered, f"未登记的告警码：{sorted(emitted - registered)}"
+
+
+def test_router_constants_match_single_source():
+    """执行器常量与真源等值（防静默漂移）。"""
+    from engine.model.router import COMPLEXITY_RANK, TRIGGERS
+    lex = paradigm_lexicon()
+    assert set(TRIGGERS) == lex["modelTriggers"]
+    assert set(COMPLEXITY_RANK) == {"XS", "S", "M", "L", "XL"}
+
+
+def load_paradigms_doc() -> dict:
+    import json
+    from pathlib import Path
+    p = Path.home() / ".agents" / "agent-paradigms" / "paradigms.json"
+    return json.loads(p.read_text(encoding="utf-8"))

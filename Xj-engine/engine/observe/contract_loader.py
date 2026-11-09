@@ -432,6 +432,13 @@ def _validate_context_policy(asset_key: str, cp: dict, lex: dict,
         if vec.get("metric") not in lex["vectorMetrics"]:
             raise ContractError(asset_key, "observe.contextPolicy.memory.vector.metric",
                                 f"非法值 {vec.get('metric')!r}")
+        status = vec.get("status")
+        if status is not None and status not in ("reserved", "wired"):
+            raise ContractError(asset_key, "observe.contextPolicy.memory.vector.status",
+                                f"非法值 {status!r}（支持 reserved / wired）")
+        if status == "reserved" and vec["enabled"] is True:
+            raise ContractError(asset_key, "observe.contextPolicy.memory.vector.status",
+                                "status=reserved 与 enabled=true 矛盾（未对接 RAG 不得声称可用）")
         if vec["enabled"]:
             # 启用即必须有落地参数；只声明不落地=假功能
             for k in ("collection", "embeddingModel", "dim"):
