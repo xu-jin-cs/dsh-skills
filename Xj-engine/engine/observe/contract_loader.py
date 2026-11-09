@@ -72,6 +72,9 @@ def paradigm_lexicon() -> dict:
             "alarmCodes": set((_ctx_ov.get("alarm") or {}).get("codes") or []),
             "handoffCarriers": set((_ctx_ho.get("carriers") or {}).keys()),
             "missingPolicies": set(_ctx_ho.get("missingPolicies") or []),
+            # 模型底座枚举（第 15 段）
+            "modelTriggers": set((d.get("modelPolicyStandard") or {}).get("triggers") or []),
+            "selectionDims": set(((d.get("modelPolicyStandard") or {}).get("selectionDims") or {}).keys()),
         }
     return _PARADIGM_CACHE
 
@@ -215,6 +218,9 @@ def validate_observe(asset_key: str, ob: dict) -> None:
     pc = ob.get("promptContract")
     if pc is not None:
         _validate_prompt_contract(asset_key, pc)
+    mp = ob.get("modelPolicy")
+    if mp is not None:
+        _validate_model_policy(asset_key, mp, paradigm_lexicon())
 
 
 def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
@@ -569,6 +575,94 @@ def _validate_prompt_contract(asset_key: str, pc: dict) -> None:
                                 f"分离铁律开启时同一段不能既稳定又动态：{sorted(dup)}")
 
 
+MODEL_COMPLEXITY = {"XS", "S", "M", "L", "XL"}
+_MODEL_RANK = {"XS": 0, "S": 1, "M": 2, "L": 3, "XL": 4}
+
+
+def check_model_policy(asset_key: str, mp: dict) -> None:
+    """公开入口：范式层 CLI 复用同一校验实现。"""
+    _validate_model_policy(asset_key, mp, paradigm_lexicon())
+
+
+def _validate_model_policy(asset_key: str, mp: dict, lex: dict) -> None:
+    """第 15 段 modelPolicy（2026-11-09，模型底座分层选型）。**可选**；声明了即严格校验。"""
+    if not isinstance(mp, dict):
+        raise ContractError(asset_key, "observe.modelPolicy", "不是对象")
+    tiers = mp.get("tiers")
+    if not isinstance(tiers, dict):
+        raise ContractError(asset_key, "observe.modelPolicy.tiers", "必须是对象")
+    for role in ("router", "primary", "verifier"):
+        t = tiers.get(role)
+        if not isinstance(t, dict):
+            raise ContractError(asset_key, f"observe.modelPolicy.tiers.{role}", "缺失或不是对象")
+        if not isinstance(t.get("model"), str) or not t["model"].strip():
+            raise ContractError(asset_key, f"observe.modelPolicy.tiers.{role}.model", "必须非空")
+        if t.get("maxComplexity") not in MODEL_COMPLEXITY:
+            raise ContractError(asset_key, f"observe.modelPolicy.tiers.{role}.maxComplexity",
+                                f"非法值 {t.get('maxComplexity')!r}")
+    # 裁判≠运动员：同模型自查等于没有校验
+    if tiers["verifier"].get("decoupled") is not True:
+        raise ContractError(asset_key, "observe.modelPolicy.tiers.verifier.decoupled",
+                            "必须为 true（独立裁判）")
+    if tiers["verifier"]["model"] == tiers["primary"]["model"]:
+        raise ContractError(asset_key, "observe.modelPolicy.tiers.verifier.model",
+                            "校验模型不得与主推理同模型（裁判≠运动员）")
+    # 弱模型不碰复杂规划
+    if _MODEL_RANK[tiers["router"]["maxComplexity"]] >= _MODEL_RANK[tiers["primary"]["maxComplexity"]]:
+        raise ContractError(asset_key, "observe.modelPolicy.tiers.router.maxComplexity",
+                            f"router 边界 {tiers['router']['maxComplexity']} 必须严格弱于 "
+                            f"primary {tiers['primary']['maxComplexity']}")
+    mc = tiers["router"].get("minConfidence")
+    if mc is not None and (not isinstance(mc, (int, float)) or not (0 <= mc <= 1)):
+        raise ContractError(asset_key, "observe.modelPolicy.tiers.router.minConfidence",
+                            "必须是 0~1 的数")
+
+    dg = mp.get("degrade")
+    if not isinstance(dg, dict):
+        raise ContractError(asset_key, "observe.modelPolicy.degrade", "必须是对象")
+    trig = dg.get("triggers")
+    if not isinstance(trig, list) or not lex["modelTriggers"] <= set(trig):
+        raise ContractError(asset_key, "observe.modelPolicy.degrade.triggers",
+                            f"必须覆盖 {sorted(lex['modelTriggers'])}")
+    chain = dg.get("chain")
+    if not isinstance(chain, list) or not chain:
+        raise ContractError(asset_key, "observe.modelPolicy.degrade.chain", "必须是非空数组")
+    if chain[0] != tiers["primary"]["model"]:
+        raise ContractError(asset_key, "observe.modelPolicy.degrade.chain",
+                            f"chain[0] 必须等于 primary.model（{tiers['primary']['model']}）")
+    if dg.get("onExhausted") not in ("fail", "escalate"):
+        raise ContractError(asset_key, "observe.modelPolicy.degrade.onExhausted",
+                            f"非法值 {dg.get('onExhausted')!r}")
+
+    vf = mp.get("verify")
+    if not isinstance(vf, dict):
+        raise ContractError(asset_key, "observe.modelPolicy.verify", "必须是对象")
+    if vf.get("onFail") != "rework":
+        raise ContractError(asset_key, "observe.modelPolicy.verify.onFail",
+                            "校验未通过必须 rework（禁止静默放行）")
+    mr = vf.get("maxRework")
+    if not isinstance(mr, int) or not (1 <= mr <= 5):
+        raise ContractError(asset_key, "observe.modelPolicy.verify.maxRework", "必须是 1~5 的整数")
+    if vf.get("feedback") != "structured":
+        raise ContractError(asset_key, "observe.modelPolicy.verify.feedback",
+                            "必须为 structured（结构化打回·定位）")
+
+    sel = mp.get("selection")
+    if not isinstance(sel, dict):
+        raise ContractError(asset_key, "observe.modelPolicy.selection", "必须是对象")
+    if sel.get("model") not in ("router", "primary", "verifier"):
+        raise ContractError(asset_key, "observe.modelPolicy.selection.model",
+                            f"非法值 {sel.get('model')!r}")
+    scores = sel.get("scores")
+    if not isinstance(scores, dict) or not lex["selectionDims"] <= set(scores):
+        raise ContractError(asset_key, "observe.modelPolicy.selection.scores",
+                            f"五维评分必须齐全：{sorted(lex['selectionDims'])}")
+    for k, v in scores.items():
+        if not isinstance(v, (int, float)) or not (0 <= v <= 1):
+            raise ContractError(asset_key, f"observe.modelPolicy.selection.scores.{k}",
+                                f"必须是 0~1 的数，实际 {v!r}")
+
+
 def prompt_contract_warnings(asset_key: str, ob: dict) -> list[dict]:
     pc = ob.get("promptContract")
     if not isinstance(pc, dict):
@@ -647,6 +741,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             "paradigm": ob.get("paradigm") or {},
             "contextPolicy": ob.get("contextPolicy") or {},
             "promptContract": ob.get("promptContract") or {},
+            "modelPolicy": ob.get("modelPolicy") or {},
         }
         if declared and declared != actual:
             warnings.append({"assetKey": key, "code": "STALE_HASH",
@@ -724,6 +819,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                     "paradigm": aob.get("paradigm") or {},
                     "contextPolicy": aob.get("contextPolicy") or {},
                     "promptContract": aob.get("promptContract") or {},
+                    "modelPolicy": aob.get("modelPolicy") or {},
                 }
                 if a_declared and a_declared != a_actual:
                     warnings.append({"assetKey": akey, "code": "STALE_HASH",

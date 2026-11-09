@@ -475,3 +475,101 @@ def test_registry_carries_prompt_contract_key():
     assert res["errors"] == []
     for entry in res["registry"].values():
         assert "promptContract" in entry
+
+
+# ── 第 15 段 modelPolicy（模型底座分层选型，2026-11-09） ──────────
+def _mp(**over) -> dict:
+    mp = {
+        "tiers": {
+            "router": {"model": "kimi-k3", "maxComplexity": "S", "minConfidence": 0.6},
+            "primary": {"model": "deepseek-v4", "maxComplexity": "XL"},
+            "verifier": {"model": "qwen-judge", "maxComplexity": "XL",
+                         "decoupled": True, "votes": 3},
+        },
+        "degrade": {"triggers": ["timeout", "error", "quota_exhausted"],
+                    "chain": ["deepseek-v4", "kimi-k3"], "onExhausted": "escalate"},
+        "verify": {"onFail": "rework", "maxRework": 2, "feedback": "structured"},
+        "selection": {"model": "primary",
+                      "scores": {"reasoning": 0.9, "contextWindow": 0.85, "latency": 0.6,
+                                 "tokenPrice": 0.55, "localPrivacy": 0.4}},
+    }
+    mp.update(over)
+    return mp
+
+
+def test_lexicon_has_model_enums():
+    lex = paradigm_lexicon()
+    assert lex["modelTriggers"] == {"timeout", "error", "quota_exhausted"}
+    assert lex["selectionDims"] == {"reasoning", "contextWindow", "latency",
+                                    "tokenPrice", "localPrivacy"}
+
+
+def test_model_policy_valid():
+    validate_observe("skill:test-paradigm", _ob(modelPolicy=_mp()))
+
+
+def test_model_policy_absent_is_ok():
+    validate_observe("skill:test-paradigm", _ob())
+
+
+def test_verifier_must_differ_from_primary():
+    mp = _mp()
+    mp["tiers"]["verifier"]["model"] = "deepseek-v4"      # 同模型自查
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(modelPolicy=mp))
+    assert "裁判≠运动员" in str(e.value)
+
+
+def test_verifier_must_be_decoupled():
+    mp = _mp()
+    mp["tiers"]["verifier"]["decoupled"] = False
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(modelPolicy=mp))
+    assert "decoupled" in str(e.value)
+
+
+def test_router_boundary_must_be_strictly_weaker():
+    mp = _mp()
+    mp["tiers"]["router"]["maxComplexity"] = "XL"          # 与 primary 同档
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(modelPolicy=mp))
+    assert "严格弱于" in str(e.value)
+
+
+def test_degrade_triggers_must_cover_three():
+    mp = _mp()
+    mp["degrade"]["triggers"] = ["timeout", "error"]       # 缺 quota_exhausted
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(modelPolicy=mp))
+    assert "quota_exhausted" in str(e.value)
+
+
+def test_chain_head_must_be_primary_model():
+    mp = _mp()
+    mp["degrade"]["chain"] = ["kimi-k3", "deepseek-v4"]     # 链首不是 primary
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(modelPolicy=mp))
+    assert "chain[0]" in str(e.value)
+
+
+def test_verify_on_fail_must_rework():
+    mp = _mp()
+    mp["verify"]["onFail"] = "pass"
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(modelPolicy=mp))
+    assert "onFail" in str(e.value)
+
+
+def test_selection_needs_five_dims():
+    mp = _mp()
+    del mp["selection"]["scores"]["localPrivacy"]
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(modelPolicy=mp))
+    assert "五维" in str(e.value)
+
+
+def test_registry_carries_model_policy_key():
+    res = scan()
+    assert res["errors"] == []
+    for entry in res["registry"].values():
+        assert "modelPolicy" in entry
