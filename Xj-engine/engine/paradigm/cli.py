@@ -66,8 +66,10 @@ def _cmd_match_run(a, skipped: bool) -> int:
     code = {"auto": 0, "review": 2, "blocked": 1}[decision["decision"]]
     lines = [
         f"范式：{decision['paradigm']}（{decision['decision']}）置信度 {decision['confidence']}",
-        f"最高分 {decision.get('top')} / 次高分 {decision.get('second')}"
-        f"（阈值 auto={decision['thresholds']['auto']} review={decision['thresholds']['review']}）",
+        (f"最高分 {decision.get('top')} / 次高分 {decision.get('second')}"
+         f"（阈值 auto={decision['thresholds']['auto']} review={decision['thresholds']['review']}）"
+         if decision.get("top") is not None else
+         f"人工覆盖优先（阈值 auto={decision['thresholds']['auto']} review={decision['thresholds']['review']}）"),
         f"模式：{decision['mode']}" + ("（缓存命中）" if decision.get("cacheHit") else ""),
     ]
     if decision["decision"] == "review":

@@ -14,6 +14,8 @@ from . import spec
 
 VAGUE = re.compile(r"良好|差不多|尽快|适当|合理|优质|高效|尽快完成|自行把握|视情况")
 LIGHT = {"single_tool_call", "react"}
+CONJ = re.compile(r"[和并再以及同]")
+TEST_PREFIX = re.compile(r"^\s*(python3|python|pytest|curl|wget|grep|test|sh|bash|node|npm|npx|jq|git|ruff|mypy|tsc)\b")
 
 
 def _gate_schema(asset: dict, schema: dict, expected: str | None) -> tuple[list, list]:
@@ -36,7 +38,79 @@ def _gate_schema(asset: dict, schema: dict, expected: str | None) -> tuple[list,
     if ver != cur:
         errors.append(f"版本不匹配：模板 paradigmVersion={ver!r}，当前范式层={cur!r}"
                       "（旧模板禁止静默失效）")
+    errors.extend(_static_structure(asset, schema))
     return errors, warns
+
+
+def _static_structure(asset: dict, schema: dict) -> list[str]:
+    """结构化静态校验（原子三判据 / 编排声明一致 / 状态契约 / 段数口径）。"""
+    v: list[str] = []
+    nodes = (asset.get("pipeline") or {}).get("nodes") or []
+    ids = [n.get("nodeId") for n in nodes]
+    idset = set(ids)
+    if len(ids) != len(idset):
+        v.append("pipeline.nodes: nodeId 重复")
+    id2 = {n.get("nodeId"): n for n in nodes}
+
+    for n in nodes:
+        for dep in n.get("dependsOn") or []:
+            if dep not in idset:
+                v.append(f"pipeline.nodes.{n.get('nodeId')}: dependsOn 不存在 {dep}")
+        if n.get("mode") == "optional_parallel" and not n.get("parallelGroup"):
+            v.append(f"pipeline.nodes.{n.get('nodeId')}: optional_parallel 缺 parallelGroup")
+        if n.get("mode") == "fallback_hook":
+            fo = n.get("fallbackOf")
+            if not fo:
+                v.append(f"pipeline.nodes.{n.get('nodeId')}: fallback_hook 缺 fallbackOf")
+            elif fo not in idset:
+                v.append(f"pipeline.nodes.{n.get('nodeId')}: fallbackOf 指向不存在 {fo}")
+
+    orch = asset.get("orchestration") or {}
+    decl = orch.get("declared") or []
+    dmap = {d.get("nodeId"): d for d in decl}
+    for nid in idset - set(dmap):
+        v.append(f"orchestration.declared: 漏声明节点 {nid}")
+    for nid in set(dmap) - idset:
+        v.append(f"orchestration.declared: 多声明不存在节点 {nid}")
+    for nid, d in dmap.items():
+        node = id2.get(nid) or {}
+        if d.get("mode") and node.get("mode") and d["mode"] != node["mode"]:
+            v.append(f"orchestration.declared.{nid}: mode 与节点声明不一致")
+    for g in orch.get("parallelGroups") or []:
+        for nid in g.get("nodes") or []:
+            if nid not in idset:
+                v.append(f"orchestration.parallelGroups.{g.get('id')}: 节点不存在 {nid}")
+
+    for e in (asset.get("stateContract") or {}).get("edges") or []:
+        f, t = e.get("from"), e.get("to")
+        if f not in idset or t not in idset:
+            v.append(f"stateContract.edge: 节点不存在 {f}->{t}")
+            continue
+        out_fields = set(id2[f].get("stateOut") or [])
+        for fld in e.get("fields") or []:
+            if out_fields and fld not in out_fields:
+                v.append(f"stateContract {f}->{t}: 字段 {fld} 不在 {f}.stateOut")
+
+    for t in asset.get("atomicTasks") or []:
+        verb = t.get("verb") or ""
+        if CONJ.search(verb):
+            v.append(f"atomicTasks.{t.get('id')}: verb 含并列连词（{verb}）→ 必须一件事一动词")
+        cmd = (t.get("unitTest") or {}).get("command") or ""
+        if not TEST_PREFIX.match(cmd):
+            v.append(f"atomicTasks.{t.get('id')}: unitTest.command 不是可执行入口（{cmd[:40]}）")
+
+    reg_pid = (((asset.get("registration") or {}).get("observe") or {}).get("paradigm") or {}).get("id")
+    if reg_pid and reg_pid != (asset.get("meta") or {}).get("paradigm"):
+        v.append(f"registration.observe.paradigm.id={reg_pid!r} 与 meta.paradigm 不一致")
+
+    req_sec = list(((spec.load().get("paradigms") or [{}])[0].get("requiredSections") or []))
+    schema_req = list(schema.get("required") or [])
+    if req_sec != schema_req:
+        v.append(f"段数口径不一致：paradigms.requiredSections={len(req_sec)} vs schema.required={len(schema_req)}")
+    miss = [k for k in schema_req if k not in asset]
+    if miss:
+        v.append(f"缺段：{miss}")
+    return v
 
 
 def _gate_three_piece(asset: dict) -> tuple[list, list]:
