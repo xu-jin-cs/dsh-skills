@@ -27,7 +27,29 @@ except ImportError:  # pragma: no cover
 
 SKILL_ROOT = Path.home() / ".agents" / "skills"
 CONTRACT_VERSION = "1.0"
-NODE_STATUSES = {"pending", "running", "waiting_input", "completed", "failed", "skipped", "stale", "voided"}
+NODE_STATUSES = {"pending", "running", "waiting_input", "completed", "failed", "skipped",
+                 "stale", "voided", "paused", "aborted", "incomplete"}
+# 合法转移（唯一实现）：只允许前进与受控回退；禁止 failed→completed 之类的静默越级
+NODE_TRANSITIONS = {
+    "pending": {"running", "skipped", "aborted", "incomplete"},
+    "running": {"completed", "failed", "paused", "aborted", "incomplete", "waiting_input"},
+    "waiting_input": {"running", "paused", "aborted", "incomplete", "failed"},
+    "paused": {"running", "aborted", "incomplete", "failed"},
+    "failed": {"running", "skipped", "aborted", "incomplete"},   # 重跑才可回到 running
+    "completed": {"stale", "voided"},                            # 作废/失效
+    "incomplete": {"stale", "voided", "running"},
+    "skipped": {"voided"},
+    "stale": {"running", "voided"},
+    "voided": set(),
+    "aborted": set(),
+}
+
+
+def is_valid_transition(src: str, dst: str) -> bool:
+    """节点状态迁移是否合法（唯一实现；未知状态一律 False，禁止放行）。"""
+    if src not in NODE_TRANSITIONS or dst not in NODE_STATUSES:
+        return False
+    return dst in NODE_TRANSITIONS[src]
 DELIVERABLE_TYPES = {"text", "structured", "binary", "none"}
 EVENTS = {"node_start", "node_end", "node_failed", "input_ready", "task_end"}
 # 控制通道枚举（唯一口径）：pause 由谁执行 / rerun 由谁拉起
@@ -306,6 +328,22 @@ def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
     metrics = par.get("metrics")
     if metrics is not None and not isinstance(metrics, dict):
         raise ContractError(asset_key, "observe.paradigm.metrics", "必须是对象")
+
+    # 多 Agent 三件套硬门（F-6）：角色分工 / 接口契约 / 并行编排
+    if pid == "multi_agent":
+        agents = sorted({n.get("agentId") for n in nodes if n.get("agentId")})
+        if len(agents) < 2:
+            raise ContractError(asset_key, "observe.paradigm.id",
+                                f"声明 multi_agent 但仅有 {len(agents)} 个 agentId"
+                                f"（三件套之一「角色分工」不满足）")
+        if not any(n.get("stateOut") for n in nodes):
+            raise ContractError(asset_key, "observe.paradigm.id",
+                                "声明 multi_agent 但无任何节点 stateOut"
+                                "（三件套之二「接口契约」不满足）")
+        if not groups:
+            raise ContractError(asset_key, "observe.paradigm.id",
+                                "声明 multi_agent 但无 parallelGroup"
+                                "（三件套之三「并行编排/收口前置」不满足）")
 
 
 def _validate_context_policy(asset_key: str, cp: dict, lex: dict,
@@ -753,6 +791,11 @@ def scan(root: Path = SKILL_ROOT) -> dict:
         # observe_step.py）。这类资产在平台上会"任务有行、节点全 pending"，属声明层说谎。
         # 控制声明与节点能力一致性（机制层唯一判定，此处只做声明体检）
         _ctl = ob.get("control") or {}
+        if any((n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]) \
+                and not _ctl.get("pause"):
+            warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
+                             "message": "节点声明了 supportPause=true，但 observe.control.pause 未声明"
+                                        "（控制台会置灰，且平台无法下发暂停）"})
         if _ctl.get("pause") and not any(
                 (n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]):
             warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
