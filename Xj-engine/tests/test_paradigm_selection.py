@@ -201,3 +201,22 @@ def test_order_derives_from_match_order():
     mo = spec.load()["matchOrder"]
     assert spec.order() == tuple(reversed(mo))
     assert set(spec.order()) == set(spec.ORDER)      # 兜底常量不得与真源分叉
+
+
+# ── F-9：入参错误必须 exit 3（不得与 2=人工复核撞码）──────────────
+def test_cli_bad_args_exit_3():
+    from engine.paradigm import cli
+    try:
+        cli.main(["match"])          # 缺 --text → argparse error
+    except SystemExit as e:
+        assert e.code == 3
+    else:
+        raise AssertionError("期望 SystemExit(3)")
+
+
+def test_paradigm_match_bad_args_exit_3():
+    import subprocess
+    import sys as _sys
+    bin_path = str(__import__("pathlib").Path.home() / ".agents/agent-paradigms/bin/paradigm_match.py")
+    r = subprocess.run([_sys.executable, bin_path, "match"], capture_output=True, text=True)
+    assert r.returncode == 3, r.stderr[:200]
