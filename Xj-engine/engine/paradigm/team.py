@@ -110,7 +110,7 @@ def contracts(asset: dict) -> dict:
         if not e.get("validationRule"):
             warns.append(f"{name}: 缺 validationRule（取值未做格式/范围/枚举校验）")
         down_in = set((by_id.get(t) or {}).get("stateIn") or [])
-        miss = [x for x in fields if down_in and x not in down_in]
+        miss = [x for x in fields if x not in down_in]
         if miss:
             errors.append(f"{name}: 下游 {t} 不接受字段 {miss}（schema 不对齐）")
         rows.append({"interfaceName": name, "fromAgent": f, "toAgents": [t],
@@ -212,7 +212,8 @@ def parallel_precheck(asset: dict, agents: dict, par: dict) -> dict:
         elif units >= 2 and not dep_reason:
             warnings.append("有 ≥2 独立单元但判 B：需 depReason，或冻结契约后用 depType=contract 走 A")
     return {"decision": decision, "units": units, "files": files, "coupled": coupled,
-            "depReason": dep_reason, "reasons": reasons, "warnings": warnings,
+            "depType": dep_type, "depReason": dep_reason,
+            "reasons": reasons, "warnings": warnings,
             "authority": "dispatch_switch.py（派发时以闸为准；此处仅拓扑预检）"}
 
 
