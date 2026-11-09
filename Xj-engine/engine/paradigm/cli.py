@@ -17,7 +17,7 @@ import argparse
 import json
 import sys
 
-from . import escape as escape_mod
+from . import capability, escape as escape_mod, wiring as wiring_mod
 from . import event_log, gates, matcher, samples, spec
 
 
@@ -119,6 +119,33 @@ def cmd_escape(a) -> int:
     return 1 if res["escaped"] else 0
 
 
+def cmd_capability(a) -> int:
+    row = capability.build(a.paradigm, a.role)
+    event_log.emit("capability", paradigm=a.paradigm, role=a.role,
+                   profile=row.get("capabilityProfile"), conflicts=row.get("conflicts"))
+    lines = [f"能力 profile：{a.paradigm} × {a.role} → {'OK' if row['ok'] else 'FAIL'}"]
+    p = row["capabilityProfile"]
+    lines.append(f"  plan={p['plan']['mode']}({p['plan']['source']}) "
+                 f"tool={p['tool']['mode']}({p['tool']['source']}) "
+                 f"memory={p['memory']['enabledTiers']} persist={p['memory']['persist']} "
+                 f"reflect={p['reflect']['mode']} loop≤{p['reflect']['loop']['maxIterations']}")
+    lines += [f"  ✗ {c}" for c in row["conflicts"]]
+    _print(row, a.json, lines)
+    return 0 if row["ok"] else 1
+
+
+def cmd_wiring(a) -> int:
+    asset = json.loads(open(a.spec, encoding="utf-8").read())
+    res = wiring_mod.check(asset, strict=a.strict)
+    event_log.emit("wiring", spec=a.spec, code=res["code"], verdict=res["verdict"],
+                   blocking=res["blocking"], degradable=res["degradable"])
+    lines = [f"[{res['verdict']}] code={res['code']} strict={a.strict} {a.spec}",
+             f"阻断类缺口 {res['blocking']}｜可降级缺口 {res['degradable']}"]
+    lines += [f"  {g['field']}: {g['status']}（{g['consumer']}）" for g in res["gaps"]]
+    _print(res, a.json, lines)
+    return res["code"]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="xj-engine paradigm", description="范式选型（唯一实现）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -147,6 +174,18 @@ def main(argv=None) -> int:
     e.add_argument("--facts", required=True, help='JSON：{"maxIterations":..,"loopPurpose":..,"distinctAgentId":..}')
     e.add_argument("--json", action="store_true")
     e.set_defaults(func=cmd_escape)
+
+    c = sub.add_parser("capability", help="矩阵推导：范式 × 任务角色 → 四能力 profile")
+    c.add_argument("--paradigm", required=True)
+    c.add_argument("--role", required=True)
+    c.add_argument("--json", action="store_true")
+    c.set_defaults(func=cmd_capability)
+
+    w = sub.add_parser("wiring", help="运行时接线自检（报告式；--strict 才阻断）")
+    w.add_argument("--spec", required=True)
+    w.add_argument("--strict", action="store_true")
+    w.add_argument("--json", action="store_true")
+    w.set_defaults(func=cmd_wiring)
 
     a = ap.parse_args(argv)
     return a.func(a)
