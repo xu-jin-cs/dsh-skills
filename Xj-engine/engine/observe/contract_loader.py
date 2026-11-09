@@ -34,6 +34,30 @@ EVENTS = {"node_start", "node_end", "node_failed", "input_ready", "task_end"}
 CONTROL_PAUSE = {"boundary-block", "sigstop", "none"}
 CONTROL_RERUN = {"session-resume", "flow-run", "none"}
 
+# 范式层（2026-11-09）：五范式/编排策略/任务角色/风险类别的唯一真源在
+# ~/.agents/agent-paradigms/paradigms.json；本文件只读取，不在此再定义一份枚举。
+# 该文件缺失时：不带 paradigm 块的资产照常校验（向后兼容）；一旦声明了 paradigm，
+# 则显式报错（功能禁用 + 可诊断），不做静默降级。
+PARADIGM_FILE = Path.home() / ".agents" / "agent-paradigms" / "paradigms.json"
+_PARADIGM_CACHE: dict | None = None
+
+
+def paradigm_lexicon() -> dict:
+    """返回 {paradigmIds, nodeModes, taskRoles, riskGuards}；缺失即 fail-fast。"""
+    global _PARADIGM_CACHE
+    if _PARADIGM_CACHE is None:
+        if not PARADIGM_FILE.is_file():
+            raise ContractError("(global)", "observe.paradigm",
+                                f"范式层未安装：找不到 {PARADIGM_FILE}（五范式枚举唯一真源）")
+        d = json.loads(PARADIGM_FILE.read_text(encoding="utf-8"))
+        _PARADIGM_CACHE = {
+            "paradigmIds": {p["id"] for p in d.get("paradigms") or []},
+            "nodeModes": set((d.get("orchestrationStrategies") or {}).keys()),
+            "taskRoles": set((d.get("taskRoles") or {}).keys()),
+            "riskGuards": set((d.get("riskGuards") or {}).keys()),
+        }
+    return _PARADIGM_CACHE
+
 # P1 冻结白名单（见 v3/05 §三）：入库但只读展示，不作执行演示
 # 2026-11-05 移出 ppt：原冻结理由是"图谱对应已退役 12 节点流程"，现 SKILL.md 已自带
 # 4 节点 observe 契约并接一行式 observe_step.py（退役图不再作为载体），冻结理由失效。
@@ -167,6 +191,92 @@ def validate_observe(asset_key: str, ob: dict) -> None:
             if v is not None and v not in allowed:
                 raise ContractError(asset_key, f"observe.control.{k}",
                                     f"非法值 {v!r}（支持 {sorted(allowed)}）")
+    _validate_paradigm(asset_key, ob, nodes)
+
+
+def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
+    """范式块与节点编排属性（2026-11-09）。**全部可选**，缺省不报错（向后兼容）。
+
+    声明的枚举唯一真源是 ~/.agents/agent-paradigms/paradigms.json；本函数只做引用完整性校验。
+    """
+    ids = [n.get("nodeId") for n in nodes]
+    idset = set(ids)
+    seq_of = {n.get("nodeId"): n.get("seq") for n in nodes}
+
+    has_orch = any(n.get("mode") is not None for n in nodes)
+    par = ob.get("paradigm")
+    if par is not None and not isinstance(par, dict):
+        raise ContractError(asset_key, "observe.paradigm", "不是对象")
+    if par is not None or has_orch:
+        lex = paradigm_lexicon()          # 只在真的用到范式能力时才要求范式层存在
+    else:
+        lex = None
+
+    # 1) 节点编排属性
+    groups: dict[str, list[str]] = {}
+    for n in nodes:
+        nid = n.get("nodeId")
+        mode = n.get("mode")
+        if mode is not None:
+            if mode not in lex["nodeModes"]:
+                raise ContractError(asset_key, "observe.nodes[].mode",
+                                    f"{nid} 非法值 {mode!r}（支持 {sorted(lex['nodeModes'])}）")
+            if mode == "optional_parallel":
+                g = n.get("parallelGroup")
+                if not g:
+                    raise ContractError(asset_key, "observe.nodes[].parallelGroup",
+                                        f"{nid} mode=optional_parallel 必须声明 parallelGroup")
+                groups.setdefault(g, []).append(nid)
+            if mode == "fallback_hook":
+                fo = n.get("fallbackOf")
+                if not fo:
+                    raise ContractError(asset_key, "observe.nodes[].fallbackOf",
+                                        f"{nid} mode=fallback_hook 必须声明 fallbackOf")
+                if fo not in idset:
+                    raise ContractError(asset_key, "observe.nodes[].fallbackOf",
+                                        f"{nid} 指向不存在的节点 {fo!r}")
+                if seq_of.get(fo, 0) > seq_of.get(nid, 0):
+                    raise ContractError(asset_key, "observe.nodes[].fallbackOf",
+                                        f"{nid} 兜底的节点 {fo} 在其之后（应在之前）")
+        for k in ("stateIn", "stateOut"):
+            v = n.get(k)
+            if v is not None and (not isinstance(v, list)
+                                  or not all(isinstance(x, str) and x for x in v)):
+                raise ContractError(asset_key, f"observe.nodes[].{k}",
+                                    f"{nid} 必须是字符串数组")
+        if "acceptance" in n and not isinstance(n.get("acceptance"), str):
+            raise ContractError(asset_key, "observe.nodes[].acceptance", f"{nid} 必须是字符串")
+    for g, members in groups.items():
+        if len(members) < 2:
+            raise ContractError(asset_key, "observe.nodes[].parallelGroup",
+                                f"并行组 {g!r} 只有 {len(members)} 个节点（至少 2 个）")
+
+    # 2) 范式块
+    if par is None:
+        return
+    pid = par.get("id")
+    if pid not in lex["paradigmIds"]:
+        raise ContractError(asset_key, "observe.paradigm.id",
+                            f"非法值 {pid!r}（支持 {sorted(lex['paradigmIds'])}）")
+    role = par.get("taskRole")
+    if role is not None and role not in lex["taskRoles"]:
+        raise ContractError(asset_key, "observe.paradigm.taskRole",
+                            f"非法值 {role!r}（支持 {sorted(lex['taskRoles'])}）")
+    anchor = par.get("deliverableAnchor")
+    if anchor is not None and anchor not in idset:
+        raise ContractError(asset_key, "observe.paradigm.deliverableAnchor",
+                            f"指向不存在的节点 {anchor!r}")
+    guards = par.get("riskGuards")
+    if guards is not None:
+        if not isinstance(guards, list):
+            raise ContractError(asset_key, "observe.paradigm.riskGuards", "必须是数组")
+        bad = set(guards) - lex["riskGuards"]
+        if bad:
+            raise ContractError(asset_key, "observe.paradigm.riskGuards",
+                                f"非法类别 {sorted(bad)}（支持 {sorted(lex['riskGuards'])}）")
+    metrics = par.get("metrics")
+    if metrics is not None and not isinstance(metrics, dict):
+        raise ContractError(asset_key, "observe.paradigm.metrics", "必须是对象")
 
 
 # ── 扫描 ────────────────────────────────────────────────────────
@@ -207,6 +317,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             "nodes": ob["nodes"],
             "report": ob.get("report"),
             "control": ob.get("control") or {},
+            "paradigm": ob.get("paradigm") or {},
         }
         if declared and declared != actual:
             warnings.append({"assetKey": key, "code": "STALE_HASH",
@@ -230,6 +341,24 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             warnings.append({"assetKey": key, "code": "CONTRACT_MISMATCH",
                              "message": "声明了节点级事件但 SKILL.md 未调用 observe_step.py"
                                         "（节点级上报无通道，面板会显示节点全 pending）"})
+        # 范式/编排一致性体检（只警告，不改变既有资产能否入库）
+        _par = ob.get("paradigm") or {}
+        _modes = [n.get("mode") for n in ob["nodes"] if n.get("mode")]
+        if _par.get("id") in ("plan_execute", "multi_agent") and not _modes:
+            warnings.append({"assetKey": key, "code": "PARADIGM_INCOMPLETE",
+                             "message": f"声明了 paradigm={_par['id']} 但没有任何 nodes[].mode"
+                                        f"（控制台只能按默认串行渲染）"})
+        _has_state = any(n.get("stateIn") or n.get("stateOut") for n in ob["nodes"])
+        if _modes and not _has_state:
+            warnings.append({"assetKey": key, "code": "ORCHESTRATION_NO_STATE",
+                             "message": "声明了编排属性但无 stateIn/stateOut（显式状态契约缺失）"})
+        _avail: set[str] = set()
+        for n in sorted(ob["nodes"], key=lambda x: x.get("seq") or 0):
+            for fld in (n.get("stateIn") or []):
+                if fld not in _avail:
+                    warnings.append({"assetKey": key, "code": "STATE_FIELD_UNREACHABLE",
+                                     "message": f"{n.get('nodeId')} 读字段 {fld} 但无上游 stateOut 提供"})
+            _avail |= set(n.get("stateOut") or [])
 
         # agent 资产（同目录 agents/*.md）
         ad = d / "agents"
@@ -261,6 +390,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                     "pausableTotal": sum(1 for n in aob["nodes"] if n["capabilities"]["supportPause"]),
                     "frozen": False, "frozenReason": "", "nodes": aob["nodes"],
                     "report": aob.get("report"),
+                    "paradigm": aob.get("paradigm") or {},
                 }
                 if a_declared and a_declared != a_actual:
                     warnings.append({"assetKey": akey, "code": "STALE_HASH",
