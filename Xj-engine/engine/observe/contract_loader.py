@@ -212,6 +212,9 @@ def validate_observe(asset_key: str, ob: dict) -> None:
     cp = ob.get("contextPolicy")
     if cp is not None:
         _validate_context_policy(asset_key, cp, paradigm_lexicon(), nodes)
+    pc = ob.get("promptContract")
+    if pc is not None:
+        _validate_prompt_contract(asset_key, pc)
 
 
 def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
@@ -476,6 +479,108 @@ def check_context_policy(asset_key: str, cp: dict,
     _validate_context_policy(asset_key, cp, paradigm_lexicon(), nodes)
 
 
+def check_prompt_contract(asset_key: str, pc: dict) -> None:
+    """公开入口：范式层 CLI 复用同一校验实现。"""
+    _validate_prompt_contract(asset_key, pc)
+
+
+def _validate_prompt_contract(asset_key: str, pc: dict) -> None:
+    """第 14 段 promptContract（2026-11-09，系统提示词宪法）。**可选**；声明了即严格校验。
+
+    只校验"写没写全、写没写死"（空=允许、缺项=失败），语义质量留软层。
+    """
+    if not isinstance(pc, dict):
+        raise ContractError(asset_key, "observe.promptContract", "不是对象")
+    role = pc.get("agent_role")
+    if not isinstance(role, str) or not role.strip():
+        raise ContractError(asset_key, "observe.promptContract.agent_role", "必须是非空字符串")
+    cg = pc.get("core_goal")
+    if not isinstance(cg, dict):
+        raise ContractError(asset_key, "observe.promptContract.core_goal", "必须是对象")
+    for k in ("statement", "done_when"):
+        if not isinstance(cg.get(k), str) or not cg[k].strip():
+            raise ContractError(asset_key, f"observe.promptContract.core_goal.{k}",
+                                "必须非空（done_when 要可机械复判）")
+    acts = pc.get("allow_actions")
+    if not isinstance(acts, list) or not acts or not all(isinstance(a, str) and a for a in acts):
+        raise ContractError(asset_key, "observe.promptContract.allow_actions",
+                            "必须是非空字符串数组（空数组=允许一切）")
+    if len(set(acts)) != len(acts):
+        raise ContractError(asset_key, "observe.promptContract.allow_actions", "存在重复项")
+    tools = pc.get("tool_spec")
+    if not isinstance(tools, list) or not tools:
+        raise ContractError(asset_key, "observe.promptContract.tool_spec", "必须是非空数组")
+    names = []
+    for i, t in enumerate(tools):
+        if not isinstance(t, dict):
+            raise ContractError(asset_key, "observe.promptContract.tool_spec", f"第 {i+1} 项不是对象")
+        n = t.get("name")
+        if not isinstance(n, str) or not n:
+            raise ContractError(asset_key, "observe.promptContract.tool_spec[].name", f"第 {i+1} 项缺 name")
+        if n not in acts:
+            raise ContractError(asset_key, "observe.promptContract.tool_spec[].name",
+                                f"工具 {n!r} 不在 allow_actions 中（声明了却不准用）")
+        for k in ("when", "how"):
+            if not isinstance(t.get(k), str) or not t[k].strip():
+                raise ContractError(asset_key, f"observe.promptContract.tool_spec.{k}",
+                                    f"{n} 缺 {k}（何时用/怎么用）")
+        if not isinstance(t.get("args"), dict):
+            raise ContractError(asset_key, "observe.promptContract.tool_spec.args",
+                                f"{n} 的 args 必须是对象（参数约束）")
+        names.append(n)
+    if len(set(names)) != len(names):
+        raise ContractError(asset_key, "observe.promptContract.tool_spec[].name", "工具名重复")
+    eh = pc.get("error_handling")
+    if not isinstance(eh, dict):
+        raise ContractError(asset_key, "observe.promptContract.error_handling", "必须是对象")
+    for k in ("failure", "timeout", "exception"):
+        if not isinstance(eh.get(k), str) or not eh[k].strip():
+            raise ContractError(asset_key, f"observe.promptContract.error_handling.{k}",
+                                "失败/超时/异常三情形都必须写（缺一即编造兜底）")
+    shots = pc.get("few_shot_examples")
+    if not isinstance(shots, list) or not (2 <= len(shots) <= 5):
+        raise ContractError(asset_key, "observe.promptContract.few_shot_examples",
+                            f"必须是 2~5 条，实际 {len(shots) if isinstance(shots, list) else 'N/A'}")
+    kinds = set()
+    for s in shots:
+        if not isinstance(s, dict) or s.get("kind") not in ("format", "refusal", "boundary"):
+            raise ContractError(asset_key, "observe.promptContract.few_shot_examples[].kind",
+                                f"非法 kind：{s.get('kind') if isinstance(s, dict) else s!r}")
+        for k in ("input", "output"):
+            if not isinstance(s.get(k), str) or not s[k].strip():
+                raise ContractError(asset_key, f"observe.promptContract.few_shot_examples.{k}", "必须非空")
+        kinds.add(s["kind"])
+    missing = {"format", "refusal", "boundary"} - kinds
+    if missing:
+        raise ContractError(asset_key, "observe.promptContract.few_shot_examples",
+                            f"样例必须覆盖格式/拒答/边界，缺 {sorted(missing)}")
+    iso = pc.get("isolate_prompt_rule")
+    if not isinstance(iso, bool):
+        raise ContractError(asset_key, "observe.promptContract.isolate_prompt_rule", "必须是布尔值")
+    stable = pc.get("stable_sections")
+    dyn = pc.get("dynamic_sections")
+    for name, v in (("stable_sections", stable), ("dynamic_sections", dyn)):
+        if not isinstance(v, list) or not v or not all(isinstance(x, str) and x for x in v):
+            raise ContractError(asset_key, f"observe.promptContract.{name}", "必须是非空字符串数组")
+    if iso:
+        dup = set(stable) & set(dyn)
+        if dup:
+            raise ContractError(asset_key, "observe.promptContract",
+                                f"分离铁律开启时同一段不能既稳定又动态：{sorted(dup)}")
+
+
+def prompt_contract_warnings(asset_key: str, ob: dict) -> list[dict]:
+    pc = ob.get("promptContract")
+    if not isinstance(pc, dict):
+        return []
+    out = []
+    if pc.get("isolate_prompt_rule") is False:
+        out.append({"assetKey": asset_key, "code": "PROMPT_SEPARATION_OFF",
+                    "message": "isolate_prompt_rule=false：稳定规则与动态上下文混在一起，"
+                               "缓存命中率与注入防护双重失效"})
+    return out
+
+
 def context_policy_warnings(asset_key: str, ob: dict) -> list[dict]:
     """第 13 段的运行期体检告警（不阻断入库，但必须在 sync 响应里当场看见）。"""
     cp = ob.get("contextPolicy")
@@ -541,6 +646,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             "control": ob.get("control") or {},
             "paradigm": ob.get("paradigm") or {},
             "contextPolicy": ob.get("contextPolicy") or {},
+            "promptContract": ob.get("promptContract") or {},
         }
         if declared and declared != actual:
             warnings.append({"assetKey": key, "code": "STALE_HASH",
@@ -583,6 +689,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                                      "message": f"{n.get('nodeId')} 读字段 {fld} 但无上游 stateOut 提供"})
             _avail |= set(n.get("stateOut") or [])
         warnings.extend(context_policy_warnings(key, ob))
+        warnings.extend(prompt_contract_warnings(key, ob))
 
         # agent 资产（同目录 agents/*.md）
         ad = d / "agents"
@@ -616,11 +723,13 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                     "report": aob.get("report"),
                     "paradigm": aob.get("paradigm") or {},
                     "contextPolicy": aob.get("contextPolicy") or {},
+                    "promptContract": aob.get("promptContract") or {},
                 }
                 if a_declared and a_declared != a_actual:
                     warnings.append({"assetKey": akey, "code": "STALE_HASH",
                                      "message": f"sourceHash 漂移：声明 {a_declared}，实际 {a_actual}"})
                 warnings.extend(context_policy_warnings(akey, aob))
+                warnings.extend(prompt_contract_warnings(akey, aob))
     return {"registry": registry, "warnings": warnings, "errors": [str(e) for e in errors]}
 
 
