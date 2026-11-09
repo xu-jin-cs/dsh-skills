@@ -31,10 +31,10 @@ def _ob(**extra) -> dict:
                    "onEvents": ["node_start", "node_end"], "fields": ["taskId"]},
         "nodes": [
             {"nodeId": "n1", "agentId": "main", "title": "读取", "seq": 1,
-             "deliverableType": "text",
+             "deliverableType": "text", "stateOut": ["draft"],
              "capabilities": {"canReplace": True, "supportPause": False, "supportRerun": False}},
             {"nodeId": "n2", "agentId": "main", "title": "产出", "seq": 2,
-             "deliverableType": "text",
+             "deliverableType": "text", "stateOut": ["verdict"],
              "capabilities": {"canReplace": True, "supportPause": False, "supportRerun": False}},
         ],
     }
@@ -293,3 +293,82 @@ def test_registry_carries_context_policy_key():
     assert res["errors"] == []
     for entry in res["registry"].values():
         assert "contextPolicy" in entry            # 缺省为空 dict，字段恒在
+
+
+# ── 溢出降级与告警 / 跨节点交接载体（2026-11-09 追加） ────────────
+def test_lexicon_has_overflow_and_handoff_enums():
+    lex = paradigm_lexicon()
+    assert lex["overflowActions"] == {"truncate", "summarize", "escalate", "fail"}
+    assert lex["escalateTargets"] == {"human", "orchestrator", "none"}
+    assert lex["alarmChannels"] == {"log", "platform", "notify"}
+    assert lex["handoffCarriers"] == {"file", "message", "artifact_store", "none"}
+    assert lex["missingPolicies"] == {"refuse", "escalate"}
+
+
+def test_truncate_requires_alarm():
+    cp = _ctx()
+    cp["overflow"]["onBudgetExceeded"] = "truncate"
+    cp["overflow"]["alarm"]["enabled"] = False       # 静默截断 → 必须拦住
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "静默截断" in str(e.value)
+
+
+def test_escalate_requires_target():
+    cp = _ctx()
+    cp["overflow"]["onCompressionExhausted"] = "escalate"
+    cp["overflow"]["escalateTo"] = "none"
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "escalateTo" in str(e.value)
+
+
+def test_alarm_channels_validated():
+    cp = _ctx()
+    cp["overflow"]["alarm"]["channels"] = ["sms"]
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "channels" in str(e.value)
+
+
+def test_handoff_file_requires_path_pattern():
+    cp = _ctx()
+    cp["handoff"]["carrier"] = "file"
+    cp["handoff"].pop("pathPattern", None)
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "pathPattern" in str(e.value)
+
+
+def test_handoff_fields_must_come_from_stateout():
+    cp = _ctx()
+    cp["handoff"]["fields"] = ["draft", "unrelated_field"]
+    ob = _ob(contextPolicy=cp)
+    ob["nodes"][0]["stateOut"] = ["draft"]           # unrelated_field 无人产出
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", ob)
+    assert "unrelated_field" in str(e.value)
+
+
+def test_handoff_fields_ok_when_declared():
+    cp = _ctx()
+    cp["handoff"]["fields"] = ["draft", "verdict"]
+    ob = _ob(contextPolicy=cp)
+    ob["nodes"][0]["stateOut"] = ["draft"]
+    ob["nodes"][1]["stateOut"] = ["verdict"]
+    validate_observe("skill:test-paradigm", ob)
+
+
+def test_handoff_envelope_needs_from_to_ts():
+    cp = _ctx()
+    cp["handoff"]["envelope"]["requiredFields"] = ["from", "to"]     # 缺 ts
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "from/to/ts" in str(e.value)
+
+
+def test_handoff_none_carrier_allows_empty_fields():
+    cp = _ctx()
+    cp["handoff"].update({"carrier": "none", "fields": []})
+    cp["handoff"].pop("pathPattern", None)
+    validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
