@@ -178,7 +178,14 @@ def main(argv=None) -> int:
     flo_run.add_argument("--allow-host", action="store_true",
                          help="允许加载 agent-harness 集成（默认 strict 无宿主）")
 
+    par_p = sub.add_parser("paradigm", help="范式选型：打分 / 三门校验 / 逃逸检测（唯一实现）")
+    # 其余参数交由 engine.paradigm.cli 解析（避免两处维护同一套选项）
+    par_p.add_argument("rest", nargs=argparse.REMAINDER)
+
     args = parser.parse_args(argv)
+    if args.cmd == "paradigm":
+        from engine.paradigm.cli import main as paradigm_main
+        return paradigm_main(list(args.rest))
     if args.cmd == "health":
         return _cmd_health()
     if args.cmd == "run":
