@@ -78,6 +78,54 @@ def rerun_plan(control: dict | None, nodes: list[dict] | None,
     return {"allowed": True, "channel": ch, "mode": "flow-run", "reason": ""}
 
 
+RETRYABLE = {"timeout", "transient", "resource"}
+NON_RETRYABLE = {"validation", "permission", "business"}
+
+
+def retry_plan(node: dict, *, attempt: int, error_class: str,
+               policy: dict | None = None) -> dict:
+    """⑥ 重试决策（纯函数，唯一实现）：能不能重试、退避多久、由谁执行。
+
+    引擎只出决策；真正重试由宿主按计划执行（2026-11-10 用户裁定）。
+    """
+    rp = policy or (node.get("retryPolicy") or {})
+    caps = node.get("capabilities") or {}
+    if not isinstance(rp, dict):
+        rp = {}
+    default_max = 1 if caps.get("supportRerun") is True else 0
+    max_retries = rp.get("maxRetries", default_max)
+    if not isinstance(max_retries, int) or max_retries < 0:
+        max_retries = 0
+    max_retries = min(max_retries, 5)                       # 全局硬顶
+    retryable = set(rp.get("retryableErrors") or RETRYABLE)
+    non = set(rp.get("nonRetryableErrors") or NON_RETRYABLE)
+    if error_class in non or (retryable and error_class not in retryable and
+                              error_class not in RETRYABLE):
+        return {"allowed": False, "action": "escalate", "attempt": attempt,
+                "reason": f"错误类别 {error_class!r} 不可重试（转人工/重跑）"}
+    if error_class not in RETRYABLE and error_class not in retryable:
+        return {"allowed": False, "action": "escalate", "attempt": attempt,
+                "reason": f"未知错误类别 {error_class!r}，不自动重试"}
+    if attempt > max_retries:
+        return {"allowed": False, "action": "exhausted", "attempt": attempt,
+                "maxRetries": max_retries,
+                "reason": f"重试已用尽（attempt={attempt} > maxRetries={max_retries}）"}
+
+    bo = rp.get("backoff") or {}
+    btype = bo.get("type", "none")
+    if btype == "fixed":
+        delay = int(bo.get("baseMs", 500))
+    elif btype == "exponential":
+        base = int(bo.get("baseMs", 500))
+        cap = int(bo.get("capMs", 30000))
+        delay = min(base * (2 ** max(0, attempt - 1)), cap)
+    else:
+        delay = 0
+    return {"allowed": True, "action": "retry", "attempt": attempt + 1,
+            "delayMs": delay, "backoff": btype, "maxRetries": max_retries,
+            "channel": "host", "reason": f"{error_class} 可重试（第 {attempt + 1} 次）"}
+
+
 def asset_caps(control: dict | None, nodes: list[dict] | None) -> dict:
     """**UI 置灰用的能力布尔**（唯一派生）。
 
