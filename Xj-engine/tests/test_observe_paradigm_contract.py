@@ -573,3 +573,50 @@ def test_registry_carries_model_policy_key():
     assert res["errors"] == []
     for entry in res["registry"].values():
         assert "modelPolicy" in entry
+
+
+# ── 复审补：multi_agent 三件套门 / 状态转移（F-6 / F-11） ────────
+def _multi_ob(agents=("a", "b"), group=True, stateout=True) -> dict:
+    ob = _ob(paradigm={"id": "multi_agent"})
+    for i, n in enumerate(ob["nodes"]):
+        n["agentId"] = agents[i % len(agents)]
+        if stateout:
+            n["stateOut"] = [f"f{i}"]
+        else:
+            n.pop("stateOut", None)
+        if group:
+            n["mode"] = "optional_parallel"
+            n["parallelGroup"] = "g1"
+    return ob
+
+
+def test_multi_agent_gate_ok():
+    validate_observe("skill:test-paradigm", _multi_ob())
+
+
+def test_multi_agent_requires_two_agents():
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _multi_ob(agents=("only",)))
+    assert "角色分工" in str(e.value)
+
+
+def test_multi_agent_requires_parallel_group():
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _multi_ob(group=False))
+    assert "并行" in str(e.value)
+
+
+def test_multi_agent_requires_state_contract():
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _multi_ob(stateout=False))
+    assert "接口契约" in str(e.value)
+
+
+def test_node_transitions_are_guarded():
+    from engine.observe.contract_loader import NODE_STATUSES, is_valid_transition
+    assert is_valid_transition("pending", "running")
+    assert is_valid_transition("running", "completed")
+    assert not is_valid_transition("pending", "completed")      # 不许越级
+    assert not is_valid_transition("voided", "running")         # 终态不可复活
+    assert not is_valid_transition("nonsense", "running")       # 未知状态一律 False
+    assert {"paused", "aborted", "incomplete"} <= NODE_STATUSES
