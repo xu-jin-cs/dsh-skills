@@ -22,9 +22,11 @@ def pause_plan(control: dict | None, nodes: list[dict] | None, task_status: str)
     """返回 {allowed, channel, reason}。**纯函数，无副作用**。"""
     ch = (control or {}).get("pause")
     if ch not in PAUSE_CHANNELS:
+        # 区分「没声明」与「声明了不提供」——两者给出不同的下一步建议
+        head = ("该资产未声明暂停通道（observe.control.pause 缺省）" if ch is None
+                else f"该资产声明了不提供暂停（observe.control.pause={ch!r}）")
         return {"allowed": False, "channel": ch,
-                "reason": f"该资产声明了不提供暂停（observe.control.pause={ch!r}），支持 {sorted(PAUSE_CHANNELS)}"
-                          f"（observe.control.pause={ch!r}，支持 {sorted(PAUSE_CHANNELS)}）"}
+                "reason": f"{head}；支持 {sorted(PAUSE_CHANNELS)}"}
     if task_status not in LIVE_STATUSES:
         return {"allowed": False, "channel": ch, "reason": f"任务状态 {task_status}，不可暂停"}
     nodes = nodes or []
