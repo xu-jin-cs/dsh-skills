@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 
-from . import capability, spec
+from . import capability, spec, team as team_mod
 
 VAGUE = re.compile(r"良好|差不多|尽快|适当|合理|优质|高效|尽快完成|自行把握|视情况")
 LIGHT = {"single_tool_call", "react"}
@@ -291,6 +291,16 @@ def _gate_consistency(asset: dict) -> tuple[list, list]:
     return errors, warns
 
 
+def _gate_team(asset: dict) -> tuple[list, list]:
+    """跨层门：单多决策四件套（数角色/并行/契约/三件套）。"""
+    res = team_mod.analyze(asset)
+    errors = [f"单多决策：{e['type']} → {e['message']}"
+              for e in res["exceptions"] if e["level"] == "block"]
+    warns = [f"单多决策：{e['type']} → {e['message']}"
+             for e in res["exceptions"] if e["level"] != "block"]
+    return errors, warns
+
+
 def run(asset: dict, *, expected: str | None = None) -> dict:
     schema = spec.schema()
     e1, w1 = _gate_schema(asset, schema, expected)
@@ -299,8 +309,9 @@ def run(asset: dict, *, expected: str | None = None) -> dict:
     e4, w4 = _gate_evidence(asset)
     e5, w5 = _gate_consistency(asset)
     e6, w6 = _gate_bounds(asset)
-    errors = e1 + e2 + e3 + e4 + e5 + e6
-    warnings = w1 + w2 + w3 + w4 + w5 + w6
+    e7, w7 = _gate_team(asset)
+    errors = e1 + e2 + e3 + e4 + e5 + e6 + e7
+    warnings = w1 + w2 + w3 + w4 + w5 + w6 + w7
     code = 1 if errors else (2 if warnings else 0)
     return {"code": code,
             "verdict": {1: "FAIL", 2: "WARN", 0: "PASS"}[code],
@@ -310,5 +321,6 @@ def run(asset: dict, *, expected: str | None = None) -> dict:
                       "reference": {"errors": e3, "warnings": w3},
                       "evidence": {"errors": e4, "warnings": w4},
                       "consistency": {"errors": e5, "warnings": w5},
-                      "bounds": {"errors": e6, "warnings": w6}},
+                      "bounds": {"errors": e6, "warnings": w6},
+                      "team": {"errors": e7, "warnings": w7}},
             "paradigmVersion": spec.paradigm_version()}

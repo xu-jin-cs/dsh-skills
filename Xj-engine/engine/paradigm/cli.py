@@ -17,7 +17,7 @@ import argparse
 import json
 import sys
 
-from . import capability, escape as escape_mod, wiring as wiring_mod
+from . import capability, escape as escape_mod, team as team_mod, wiring as wiring_mod
 from . import event_log, gates, matcher, samples, spec
 
 
@@ -146,6 +146,25 @@ def cmd_wiring(a) -> int:
     return res["code"]
 
 
+def cmd_team(a) -> int:
+    asset = json.loads(open(a.spec, encoding="utf-8").read())
+    res = team_mod.analyze(asset)
+    event_log.emit("team", spec=a.spec, path=res["path"], code=res["code"],
+                   verdict=res["verdict"], agents=res["agents"]["agentCount"],
+                   hasParallel=res["parallel"]["hasParallel"],
+                   precheck=res["precheck"]["decision"],
+                   exceptions=[e["type"] for e in res["exceptions"]])
+    lines = [f"[{res['verdict']}] code={res['code']} path={res['path']} {a.spec}",
+             f"角色数 {res['agents']['agentCount']} {res['agents']['distinctAgentIds']}"
+             f"｜并行 {res['parallel']['hasParallel']}"
+             f"（agent 组 {len(res['parallel']['parallelGroups'])} / task 组 {len(res['parallel']['taskParallelGroups'])}）",
+             f"并行闸预判 {res['precheck']['decision']}（{', '.join(res['precheck']['reasons'])}）"]
+    lines += [f"  ✗ {e['type']}: {e['message']}" for e in res["exceptions"] if e["level"] == "block"]
+    lines += [f"  ⚠ {e['type']}: {e['message']}" for e in res["exceptions"] if e["level"] != "block"]
+    _print(res, a.json, lines)
+    return res["code"]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="xj-engine paradigm", description="范式选型（唯一实现）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -186,6 +205,11 @@ def main(argv=None) -> int:
     w.add_argument("--strict", action="store_true")
     w.add_argument("--json", action="store_true")
     w.set_defaults(func=cmd_wiring)
+
+    t = sub.add_parser("team", help="单多决策：数角色/看并行/看契约/三件套/路径/异常")
+    t.add_argument("--spec", required=True)
+    t.add_argument("--json", action="store_true")
+    t.set_defaults(func=cmd_team)
 
     a = ap.parse_args(argv)
     return a.func(a)

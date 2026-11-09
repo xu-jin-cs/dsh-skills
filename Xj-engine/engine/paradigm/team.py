@@ -12,6 +12,8 @@ import re
 from . import spec
 
 LIGHT_TITLES = re.compile(r"工具|服务节点|临时|proxy|cache")
+# 人工兜底/交接目标不是 Agent（无调度入口），不计入 agentCount
+HUMAN_IDS = {"human", "user", "manual", "human_operator", "operator"}
 
 
 # ── ① 数角色 ────────────────────────────────────────────────────
@@ -22,6 +24,9 @@ def count_agents(asset: dict) -> dict:
         aid = n.get("agentId")
         if not aid:
             excluded.append({"nodeId": n.get("nodeId"), "reason": "缺 agentId"})
+            continue
+        if str(aid).lower() in HUMAN_IDS:
+            excluded.append({"nodeId": n.get("nodeId"), "reason": "人工兜底节点（非 Agent）"})
             continue
         if n.get("disabled") is True:
             excluded.append({"nodeId": n.get("nodeId"), "reason": "disabled"})
@@ -68,7 +73,13 @@ def detect_parallel(asset: dict) -> dict:
     if len(flagged) >= 2:
         groups.append({"groupId": "inParallel", "agents": _agents_of(nodes, flagged),
                        "parallelType": _ptype(nodes, flagged)})
-    return {"hasParallel": bool(groups), "parallelGroups": groups}
+    for g in groups:
+        g["agentParallel"] = len(set(g["agents"])) >= 2
+    agent_groups = [g for g in groups if g["agentParallel"]]
+    task_groups = [g for g in groups if not g["agentParallel"]]
+    return {"hasParallel": bool(agent_groups), "parallelGroups": agent_groups,
+            "taskParallelGroups": task_groups,
+            "allGroups": groups}
 
 
 def _agents_of(nodes: list[dict], ids: list[str]) -> list[str]:
@@ -117,14 +128,15 @@ def three_piece(asset: dict, agents: dict, par: dict, con: dict) -> dict:
     nodes = (asset.get("pipeline") or {}).get("nodes") or []
     roles = (asset.get("orchestration") or {}).get("teamRoles") or []
     declared_ids = {r.get("agentId") for r in roles}
-    # 角色套件
-    if len(declared_ids) < agents["agentCount"]:
+    # 角色套件（单 Agent 路径不要求 teamRoles）
+    if agents["agentCount"] > 1 and len(declared_ids) < agents["agentCount"]:
         missing = sorted(set(agents["distinctAgentIds"]) - declared_ids)
         errors.append(f"角色套件不完整：缺 {missing} 的 role/goal/capability 定义")
-    for r in roles:
-        for k in ("role", "goal", "capability"):
-            if not r.get(k):
-                errors.append(f"角色套件不完整：{r.get('agentId')} 缺 {k}")
+    if agents["agentCount"] > 1:
+        for r in roles:
+            for k in ("role", "goal", "capability"):
+                if not r.get(k):
+                    errors.append(f"角色套件不完整：{r.get('agentId')} 缺 {k}")
     # 流程套件
     if agents["agentCount"] > 1 and not par["hasParallel"]:
         if not ((asset.get("orchestration") or {}).get("parallelDecision") or {}).get("depReason"):
@@ -177,20 +189,30 @@ def _has_cycle(nodes: list[dict]) -> bool:
 
 # ── ② 并行闸同轴预判 ────────────────────────────────────────────
 def parallel_precheck(asset: dict, agents: dict, par: dict) -> dict:
-    units = max(1, len(par["parallelGroups"]))
+    all_groups = par.get("allGroups") or par["parallelGroups"]
+    units = max([len(g.get("agents") or []) for g in all_groups] + [1])
     nodes = (asset.get("pipeline") or {}).get("nodes") or []
     files = len({n.get("deliverable") for n in nodes if n.get("deliverable")})
     coupled = any(len(e.get("fields") or []) and len(
         {n.get("agentId") for n in nodes if n.get("nodeId") in (e.get("from"), e.get("to"))}) > 1
         for e in (asset.get("stateContract") or {}).get("edges") or [])
-    decision = "A_parallel" if (par["hasParallel"] and units >= 2) else "B_sequential"
-    dep_reason = ((asset.get("orchestration") or {}).get("parallelDecision") or {}).get("depReason", "")
+    pd = (asset.get("orchestration") or {}).get("parallelDecision") or {}
+    dep_reason = pd.get("depReason", "")
+    dep_type = pd.get("depType", "")
+    can_parallel = units >= 2 and bool(all_groups) and (
+        not coupled or dep_type == "contract")
+    decision = "A_parallel" if can_parallel else "B_sequential"
     reasons = [f"units={units}", f"files={files}", f"coupled={coupled}",
-               f"hasParallel={par['hasParallel']}"]
-    if decision == "B_sequential" and agents["agentCount"] > 1 and not dep_reason:
-        reasons.append("缺 depReason（并行闸 B 档要求）")
+               f"depType={dep_type or '-'}",
+               f"agentParallel={par['hasParallel']}"]
+    warnings: list[str] = []
+    if decision == "B_sequential":
+        if agents["agentCount"] > 1 and not dep_reason:
+            warnings.append("B 档多 Agent 串行缺 depReason（并行闸要求）")
+        elif units >= 2 and not dep_reason:
+            warnings.append("有 ≥2 独立单元但判 B：需 depReason，或冻结契约后用 depType=contract 走 A")
     return {"decision": decision, "units": units, "files": files, "coupled": coupled,
-            "depReason": dep_reason, "reasons": reasons,
+            "depReason": dep_reason, "reasons": reasons, "warnings": warnings,
             "authority": "dispatch_switch.py（派发时以闸为准；此处仅拓扑预检）"}
 
 
@@ -201,10 +223,12 @@ def exceptions(asset: dict, agents: dict, par: dict, con: dict, three: dict) -> 
         out.append({"type": "count_zero", "level": "block",
                     "message": "agentCount=0，必须至少有一个主 Agent",
                     "action": "route_to_human"})
-    dup = [x for x in agents["excluded"] if "重复 agentId" in x["reason"]]
-    if dup:
+    roles = (asset.get("orchestration") or {}).get("teamRoles") or []
+    role_ids = [r.get("agentId") for r in roles]
+    if len(role_ids) != len(set(role_ids)):
         out.append({"type": "count_duplicate", "level": "warn",
-                    "message": f"重复 agentId 已去重：{len(dup)} 处", "action": "record"})
+                    "message": "teamRoles 中 agentId 重复声明，已按首个定义计数",
+                    "action": "record"})
     if agents["agentCount"] > 1 and not con["contracts"]:
         out.append({"type": "contract_missing", "level": "block",
                     "message": "Agent 之间缺少 inFields/outFields 定义", "action": "route_to_human"})
@@ -232,6 +256,9 @@ def analyze(asset: dict) -> dict:
     three = three_piece(asset, agents, par, con)
     pre = parallel_precheck(asset, agents, par)
     exc = exceptions(asset, agents, par, con, three)
+    for w in pre["warnings"]:
+        exc.append({"type": "parallel_decision", "level": "warn",
+                    "message": w, "action": "record"})
 
     if agents["agentCount"] == 0:
         path = "blocked"
