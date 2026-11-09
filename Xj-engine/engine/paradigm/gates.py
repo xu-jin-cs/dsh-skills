@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 
-from . import spec
+from . import capability, spec
 
 VAGUE = re.compile(r"良好|差不多|尽快|适当|合理|优质|高效|尽快完成|自行把握|视情况")
 LIGHT = {"single_tool_call", "react"}
@@ -171,18 +171,144 @@ def _gate_bounds(asset: dict) -> tuple[list, list]:
     return errors, warns
 
 
+
+
+def _gate_reference(asset: dict) -> tuple[list, list]:
+    """门三 引用完整性：allow_actions ⊆ tool_spec ⊆ 全局白名单（fail-closed）。"""
+    errors, warns = [], []
+    pc = asset.get("promptContract") or {}
+    actions = pc.get("allow_actions")
+    tools = pc.get("tool_spec")
+    whitelist = set((spec.load().get("toolWhitelist") or {}).get("actions") or [])
+    names = [t.get("name") for t in (tools or []) if isinstance(t, dict)]
+    if not isinstance(actions, list) or not actions:
+        errors.append("引用完整性：promptContract.allow_actions 缺失或为空")
+        actions = []
+    if not isinstance(tools, list) or not tools:
+        errors.append("引用完整性：promptContract.tool_spec 缺失")
+        tools = []
+    out_white = sorted(set(actions) - whitelist)
+    if out_white:
+        errors.append(f"引用完整性：allow_actions 越出全局白名单 {out_white}")
+    out_actions = sorted(set(names) - set(actions))
+    if out_actions:
+        errors.append(f"引用完整性：tool_spec 工具未在 allow_actions 中 {out_actions}")
+    for t in tools:
+        if not isinstance(t, dict):
+            continue
+        if not isinstance(t.get("args"), dict):
+            errors.append(f"引用完整性：工具 {t.get('name')} 缺 args 参数契约")
+        if not (isinstance(t.get("timeoutMs"), int) and t["timeoutMs"] > 0):
+            errors.append(f"引用完整性：工具 {t.get('name')} 缺 timeoutMs（或非正数）")
+    reverse = sorted(set(actions) - set(names))
+    if reverse:
+        warns.append(f"反向覆盖：allow_actions 中 {reverse} 未在 tool_spec 声明，运行时不可调（fail-closed）")
+    return errors, warns
+
+
+def _est_tokens(text: str) -> int:
+    return sum(1 if ord(c) >= 128 else 0.3 for c in (text or ""))
+
+
+def _gate_evidence(asset: dict) -> tuple[list, list]:
+    """门四 证据充分：Few-shot 数量/成对/预算 + 反思上界。"""
+    errors, warns = [], []
+    pid = (asset.get("meta") or {}).get("paradigm")
+    pc = asset.get("promptContract") or {}
+    shots = pc.get("few_shot_examples") or []
+    exempt = pc.get("fewShotExemption") or {}
+    min_needed = 1 if (pid == "single_tool_call" and exempt.get("allowed") is True) else 2
+    if not (min_needed <= len(shots) <= 5):
+        errors.append(f"证据充分：Few-shot 需 ≥{min_needed} 条（实得 {len(shots)}）")
+    for i, s in enumerate(shots):
+        if not isinstance(s, dict) or not s.get("input") or not s.get("output"):
+            errors.append(f"证据充分：第 {i+1} 条样例缺 input/output 成对")
+    prof = ((asset.get("capabilityProfile") or {}).get("capabilityProfile") or {})
+    rf = prof.get("reflect") or {}
+    if rf.get("mode") not in (None, "forbidden"):
+        mi = (rf.get("loop") or {}).get("maxIterations")
+        mr = (rf.get("verify") or {}).get("maxReflow")
+        for name, val in (("loop.maxIterations", mi), ("verify.maxReflow", mr)):
+            if not isinstance(val, int) or val <= 0:
+                errors.append(f"证据充分：反思上界 {name} 必须为正整数（实得 {val!r}）")
+            elif val > 5:
+                errors.append(f"证据充分：{name}={val} 超过硬线 5")
+    budget = ((asset.get("contextPolicy") or {}).get("budget") or {}).get("systemPromptTokens") or 0
+    if budget and shots:
+        used = sum(_est_tokens(str(s.get("input", "")) + str(s.get("output", ""))) for s in shots)
+        if used > budget * 0.2:
+            warns.append(f"样例预算：估算 {int(used)} tokens 超过系统段配额 20%（{int(budget*0.2)}）")
+    return errors, warns
+
+
+def _gate_consistency(asset: dict) -> tuple[list, list]:
+    """门五 一致性：能力矩阵/角色修正/记忆落盘/输出契约。"""
+    errors, warns = [], []
+    meta = asset.get("meta") or {}
+    pid = meta.get("paradigm")
+    role = ((asset.get("taskRole") or {}).get("role"))
+    declared = (asset.get("capabilityProfile") or {})
+    if not pid or not role:
+        return ["一致性：缺 meta.paradigm 或 taskRole.role，无法比对能力声明"], warns
+    try:
+        derived = capability.build(pid, role)
+    except ValueError as e:
+        return [f"一致性：{e}"], warns
+
+    if derived["conflicts"]:
+        errors.extend(f"一致性：{c}" for c in derived["conflicts"])
+
+    d = derived["capabilityProfile"]
+    c = declared.get("capabilityProfile") or {}
+    pairs = [
+        ("plan.mode", (c.get("plan") or {}).get("mode"), d["plan"]["mode"]),
+        ("tool.mode", (c.get("tool") or {}).get("mode"), d["tool"]["mode"]),
+        ("memory.enabledTiers", sorted((c.get("memory") or {}).get("enabledTiers") or []),
+         sorted(d["memory"]["enabledTiers"])),
+        ("memory.persist", (c.get("memory") or {}).get("persist"), d["memory"]["persist"]),
+        ("memory.recall", (c.get("memory") or {}).get("recall"), d["memory"]["recall"]),
+        ("reflect.mode", (c.get("reflect") or {}).get("mode"), d["reflect"]["mode"]),
+        ("reflect.loop.maxIterations", ((c.get("reflect") or {}).get("loop") or {}).get("maxIterations"),
+         d["reflect"]["loop"]["maxIterations"]),
+        ("reflect.verify.maxReflow", ((c.get("reflect") or {}).get("verify") or {}).get("maxReflow"),
+         d["reflect"]["verify"]["maxReflow"]),
+    ]
+    diffs = [f"{name}: 声明={got!r} 期望={exp!r}" for name, got, exp in pairs if got != exp]
+    errors.extend(f"一致性：能力与矩阵/角色不符 → {x}" for x in diffs)
+    if derived["overrides"] and not (declared.get("overrides") or []):
+        errors.append("一致性：角色修正已生效但声明未登记 overrides（无出处）")
+
+    if role in ("long_session", "batch_job") and (c.get("memory") or {}).get("persist") is False:
+        errors.append(f"一致性：taskRole={role} 但 memory.persist=false（长任务必须落盘）")
+
+    io = (asset.get("controlLists") or {}).get("ioConstraints") or {}
+    if not isinstance(io.get("outputSchema"), dict) or not io.get("outputSchema"):
+        errors.append("一致性：输出契约缺失（ioConstraints.outputSchema 为空）")
+    if not (io.get("provenanceRequired") or []):
+        errors.append("一致性：输出契约缺溯源字段（provenanceRequired 为空）")
+    elif not io.get("enums"):
+        warns.append("一致性：输出契约未给字段枚举，建议补 enums 以支持字段级校验")
+    return errors, warns
+
+
 def run(asset: dict, *, expected: str | None = None) -> dict:
     schema = spec.schema()
     e1, w1 = _gate_schema(asset, schema, expected)
     e2, w2 = _gate_three_piece(asset)
-    e3, w3 = _gate_bounds(asset)
-    errors = e1 + e2 + e3
-    warnings = w1 + w2 + w3
+    e3, w3 = _gate_reference(asset)
+    e4, w4 = _gate_evidence(asset)
+    e5, w5 = _gate_consistency(asset)
+    e6, w6 = _gate_bounds(asset)
+    errors = e1 + e2 + e3 + e4 + e5 + e6
+    warnings = w1 + w2 + w3 + w4 + w5 + w6
     code = 1 if errors else (2 if warnings else 0)
     return {"code": code,
             "verdict": {1: "FAIL", 2: "WARN", 0: "PASS"}[code],
             "errors": errors, "warnings": warnings,
             "gates": {"schema": {"errors": e1, "warnings": w1},
                       "threePiece": {"errors": e2, "warnings": w2},
-                      "bounds": {"errors": e3, "warnings": w3}},
+                      "reference": {"errors": e3, "warnings": w3},
+                      "evidence": {"errors": e4, "warnings": w4},
+                      "consistency": {"errors": e5, "warnings": w5},
+                      "bounds": {"errors": e6, "warnings": w6}},
             "paradigmVersion": spec.paradigm_version()}

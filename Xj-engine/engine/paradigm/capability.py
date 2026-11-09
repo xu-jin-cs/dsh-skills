@@ -69,11 +69,12 @@ def derive(paradigm: str, task_role: str) -> dict:
     mem_rule = rule.get("memory") or {}
     if mem_rule.get("maxTier") == "working":
         keep = [t for t in profile["memory"]["enabledTiers"] if t == "working"]
-        if keep != profile["memory"]["enabledTiers"]:
-            overrides.append({"field": "memory.enabledTiers", "reason": f"taskRole={role}"})
+        changed = keep != profile["memory"]["enabledTiers"] or profile["memory"]["persist"] is True
         profile["memory"]["enabledTiers"] = keep
         profile["memory"]["persist"] = False
-        profile["memory"]["source"] = "role_override"
+        if changed:
+            profile["memory"]["source"] = "role_override"
+            overrides.append({"field": "memory.enabledTiers", "reason": f"taskRole={role}"})
     if mem_rule.get("requireEpisodic"):
         tiers = profile["memory"]["enabledTiers"]
         for t in ("working", "episodic"):
