@@ -53,6 +53,8 @@ def paradigm_lexicon() -> dict:
         ctx = d.get("contextPolicyStandard") or {}
         _ctx_mem = ctx.get("memory") or {}
         _ctx_v = _ctx_mem.get("vector") or {}
+        _ctx_ov = ctx.get("overflow") or {}
+        _ctx_ho = ctx.get("handoff") or {}
         _PARADIGM_CACHE = {
             "paradigmIds": {p["id"] for p in d.get("paradigms") or []},
             "nodeModes": set((d.get("orchestrationStrategies") or {}).keys()),
@@ -64,6 +66,12 @@ def paradigm_lexicon() -> dict:
             "memoryTiers": set(_ctx_mem.get("tiers") or {}),
             "recallStrategies": set((_ctx_mem.get("recall") or {}).get("allowed") or []),
             "vectorMetrics": set(_ctx_v.get("metrics") or []),
+            "overflowActions": set((_ctx_ov.get("actions") or {}).keys()),
+            "escalateTargets": set(_ctx_ov.get("escalateTargets") or []),
+            "alarmChannels": set((_ctx_ov.get("alarm") or {}).get("channels") or []),
+            "alarmCodes": set((_ctx_ov.get("alarm") or {}).get("codes") or []),
+            "handoffCarriers": set((_ctx_ho.get("carriers") or {}).keys()),
+            "missingPolicies": set(_ctx_ho.get("missingPolicies") or []),
         }
     return _PARADIGM_CACHE
 
@@ -203,7 +211,7 @@ def validate_observe(asset_key: str, ob: dict) -> None:
     _validate_paradigm(asset_key, ob, nodes)
     cp = ob.get("contextPolicy")
     if cp is not None:
-        _validate_context_policy(asset_key, cp, paradigm_lexicon())
+        _validate_context_policy(asset_key, cp, paradigm_lexicon(), nodes)
 
 
 def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
@@ -291,14 +299,15 @@ def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
         raise ContractError(asset_key, "observe.paradigm.metrics", "必须是对象")
 
 
-def _validate_context_policy(asset_key: str, cp: dict, lex: dict) -> None:
+def _validate_context_policy(asset_key: str, cp: dict, lex: dict,
+                             nodes: list[dict] | None = None) -> None:
     """第 13 段 contextPolicy（2026-11-09）。**可选**；声明了即严格校验。
 
     只校验结构/枚举/区间与跨字段一致性；不校验数值是否"合理"（那属标定，留人工）。
     """
     if not isinstance(cp, dict):
         raise ContractError(asset_key, "observe.contextPolicy", "不是对象")
-    for blk in ("budget", "compression", "memory"):
+    for blk in ("budget", "compression", "memory", "overflow", "handoff"):
         if not isinstance(cp.get(blk), dict):
             raise ContractError(asset_key, f"observe.contextPolicy.{blk}", "缺失或不是对象")
 
@@ -383,10 +392,88 @@ def _validate_context_policy(asset_key: str, cp: dict, lex: dict) -> None:
                     raise ContractError(asset_key, f"observe.contextPolicy.memory.vector.{k}",
                                         "enabled=true 时必填")
 
+    # ── 溢出降级与告警（禁止静默截断） ─────────────────────────
+    ov = cp["overflow"]
+    acts = []
+    for k in ("onBudgetExceeded", "onCompressionExhausted"):
+        v = ov.get(k)
+        if v not in lex["overflowActions"]:
+            raise ContractError(asset_key, f"observe.contextPolicy.overflow.{k}",
+                                f"非法值 {v!r}（支持 {sorted(lex['overflowActions'])}）")
+        acts.append(v)
+    et = ov.get("escalateTo")
+    if et not in lex["escalateTargets"]:
+        raise ContractError(asset_key, "observe.contextPolicy.overflow.escalateTo",
+                            f"非法值 {et!r}（支持 {sorted(lex['escalateTargets'])}）")
+    if "escalate" in acts and et == "none":
+        raise ContractError(asset_key, "observe.contextPolicy.overflow.escalateTo",
+                            "动作含 escalate 时必须指定升级对象（human/orchestrator）")
+    for k in ("hardStop", "recordEvidence"):
+        if not isinstance(ov.get(k), bool):
+            raise ContractError(asset_key, f"observe.contextPolicy.overflow.{k}", "必须是布尔值")
+    al = ov.get("alarm")
+    if not isinstance(al, dict) or not isinstance(al.get("enabled"), bool):
+        raise ContractError(asset_key, "observe.contextPolicy.overflow.alarm",
+                            "必须是对象且 enabled 为布尔值")
+    if "truncate" in acts and al["enabled"] is not True:
+        raise ContractError(asset_key, "observe.contextPolicy.overflow.alarm.enabled",
+                            "动作含 truncate 时必须开启告警（禁止静默截断）")
+    ch = al.get("channels")
+    if not isinstance(ch, list) or not ch or set(ch) - lex["alarmChannels"]:
+        raise ContractError(asset_key, "observe.contextPolicy.overflow.alarm.channels",
+                            f"必须是非空数组，取值 {sorted(lex['alarmChannels'])}")
+    codes = al.get("codes")
+    if not isinstance(codes, list) or not codes or set(codes) - lex["alarmCodes"]:
+        raise ContractError(asset_key, "observe.contextPolicy.overflow.alarm.codes",
+                            f"必须是非空数组，取值 {sorted(lex['alarmCodes'])}")
+    thr = al.get("throttleSec")
+    if not isinstance(thr, int) or thr < 0:
+        raise ContractError(asset_key, "observe.contextPolicy.overflow.alarm.throttleSec",
+                            "必须是非负整数")
 
-def check_context_policy(asset_key: str, cp: dict) -> None:
+    # ── 跨节点交接载体 ────────────────────────────────────────
+    ho = cp["handoff"]
+    carrier = ho.get("carrier")
+    if carrier not in lex["handoffCarriers"]:
+        raise ContractError(asset_key, "observe.contextPolicy.handoff.carrier",
+                            f"非法值 {carrier!r}（支持 {sorted(lex['handoffCarriers'])}）")
+    if carrier == "file":
+        pat = ho.get("pathPattern")
+        if not isinstance(pat, str) or "{" not in pat:
+            raise ContractError(asset_key, "observe.contextPolicy.handoff.pathPattern",
+                                "carrier=file 时必须给可参数化路径（含 {from}/{to}）")
+    hf = ho.get("fields")
+    if not isinstance(hf, list) or not all(isinstance(x, str) and x for x in hf):
+        raise ContractError(asset_key, "observe.contextPolicy.handoff.fields", "必须是字符串数组")
+    if carrier != "none":
+        if not hf:
+            raise ContractError(asset_key, "observe.contextPolicy.handoff.fields",
+                                f"carrier={carrier} 时 fields 不能为空")
+        if nodes is not None:
+            avail = {f for n in nodes for f in (n.get("stateOut") or [])}
+            unknown = sorted(set(hf) - avail)
+            if unknown:
+                raise ContractError(asset_key, "observe.contextPolicy.handoff.fields",
+                                    f"交接字段不在任何节点 stateOut：{unknown}")
+    mb = ho.get("maxBytes")
+    if not isinstance(mb, int) or mb <= 0:
+        raise ContractError(asset_key, "observe.contextPolicy.handoff.maxBytes", "必须是正整数")
+    if not isinstance(ho.get("checksum"), bool):
+        raise ContractError(asset_key, "observe.contextPolicy.handoff.checksum", "必须是布尔值")
+    if ho.get("onMissing") not in lex["missingPolicies"]:
+        raise ContractError(asset_key, "observe.contextPolicy.handoff.onMissing",
+                            f"非法值 {ho.get('onMissing')!r}（支持 {sorted(lex['missingPolicies'])}）")
+    env = ho.get("envelope")
+    req = (env or {}).get("requiredFields") if isinstance(env, dict) else None
+    if not isinstance(req, list) or not {"from", "to", "ts"} <= set(req):
+        raise ContractError(asset_key, "observe.contextPolicy.handoff.envelope.requiredFields",
+                            "必须包含 from/to/ts（交接必须可追溯）")
+
+
+def check_context_policy(asset_key: str, cp: dict,
+                         nodes: list[dict] | None = None) -> None:
     """公开入口：范式层 CLI（paradigm_match.py）复用同一校验实现，禁止客户端再写一份。"""
-    _validate_context_policy(asset_key, cp, paradigm_lexicon())
+    _validate_context_policy(asset_key, cp, paradigm_lexicon(), nodes)
 
 
 def context_policy_warnings(asset_key: str, ob: dict) -> list[dict]:

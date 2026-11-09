@@ -182,6 +182,17 @@ def _ctx(**over) -> dict:
                               "embeddingModel": None, "dim": None, "metric": "cosine",
                               "chunkSize": None, "chunkOverlap": None, "indexName": None,
                               "namespaceFields": ["assetKey", "nodeId", "tier"]}},
+        "overflow": {"onBudgetExceeded": "summarize",
+                     "onCompressionExhausted": "escalate", "escalateTo": "human",
+                     "hardStop": True, "recordEvidence": True,
+                     "alarm": {"enabled": True, "channels": ["log", "platform"],
+                               "codes": ["BUDGET_DEGRADED", "BUDGET_EXHAUSTED"],
+                               "throttleSec": 300}},
+        "handoff": {"carrier": "file", "pathPattern": "{stage_dir}/handoff/{from}__{to}.json",
+                    "fields": ["draft"], "maxBytes": 1048576, "checksum": True,
+                    "onMissing": "escalate",
+                    "envelope": {"schemaVersion": "handoff/1",
+                                 "requiredFields": ["from", "to", "ts", "fields"]}},
     }
     cp.update(over)
     return cp
