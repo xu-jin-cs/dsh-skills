@@ -28,16 +28,17 @@ except ImportError:  # pragma: no cover
 SKILL_ROOT = Path.home() / ".agents" / "skills"
 CONTRACT_VERSION = "1.0"
 NODE_STATUSES = {"pending", "running", "waiting_input", "completed", "failed", "skipped",
-                 "stale", "voided", "paused", "aborted", "incomplete"}
+                 "stale", "voided", "paused", "aborted", "incomplete", "rolled_back"}
 # 合法转移（唯一实现）：只允许前进与受控回退；禁止 failed→completed 之类的静默越级
 NODE_TRANSITIONS = {
     "pending": {"running", "skipped", "aborted", "incomplete"},
     "running": {"completed", "failed", "paused", "aborted", "incomplete", "waiting_input"},
     "waiting_input": {"running", "paused", "aborted", "incomplete", "failed"},
-    "paused": {"running", "aborted", "incomplete", "failed"},
-    "failed": {"running", "skipped", "aborted", "incomplete"},   # 重跑才可回到 running
-    "completed": {"stale", "voided"},                            # 作废/失效
-    "incomplete": {"stale", "voided", "running"},
+    "paused": {"running", "completed", "aborted", "incomplete", "failed"},
+    "failed": {"running", "skipped", "aborted", "incomplete", "rolled_back"},
+    "completed": {"stale", "voided", "rolled_back"},             # 允许回滚（需补偿动作）
+    "rolled_back": set(),                                        # 终态
+    "incomplete": {"stale", "voided", "running", "rolled_back"},
     "skipped": {"voided"},
     "stale": {"running", "voided"},
     "voided": set(),
@@ -51,7 +52,8 @@ def is_valid_transition(src: str, dst: str) -> bool:
         return False
     return dst in NODE_TRANSITIONS[src]
 DELIVERABLE_TYPES = {"text", "structured", "binary", "none"}
-EVENTS = {"node_start", "node_end", "node_failed", "input_ready", "task_end"}
+EVENTS = {"node_start", "node_end", "node_failed", "node_running", "node_waiting",
+          "node_retry", "node_timeout", "input_ready", "task_end"}
 # 控制通道枚举（唯一口径）：pause 由谁执行 / rerun 由谁拉起
 CONTROL_PAUSE = {"boundary-block", "sigstop", "none"}
 CONTROL_RERUN = {"session-resume", "flow-run", "none"}

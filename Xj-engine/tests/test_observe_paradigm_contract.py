@@ -663,3 +663,27 @@ def load_paradigms_doc() -> dict:
     from pathlib import Path
     p = Path.home() / ".agents" / "agent-paradigms" / "paradigms.json"
     return json.loads(p.read_text(encoding="utf-8"))
+
+
+# ── 2026-11-10 授权最小变更：事件补 4 类 + rolled_back 状态 ──────
+def test_new_lifecycle_events_registered():
+    from engine.observe.protocol import EVENTS as P
+    from engine.observe.contract_loader import EVENTS as C
+    assert P == C                                   # 引擎与协议逐字一致
+    for e in ("node_running", "node_waiting", "node_retry", "node_timeout"):
+        assert e in P
+
+
+def test_rolled_back_transitions():
+    from engine.observe.contract_loader import NODE_STATUSES, is_valid_transition
+    assert "rolled_back" in NODE_STATUSES
+    assert is_valid_transition("failed", "rolled_back")
+    assert is_valid_transition("completed", "rolled_back")
+    assert is_valid_transition("incomplete", "rolled_back")
+    assert not is_valid_transition("rolled_back", "running")   # 终态
+    assert not is_valid_transition("running", "rolled_back")   # 必须先失败/完成 + 补偿确认
+
+
+def test_paused_can_complete():
+    from engine.observe.contract_loader import is_valid_transition
+    assert is_valid_transition("paused", "completed")

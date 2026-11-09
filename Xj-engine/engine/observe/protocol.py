@@ -19,7 +19,10 @@ import os
 import time
 
 # 唯一合法事件枚举（与 engine/observe/contract_loader.py 的 EVENTS 逐字一致）
-EVENTS = {"node_start", "node_end", "node_failed", "input_ready", "task_end"}
+# 2026-11-10 用户授权最小变更：补 4 类节点生命周期事件（running/waiting/retry/timeout），
+# 用于等待时长、重试次数、超时可见；不新增通道、不改 progress/control 决策。
+EVENTS = {"node_start", "node_end", "node_failed", "node_running", "node_waiting",
+          "node_retry", "node_timeout", "input_ready", "task_end"}
 
 # 唯一交付物排除规则（原 observe_hook 有排除、engine_callback 无 → 两套口径）
 ARTIFACT_EXCLUDE_PREFIXES = ("stage_cfg", ".")
