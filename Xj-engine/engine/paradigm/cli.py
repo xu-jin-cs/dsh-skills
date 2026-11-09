@@ -165,8 +165,17 @@ def cmd_team(a) -> int:
     return res["code"]
 
 
+class _ArgParser(argparse.ArgumentParser):
+    """入参错误 → exit 3；2 专用于 match 的"需人工复核"，禁止 argparse 默认 exit 2 撞码。"""
+
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        print(f"FATAL 入参错误：{message}", file=sys.stderr)
+        raise SystemExit(3)
+
+
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="xj-engine paradigm", description="范式选型（唯一实现）")
+    ap = _ArgParser(prog="xj-engine paradigm", description="范式选型（唯一实现）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     m = sub.add_parser("match", help="自然语言 → 范式 + 置信三档")
