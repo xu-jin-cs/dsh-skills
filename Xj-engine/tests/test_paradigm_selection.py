@@ -79,7 +79,7 @@ def test_tie_suggestion_prefers_lighter():
     # 构造两范式同分：single 与 reflexion 各 2 分
     rows, _, _ = matcher.score_all("查询 复盘")
     top, _, conf, tie = matcher.confidence_of(rows)
-    best = max(rows, key=lambda r: (r["score"], -spec.ORDER.index(r["paradigm"])))
+    best = max(rows, key=lambda r: (r["score"], -spec.order().index(r["paradigm"])))
     assert tie or top > 0
     if tie:
         assert best["paradigm"] == "single_tool_call"

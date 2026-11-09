@@ -1,9 +1,10 @@
 """单多决策：①数角色 ②看并行 ③看契约 ④三件套 ⑤单路径 ⑥多路径 ⑦异常。
 
-并行判定遵循既有「并行闸」（dispatch_switch）的逻辑轴：
-  units（无依赖单元数）/ files（有效文件数）/ coupled（是否共享可变状态）/ baseline / depReason
-本模块只做**拓扑预检**，给出与闸同构的 A(parallel) / B(sequential) 预判与依据；
-真正派发时仍以 `dispatch_switch.py` 为准，二者不一致记 mismatch（防两套口径）。
+并行部分只是**拓扑预检（二道保险）**，不是第二套裁决：
+- 本模块 `units` = 并行组内最大分支数；闸 `units` = 无依赖独立单元数（缺省=files）——同名不同义，
+  最终派发一律以 `dispatch_switch.py --units/--files` 的 A/B/CLARIFY/VIOLATION 为准（R-117）。
+- 本模块不 import 闸、不做 mismatch 比对（复制闸判定会造第二份口径）；
+  预判与闸结论不同属预期内的"预检近似"，以闸留痕为准。
 """
 from __future__ import annotations
 

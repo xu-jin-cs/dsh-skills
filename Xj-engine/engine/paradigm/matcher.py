@@ -9,7 +9,7 @@
     reviewThreshold(0.3) ≤ c < auto      → review   人工复核（可覆盖）
     c < reviewThreshold                  → blocked  强制人工指定，禁止自动流转
 
-同分：按 ORDER 取更轻范式作为「建议项」；但同分会让 confidence=0 → 仍进入 blocked，
+同分：按 spec.order()（paradigms.json.matchOrder 派生）取更轻范式作为「建议项」；但同分会让 confidence=0 → 仍进入 blocked，
 这是规格 1.2（同分取轻）与 1.3（低置信阻断）的叠加结果，必须在日志里显式标注 tie。
 """
 from __future__ import annotations
@@ -156,8 +156,9 @@ def decide(text: str, *, override: str | None = None, mode: str | None = None,
 
     rows, warnings, mode_used = score_all(text, mode=mode, embed_model=embed_model, verbose=True)
     top, second, conf, tie = confidence_of(rows)
-    best = max(rows, key=lambda r: (r["score"], -spec.ORDER.index(r["paradigm"])
-                                    if r["paradigm"] in spec.ORDER else 0))
+    light_order = spec.order()
+    best = max(rows, key=lambda r: (r["score"], -light_order.index(r["paradigm"])
+                                    if r["paradigm"] in light_order else 0))
     suggested = best["paradigm"]
 
     if top <= 0:
@@ -170,7 +171,7 @@ def decide(text: str, *, override: str | None = None, mode: str | None = None,
     else:
         decision = "blocked"
     if tie:
-        warnings.append("tie：最高分与次高分相同，confidence=0；按 ORDER 仅作为建议项，仍需人工确认")
+        warnings.append("tie：最高分与次高分相同，confidence=0；按 matchOrder 仅作为建议项，仍需人工确认")
 
     out = {"inputHash": h, "mode": mode_used, "skip": skip, "override": False,
            "paradigm": suggested, "suggested": suggested,

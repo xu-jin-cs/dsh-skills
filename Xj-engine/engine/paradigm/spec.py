@@ -13,10 +13,19 @@ SCHEMA_FILE = Path.home() / ".agents" / "agent-paradigms" / "schema" / "agent_pa
 STATE_DIR = Path.home() / ".agents" / "agent-paradigms" / "state"
 LOG_DIR = Path.home() / ".agents" / "logs"
 
-# 轻 → 重（同分取更靠前者）
+# 轻 → 重（同分取更靠前者）。**派生视图**：真源是 paradigms.json.matchOrder（重→轻）；
+# 本常量仅作 paradigms.json 不可读时兜底，禁止单独改它（2026-11-10 F-14 收口）。
 ORDER = ("single_tool_call", "react", "plan_execute", "reflexion", "multi_agent")
 
 DATA: dict | None = None
+
+
+def order() -> tuple[str, ...]:
+    """判定顺序唯一入口：从 paradigms.json.matchOrder 反推（重→轻 ⇒ 轻→重）。"""
+    mo = load().get("matchOrder") or None
+    if isinstance(mo, list) and mo:
+        return tuple(reversed(mo))
+    return ORDER
 
 
 def load(force: bool = False) -> dict:
