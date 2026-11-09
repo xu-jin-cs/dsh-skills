@@ -372,3 +372,106 @@ def test_handoff_none_carrier_allows_empty_fields():
     cp["handoff"].update({"carrier": "none", "fields": []})
     cp["handoff"].pop("pathPattern", None)
     validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+
+
+# ── 第 14 段 promptContract（系统提示词宪法，2026-11-09） ─────────
+def _pc(**over) -> dict:
+    pc = {
+        "agent_role": "只读查询助手：一次查询、一次整理、如实回报",
+        "core_goal": {"statement": "按口径查询一次", "done_when": "结果带 source 与 queriedAt"},
+        "allow_actions": ["query_readonly", "format_output"],
+        "tool_spec": [
+            {"name": "query_readonly", "when": "口径明确时", "how": "只调一次只读接口",
+             "args": {"endpoint": "string"}},
+            {"name": "format_output", "when": "拿到结果后", "how": "按 outputSchema 组装",
+             "args": {"rows": "array"}},
+        ],
+        "error_handling": {"failure": "如实报错", "timeout": "判失败不重试",
+                           "exception": "截断多余字段并告警"},
+        "few_shot_examples": [
+            {"kind": "format", "input": "查一下昨天入库量", "output": "{\"rows\":[...]}"},
+            {"kind": "refusal", "input": "删掉这条记录", "output": "拒绝：只读，不写。"},
+            {"kind": "boundary", "input": "你先猜个数", "output": "拒绝编造：需先查询。"},
+        ],
+        "isolate_prompt_rule": True,
+        "stable_sections": ["agent_role", "core_goal", "allow_actions", "tool_spec"],
+        "dynamic_sections": ["task_input", "retrieved_context"],
+    }
+    pc.update(over)
+    return pc
+
+
+def test_prompt_contract_valid():
+    validate_observe("skill:test-paradigm", _ob(promptContract=_pc()))
+
+
+def test_prompt_contract_absent_is_ok():
+    validate_observe("skill:test-paradigm", _ob())
+
+
+def test_allow_actions_must_not_be_empty():
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(promptContract=_pc(allow_actions=[])))
+    assert "allow_actions" in str(e.value)
+
+
+def test_tool_must_be_allowed():
+    pc = _pc()
+    pc["tool_spec"][0]["name"] = "drop_table"      # 不在 allow_actions
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(promptContract=pc))
+    assert "不在 allow_actions" in str(e.value)
+
+
+def test_tool_spec_requires_when_how_args():
+    pc = _pc()
+    pc["tool_spec"][0].pop("how")
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(promptContract=pc))
+    assert "how" in str(e.value)
+
+
+def test_few_shot_count_between_2_and_5():
+    for bad in ([_pc()["few_shot_examples"][0]],
+                [_pc()["few_shot_examples"][i % 3] for i in range(6)]):
+        with pytest.raises(ContractError) as e:
+            validate_observe("skill:test-paradigm", _ob(promptContract=_pc(few_shot_examples=bad)))
+        assert "2~5" in str(e.value)
+
+
+def test_few_shot_must_cover_three_kinds():
+    shots = [s for s in _pc()["few_shot_examples"] if s["kind"] == "format"] * 2
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(promptContract=_pc(few_shot_examples=shots)))
+    assert "格式/拒答/边界" in str(e.value)
+
+
+def test_error_handling_requires_three_cases():
+    pc = _pc()
+    pc["error_handling"].pop("timeout")
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(promptContract=pc))
+    assert "timeout" in str(e.value)
+
+
+def test_stable_and_dynamic_must_be_disjoint():
+    pc = _pc()
+    pc["dynamic_sections"] = ["task_input", "agent_role"]     # 与 stable 重叠
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(promptContract=pc))
+    assert "既稳定又动态" in str(e.value)
+
+
+def test_prompt_separation_off_warns():
+    from engine.observe.contract_loader import prompt_contract_warnings
+    ws = prompt_contract_warnings("x", {"promptContract": _pc(isolate_prompt_rule=False)})
+    assert {w["code"] for w in ws} == {"PROMPT_SEPARATION_OFF"}
+    ws2 = prompt_contract_warnings("x", {"promptContract": _pc()})
+    assert ws2 == []
+
+
+def test_registry_carries_prompt_contract_key():
+    res = scan()
+    assert res["errors"] == []
+    for entry in res["registry"].values():
+        assert "promptContract" in entry
