@@ -23,7 +23,7 @@ def pause_plan(control: dict | None, nodes: list[dict] | None, task_status: str)
     ch = (control or {}).get("pause")
     if ch not in PAUSE_CHANNELS:
         return {"allowed": False, "channel": ch,
-                "reason": f"该资产未在 workflow.json 声明暂停通道"
+                "reason": f"该资产声明了不提供暂停（observe.control.pause={ch!r}），支持 {sorted(PAUSE_CHANNELS)}"
                           f"（observe.control.pause={ch!r}，支持 {sorted(PAUSE_CHANNELS)}）"}
     if task_status not in LIVE_STATUSES:
         return {"allowed": False, "channel": ch, "reason": f"任务状态 {task_status}，不可暂停"}

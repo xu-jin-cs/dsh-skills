@@ -804,6 +804,11 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                 (n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]):
             warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
                              "message": "声明了 control.rerun，但没有任何节点 supportRerun=true"})
+        if any((n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]) \
+                and not _ctl.get("rerun"):
+            warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
+                             "message": "节点声明了 supportRerun=true，但 observe.control.rerun 未声明"
+                                        "（控制台会置灰，且平台无法下发重跑）"})
         if set((ob.get("report") or {}).get("onEvents") or []) & EVENTS and not _node_channel(d):
             warnings.append({"assetKey": key, "code": "CONTRACT_MISMATCH",
                              "message": "声明了节点级事件但 SKILL.md 未调用 observe_step.py"
