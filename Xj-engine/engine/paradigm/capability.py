@@ -56,7 +56,7 @@ def derive(paradigm: str, task_role: str) -> dict:
                    "source": "paradigm"},
         "reflect": {"mode": base.get("reflect", "forbidden"),
                     "loop": {"maxIterations": REFLECT_LOOP.get(base.get("reflect", "forbidden"), 0)},
-                    "verify": {"maxReflow": 5},
+                    "verify": {"maxRework": 5},
                     "source": "paradigm"},
     }
     if profile["tool"]["mode"] == "required_isolated":

@@ -193,3 +193,11 @@ def test_escape_reflexion_unbounded():
 
 def test_escape_clean():
     assert detect("plan_execute", {"maxIterations": 0, "distinctAgentId": 1})["escaped"] is False
+
+
+# ── F-14：判定顺序单源（2026-11-10）──────────────────────────────
+def test_order_derives_from_match_order():
+    from engine.paradigm import spec
+    mo = spec.load()["matchOrder"]
+    assert spec.order() == tuple(reversed(mo))
+    assert set(spec.order()) == set(spec.ORDER)      # 兜底常量不得与真源分叉

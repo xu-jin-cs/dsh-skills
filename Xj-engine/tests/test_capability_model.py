@@ -209,3 +209,25 @@ def test_failclosed_reflect_limit():
     r = wiring.check_reflect_iteration(6, 5)
     assert not r["allow"] and r["code"] == "REFLECT_LIMIT_EXCEEDED"
     assert not wiring.check_reflect_iteration(1, 0)["allow"]
+
+
+# ── F-7：禁止组合标签单源（2026-11-10）────────────────────────────
+def test_forbidden_combos_labels_are_implemented():
+    from engine.paradigm import capability as C
+    labels = (C.spec.load().get("forbiddenCombos") or [])
+    assert labels and all(lb in C._combo_rules() for lb in labels)
+
+
+def test_forbidden_combo_drift_is_reported(monkeypatch):
+    from engine.paradigm import capability as C
+    orig = C.spec.load()
+
+    def fake_load(force=False):
+        d = dict(orig)
+        d["forbiddenCombos"] = list(orig["forbiddenCombos"]) + ["未实现的新组合 + x"]
+        return d
+
+    monkeypatch.setattr(C.spec, "load", fake_load)
+    row = C.derive("react", "one_shot")
+    errs = C.conflicts(row)
+    assert any("规则未实现" in e for e in errs)

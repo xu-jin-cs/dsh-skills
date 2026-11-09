@@ -227,8 +227,8 @@ def _gate_evidence(asset: dict) -> tuple[list, list]:
     rf = prof.get("reflect") or {}
     if rf.get("mode") not in (None, "forbidden"):
         mi = (rf.get("loop") or {}).get("maxIterations")
-        mr = (rf.get("verify") or {}).get("maxReflow")
-        for name, val in (("loop.maxIterations", mi), ("verify.maxReflow", mr)):
+        mr = (rf.get("verify") or {}).get("maxRework")
+        for name, val in (("loop.maxIterations", mi), ("verify.maxRework", mr)):
             if not isinstance(val, int) or val <= 0:
                 errors.append(f"证据充分：反思上界 {name} 必须为正整数（实得 {val!r}）")
             elif val > 5:
@@ -270,8 +270,8 @@ def _gate_consistency(asset: dict) -> tuple[list, list]:
         ("reflect.mode", (c.get("reflect") or {}).get("mode"), d["reflect"]["mode"]),
         ("reflect.loop.maxIterations", ((c.get("reflect") or {}).get("loop") or {}).get("maxIterations"),
          d["reflect"]["loop"]["maxIterations"]),
-        ("reflect.verify.maxReflow", ((c.get("reflect") or {}).get("verify") or {}).get("maxReflow"),
-         d["reflect"]["verify"]["maxReflow"]),
+        ("reflect.verify.maxRework", ((c.get("reflect") or {}).get("verify") or {}).get("maxRework"),
+         d["reflect"]["verify"]["maxRework"]),
     ]
     diffs = [f"{name}: 声明={got!r} 期望={exp!r}" for name, got, exp in pairs if got != exp]
     errors.extend(f"一致性：能力与矩阵/角色不符 → {x}" for x in diffs)
