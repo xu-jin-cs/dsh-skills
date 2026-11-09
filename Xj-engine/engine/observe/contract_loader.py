@@ -50,11 +50,20 @@ def paradigm_lexicon() -> dict:
             raise ContractError("(global)", "observe.paradigm",
                                 f"范式层未安装：找不到 {PARADIGM_FILE}（五范式枚举唯一真源）")
         d = json.loads(PARADIGM_FILE.read_text(encoding="utf-8"))
+        ctx = d.get("contextPolicyStandard") or {}
+        _ctx_mem = ctx.get("memory") or {}
+        _ctx_v = _ctx_mem.get("vector") or {}
         _PARADIGM_CACHE = {
             "paradigmIds": {p["id"] for p in d.get("paradigms") or []},
             "nodeModes": set((d.get("orchestrationStrategies") or {}).keys()),
             "taskRoles": set((d.get("taskRoles") or {}).keys()),
             "riskGuards": set((d.get("riskGuards") or {}).keys()),
+            # 上下文策略枚举（第 13 段）同样只在此读取，不在代码里另写一份
+            "compressionStrategies": set((ctx.get("compression") or {}).get("strategies") or {}),
+            "dropPolicies": set((ctx.get("compression") or {}).get("dropPolicies") or []),
+            "memoryTiers": set(_ctx_mem.get("tiers") or {}),
+            "recallStrategies": set((_ctx_mem.get("recall") or {}).get("allowed") or []),
+            "vectorMetrics": set(_ctx_v.get("metrics") or []),
         }
     return _PARADIGM_CACHE
 
@@ -192,6 +201,9 @@ def validate_observe(asset_key: str, ob: dict) -> None:
                 raise ContractError(asset_key, f"observe.control.{k}",
                                     f"非法值 {v!r}（支持 {sorted(allowed)}）")
     _validate_paradigm(asset_key, ob, nodes)
+    cp = ob.get("contextPolicy")
+    if cp is not None:
+        _validate_context_policy(asset_key, cp, paradigm_lexicon())
 
 
 def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
@@ -279,6 +291,124 @@ def _validate_paradigm(asset_key: str, ob: dict, nodes: list[dict]) -> None:
         raise ContractError(asset_key, "observe.paradigm.metrics", "必须是对象")
 
 
+def _validate_context_policy(asset_key: str, cp: dict, lex: dict) -> None:
+    """第 13 段 contextPolicy（2026-11-09）。**可选**；声明了即严格校验。
+
+    只校验结构/枚举/区间与跨字段一致性；不校验数值是否"合理"（那属标定，留人工）。
+    """
+    if not isinstance(cp, dict):
+        raise ContractError(asset_key, "observe.contextPolicy", "不是对象")
+    for blk in ("budget", "compression", "memory"):
+        if not isinstance(cp.get(blk), dict):
+            raise ContractError(asset_key, f"observe.contextPolicy.{blk}", "缺失或不是对象")
+
+    b = cp["budget"]
+    for k in ("outputReserveTokens", "systemPromptTokens"):
+        v = b.get(k)
+        if not isinstance(v, int) or v < 0:
+            raise ContractError(asset_key, f"observe.contextPolicy.budget.{k}",
+                                f"必须是非负整数，实际 {v!r}")
+    win = b.get("contextWindowTokens")
+    if win is not None and (not isinstance(win, int) or win < 1024):
+        raise ContractError(asset_key, "observe.contextPolicy.budget.contextWindowTokens",
+                            f"必须是 null 或 >=1024 的整数，实际 {win!r}")
+    for k in ("safetyMarginRatio", "degradeAtRatio"):
+        v = b.get(k)
+        if not isinstance(v, (int, float)) or not (0 < v <= 1):
+            raise ContractError(asset_key, f"observe.contextPolicy.budget.{k}",
+                                f"必须是 (0,1] 的数，实际 {v!r}")
+    if not isinstance(b.get("calibrated"), bool):
+        raise ContractError(asset_key, "observe.contextPolicy.budget.calibrated", "必须是布尔值")
+    if b.get("calibrated") is True and not str(b.get("calibrationEvidence") or "").strip():
+        raise ContractError(asset_key, "observe.contextPolicy.budget.calibrationEvidence",
+                            "calibrated=true 时必须写标定依据（禁止把默认值冒充已标定）")
+    if win is not None:
+        eff = int(win * (1 - b["safetyMarginRatio"])) - b["outputReserveTokens"] - b["systemPromptTokens"]
+        if eff <= 0:
+            raise ContractError(asset_key, "observe.contextPolicy.budget",
+                                f"有效预算 {eff} <= 0（窗口 {win} − 输出预留 − 系统占用 − 安全余量）")
+
+    c = cp["compression"]
+    strat = c.get("strategy")
+    if strat not in lex["compressionStrategies"]:
+        raise ContractError(asset_key, "observe.contextPolicy.compression.strategy",
+                            f"非法值 {strat!r}（支持 {sorted(lex['compressionStrategies'])}）")
+    fb = c.get("fallbackStrategy")
+    if fb is not None and fb not in lex["compressionStrategies"]:
+        raise ContractError(asset_key, "observe.contextPolicy.compression.fallbackStrategy",
+                            f"非法值 {fb!r}")
+    trig = c.get("triggerAtRatio")
+    if strat != "none":
+        if not isinstance(trig, (int, float)):
+            raise ContractError(asset_key, "observe.contextPolicy.compression.triggerAtRatio",
+                                f"strategy={strat} 时必填")
+        if trig > b["degradeAtRatio"]:
+            raise ContractError(asset_key, "observe.contextPolicy.compression.triggerAtRatio",
+                                f"{trig} 大于 degradeAtRatio {b['degradeAtRatio']}（永远触发不到）")
+    if strat == "summary" and not isinstance(c.get("summaryMaxTokens"), int):
+        raise ContractError(asset_key, "observe.contextPolicy.compression.summaryMaxTokens",
+                            "strategy=summary 时必填整数")
+    dp = c.get("dropPolicy")
+    if dp is not None and dp not in lex["dropPolicies"]:
+        raise ContractError(asset_key, "observe.contextPolicy.compression.dropPolicy",
+                            f"非法值 {dp!r}（支持 {sorted(lex['dropPolicies'])}）")
+
+    m = cp["memory"]
+    tiers = m.get("enabledTiers")
+    if not isinstance(tiers, list) or not tiers:
+        raise ContractError(asset_key, "observe.contextPolicy.memory.enabledTiers", "必须是非空数组")
+    if "working" not in tiers:
+        raise ContractError(asset_key, "observe.contextPolicy.memory.enabledTiers",
+                            "working 层恒开，不能省略")
+    bad = set(tiers) - lex["memoryTiers"]
+    if bad:
+        raise ContractError(asset_key, "observe.contextPolicy.memory.enabledTiers",
+                            f"非法层 {sorted(bad)}（支持 {sorted(lex['memoryTiers'])}）")
+    r = m.get("recall") or {}
+    if r.get("strategy") not in lex["recallStrategies"]:
+        raise ContractError(asset_key, "observe.contextPolicy.memory.recall.strategy",
+                            f"非法值 {r.get('strategy')!r}")
+    vec = m.get("vector")
+    if vec is not None:
+        if not isinstance(vec, dict) or not isinstance(vec.get("enabled"), bool):
+            raise ContractError(asset_key, "observe.contextPolicy.memory.vector",
+                                "必须是对象且 enabled 为布尔值")
+        if vec.get("metric") not in lex["vectorMetrics"]:
+            raise ContractError(asset_key, "observe.contextPolicy.memory.vector.metric",
+                                f"非法值 {vec.get('metric')!r}")
+        if vec["enabled"]:
+            # 启用即必须有落地参数；只声明不落地=假功能
+            for k in ("collection", "embeddingModel", "dim"):
+                if vec.get(k) in (None, ""):
+                    raise ContractError(asset_key, f"observe.contextPolicy.memory.vector.{k}",
+                                        "enabled=true 时必填")
+
+
+def context_policy_warnings(asset_key: str, ob: dict) -> list[dict]:
+    """第 13 段的运行期体检告警（不阻断入库，但必须在 sync 响应里当场看见）。"""
+    cp = ob.get("contextPolicy")
+    if not isinstance(cp, dict):
+        return []
+    out = []
+    b = cp.get("budget") or {}
+    if b.get("calibrated") is not True or b.get("contextWindowTokens") is None:
+        out.append({"assetKey": asset_key, "code": "BUDGET_UNCALIBRATED",
+                    "message": f"上下文窗口未标定（window={b.get('contextWindowTokens')!r}，"
+                               f"calibrated={b.get('calibrated')!r}）：默认值不是实测值，"
+                               f"接入前需按模型实测替换并写 calibrationEvidence"})
+    vec = (cp.get("memory") or {}).get("vector") or {}
+    if vec.get("enabled") is True:
+        out.append({"assetKey": asset_key, "code": "VECTOR_RESERVED",
+                    "message": "memory.vector.enabled=true，但向量检索属 RAG 工程且尚未对接："
+                               "该能力当前不生效（声明先行，禁止当成可检索）"})
+    rec = (cp.get("memory") or {}).get("recall") or {}
+    if rec.get("strategy") in ("embedding", "hybrid") and vec.get("enabled") is not True:
+        out.append({"assetKey": asset_key, "code": "RECALL_WITHOUT_VECTOR",
+                    "message": f"recall.strategy={rec.get('strategy')} 依赖向量层，"
+                               f"但 memory.vector.enabled=false：召回将退化或为空"})
+    return out
+
+
 # ── 扫描 ────────────────────────────────────────────────────────
 def scan(root: Path = SKILL_ROOT) -> dict:
     registry, warnings, errors = {}, [], []
@@ -318,6 +448,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
             "report": ob.get("report"),
             "control": ob.get("control") or {},
             "paradigm": ob.get("paradigm") or {},
+            "contextPolicy": ob.get("contextPolicy") or {},
         }
         if declared and declared != actual:
             warnings.append({"assetKey": key, "code": "STALE_HASH",
@@ -359,6 +490,7 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                     warnings.append({"assetKey": key, "code": "STATE_FIELD_UNREACHABLE",
                                      "message": f"{n.get('nodeId')} 读字段 {fld} 但无上游 stateOut 提供"})
             _avail |= set(n.get("stateOut") or [])
+        warnings.extend(context_policy_warnings(key, ob))
 
         # agent 资产（同目录 agents/*.md）
         ad = d / "agents"
@@ -391,10 +523,12 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                     "frozen": False, "frozenReason": "", "nodes": aob["nodes"],
                     "report": aob.get("report"),
                     "paradigm": aob.get("paradigm") or {},
+                    "contextPolicy": aob.get("contextPolicy") or {},
                 }
                 if a_declared and a_declared != a_actual:
                     warnings.append({"assetKey": akey, "code": "STALE_HASH",
                                      "message": f"sourceHash 漂移：声明 {a_declared}，实际 {a_actual}"})
+                warnings.extend(context_policy_warnings(akey, aob))
     return {"registry": registry, "warnings": warnings, "errors": [str(e) for e in errors]}
 
 

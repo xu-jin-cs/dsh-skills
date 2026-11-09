@@ -161,3 +161,124 @@ def test_scan_does_not_mutate_assets():
     assert a["registry"].keys() == b["registry"].keys()
     for k in a["registry"]:
         assert a["registry"][k]["nodes"] == b["registry"][k]["nodes"]
+
+
+# ── 第 13 段 contextPolicy（2026-11-09） ─────────────────────────
+def _ctx(**over) -> dict:
+    cp = {
+        "budget": {"contextWindowTokens": 128000, "outputReserveTokens": 16000,
+                   "systemPromptTokens": 8000, "safetyMarginRatio": 0.1,
+                   "degradeAtRatio": 0.85, "calibrated": False},
+        "compression": {"strategy": "summary", "fallbackStrategy": "fifo",
+                        "triggerAtRatio": 0.8, "keepRecentTurns": 6,
+                        "keepPinned": True, "summaryMaxTokens": 2000,
+                        "importanceWeights": {"task": 0.5, "artifact": 0.3},
+                        "dropPolicy": "drop_lowest_importance"},
+        "memory": {"enabledTiers": ["working", "episodic"],
+                   "recall": {"strategy": "keyword", "topK": 5, "minScore": 0.5,
+                              "injectAt": "stage_start"},
+                   "vector": {"status": "reserved", "enabled": False,
+                              "reservedFor": "rag_engineering", "collection": None,
+                              "embeddingModel": None, "dim": None, "metric": "cosine",
+                              "chunkSize": None, "chunkOverlap": None, "indexName": None,
+                              "namespaceFields": ["assetKey", "nodeId", "tier"]}},
+    }
+    cp.update(over)
+    return cp
+
+
+def test_lexicon_has_context_enums():
+    lex = paradigm_lexicon()
+    assert lex["compressionStrategies"] == {"none", "fifo", "summary", "importance"}
+    assert lex["memoryTiers"] == {"working", "episodic", "semantic"}
+    assert lex["recallStrategies"] == {"keyword", "embedding", "hybrid"}
+    assert lex["vectorMetrics"] == {"cosine", "l2", "ip"}
+
+
+def test_context_policy_valid():
+    ob = _ob(contextPolicy=_ctx())
+    validate_observe("skill:test-paradigm", ob)
+
+
+def test_context_policy_absent_is_ok():
+    validate_observe("skill:test-paradigm", _ob())          # 不声明不报错
+
+
+def test_calibrated_requires_evidence():
+    cp = _ctx()
+    cp["budget"]["calibrated"] = True
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "calibrationEvidence" in str(e.value)
+
+
+def test_effective_budget_must_be_positive():
+    cp = _ctx()
+    cp["budget"]["outputReserveTokens"] = 120000
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "有效预算" in str(e.value)
+
+
+def test_summary_requires_max_tokens():
+    cp = _ctx()
+    cp["compression"]["summaryMaxTokens"] = None
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "summaryMaxTokens" in str(e.value)
+
+
+def test_trigger_must_not_exceed_degrade():
+    cp = _ctx()
+    cp["compression"]["triggerAtRatio"] = 0.95       # degradeAtRatio=0.85
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "triggerAtRatio" in str(e.value)
+
+
+def test_none_strategy_allows_null_trigger():
+    cp = _ctx()
+    cp["compression"].update({"strategy": "none", "triggerAtRatio": None, "summaryMaxTokens": None})
+    validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+
+
+def test_working_tier_mandatory():
+    cp = _ctx()
+    cp["memory"]["enabledTiers"] = ["episodic"]
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "working" in str(e.value)
+
+
+def test_vector_enabled_requires_landing_fields():
+    cp = _ctx()
+    cp["memory"]["vector"]["enabled"] = True       # collection/embeddingModel/dim 仍为 null
+    with pytest.raises(ContractError) as e:
+        validate_observe("skill:test-paradigm", _ob(contextPolicy=cp))
+    assert "vector" in str(e.value)
+
+
+def test_context_policy_warnings_emitted():
+    from engine.observe.contract_loader import context_policy_warnings
+    cp = _ctx()
+    ws = context_policy_warnings("skill:test-paradigm", {"contextPolicy": cp})
+    codes = {w["code"] for w in ws}
+    assert "BUDGET_UNCALIBRATED" in codes          # calibrated=false
+
+    cp2 = _ctx()
+    cp2["memory"]["vector"]["enabled"] = True
+    cp2["memory"]["vector"].update({"collection": "kb", "embeddingModel": "bge-m3", "dim": 1024})
+    codes2 = {w["code"] for w in context_policy_warnings("x", {"contextPolicy": cp2})}
+    assert "VECTOR_RESERVED" in codes2
+
+    cp3 = _ctx()
+    cp3["memory"]["recall"]["strategy"] = "hybrid"  # 但 vector.enabled=false
+    codes3 = {w["code"] for w in context_policy_warnings("x", {"contextPolicy": cp3})}
+    assert "RECALL_WITHOUT_VECTOR" in codes3
+
+
+def test_registry_carries_context_policy_key():
+    res = scan()
+    assert res["errors"] == []
+    for entry in res["registry"].values():
+        assert "contextPolicy" in entry            # 缺省为空 dict，字段恒在
