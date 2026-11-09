@@ -127,22 +127,42 @@ def derive(paradigm: str, task_role: str) -> dict:
             "overrides": overrides}
 
 
+def _combo_rules() -> dict:
+    """禁止组合：标签来自 paradigms.json.forbiddenCombos（唯一真源），谓词在此绑定。
+
+    JSON 存不了谓词；任一侧新增而未绑定 → `conflicts()` 显式报"规则未实现"，
+    不静默漂移（2026-11-10 F-7 收口）。
+    """
+    return {
+        "单轮工具调用 + 反思回路":
+            lambda p, pid, role: pid == "single_tool_call" and p["reflect"]["mode"] != "forbidden",
+        "记忆 none + long_session":
+            lambda p, pid, role: not p["memory"]["enabledTiers"] and role == "long_session",
+        "反思 required_capped + loop 上界缺失":
+            lambda p, pid, role: (p["reflect"]["mode"] == "required_capped"
+                                  and (p["reflect"]["loop"]["maxIterations"] or 0) <= 0),
+        "多 Agent + 记忆 none":
+            lambda p, pid, role: pid == "multi_agent" and not p["memory"]["enabledTiers"],
+        "工具 none + 任一需外部数据的范式":
+            lambda p, pid, role: p["tool"]["mode"] == "none" and pid in NEEDS_TOOL,
+    }
+
+
 def conflicts(profile_row: dict) -> list[str]:
-    """§1.4 禁止组合；任一命中即 FAIL。"""
+    """§1.4 禁止组合；按 paradigms.json 声明顺序逐条判定，任一命中即 FAIL。"""
     p = profile_row["capabilityProfile"]
     pid = profile_row["derivedFrom"]["paradigm"]
     role = profile_row["derivedFrom"]["taskRole"]
+    rules = _combo_rules()
+    labels = spec.load().get("forbiddenCombos") or list(rules)
     out: list[str] = []
-    if pid == "single_tool_call" and p["reflect"]["mode"] != "forbidden":
-        out.append("禁止组合：单轮工具调用 + 反思回路")
-    if not p["memory"]["enabledTiers"] and role == "long_session":
-        out.append("禁止组合：记忆 none + long_session")
-    if p["reflect"]["mode"] == "required_capped" and (p["reflect"]["loop"]["maxIterations"] or 0) <= 0:
-        out.append("禁止组合：反思 required_capped + loop 上界缺失")
-    if pid == "multi_agent" and not p["memory"]["enabledTiers"]:
-        out.append("禁止组合：多 Agent + 记忆 none（无共享黑板无法协作）")
-    if p["tool"]["mode"] == "none" and pid in NEEDS_TOOL:
-        out.append(f"禁止组合：工具 none + {pid}（该范式需要外部数据）")
+    for label in labels:
+        fn = rules.get(label)
+        if fn is None:
+            out.append(f"禁止组合规则未实现（声明与判定漂移）：{label}")
+            continue
+        if fn(p, pid, role):
+            out.append(f"禁止组合：{label}")
     return out
 
 
