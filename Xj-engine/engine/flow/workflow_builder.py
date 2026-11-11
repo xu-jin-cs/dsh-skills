@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import re
 from typing import Any
 
 CONTRACT_VERSION = "sci/1"
@@ -129,19 +130,50 @@ def _build_source(spec: dict, stages: list[dict]) -> dict:
     return source
 
 
+def _existing_status(art_root: str) -> dict[tuple[str, str], str]:
+    """读既有台账状态：重建台账时保留已推进的状态，不把 active 重置为 pending。"""
+    path = os.path.join(art_root, "INDEX.md")
+    out: dict[tuple[str, str], str] = {}
+    if not os.path.isfile(path):
+        return out
+    try:
+        for line in open(path, encoding="utf-8"):
+            m = re.match(r"^\|\s*([^|]+?)\s*\|\s*v\d+\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|", line)
+            if m:
+                stage, status, rel = (x.strip() for x in m.groups())
+                out[(stage, rel.split("/")[-1])] = status
+    except OSError:
+        return {}
+    return out
+
+
 def _skeleton(stages: list[dict], order: list[str], dir_of: dict[str, str],
               out_dir: str, workflow_id: str) -> None:
     art_root = os.path.join(out_dir, "project_artifacts")
     by = {s["stage_id"]: s for s in stages}
+    prev = _existing_status(art_root)
     rows = []
     for sid in order:
         for a in by[sid].get("output_artifacts", []):
-            rows.append(f"| {sid} | v1 | pending | {dir_of[sid]}/{a['name']}_v1.{a.get('suffix','md')} |")
+            fname = f"{a['name']}_v1.{a.get('suffix', 'md')}"
+            rel = f"{dir_of[sid]}/{fname}"
+            # 台账状态只由真实产物决定：存在且非空=active；否则保留既有非 pending 状态或 pending
+            fpath = os.path.join(art_root, rel)
+            exists = os.path.isfile(fpath) and os.path.getsize(fpath) > 0
+            status = prev.get((sid, fname), "")
+            if exists:
+                status = status if status and status != "pending" else "active"
+            elif not status:
+                status = "pending"
+            rows.append(f"| {sid} | v1 | {status} | {rel} |")
     index_text = (f"# 项目台账（workflow: {workflow_id}，builder v{BUILDER_VERSION} 生成）\n\n"
                   "| 环节 | 版本 | 状态 | 产物路径 |\n| --- | --- | --- | --- |\n"
                   + "\n".join(rows) + "\n")
     _atomic_write(os.path.join(art_root, "INDEX.md"), index_text)
     for sid in order:
+        man = os.path.join(art_root, dir_of[sid], "manifest.md")
+        if os.path.isfile(man):
+            continue  # 幂等：既有 manifest 不覆盖
         deps = by[sid].get("depends_on") or []
         dep_rows = []
         for d in deps:
@@ -154,7 +186,7 @@ def _skeleton(stages: list[dict], order: list[str], dir_of: dict[str, str],
         manifest = (f"# {sid} 环节 manifest\n\n## 上游依赖\n"
                     "| 上游环节 | 版本 | 交付物相对路径 |\n| --- | --- | --- |\n"
                     f"{deps_text}\n\n## 产物清单\n{plist}\n")
-        _atomic_write(os.path.join(art_root, dir_of[sid], "manifest.md"), manifest)
+        _atomic_write(man, manifest)
 
 
 def build_workflow(spec: dict[str, Any], out_dir: str,
