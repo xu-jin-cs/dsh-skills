@@ -358,7 +358,8 @@ def make_stage_node(
         if agent_prompt:
             allow = ""
             if tools:
-                names = [t.get("name") for t in tools if isinstance(t, dict) and t.get("name")]
+                names = [t.get("name") if isinstance(t, dict) else str(t) for t in tools]
+                names = [n for n in names if n]
                 if names:
                     allow = f"\n\n[工具白名单] 仅允许：{', '.join(names)}；越权调用视为失败。"
             prompt = agent_prompt + allow + "\n\n---\n\n" + prompt
