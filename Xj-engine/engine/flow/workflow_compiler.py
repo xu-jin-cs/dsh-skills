@@ -533,7 +533,9 @@ def make_fanout_node(layer: str, members: list, compiled: dict,
 
     def fanout(state):
         verdict = graph_ref.judge_parallel_fanout(members)
-        state.error_log.append(f"[fanout:{layer}] 并行判定 {verdict['verdict']} via {verdict['via']}")
+        # 并行判定是信息留痕，不是错误：写入 run 台账，避免被当作执行失败
+        _run_event("fanout_decision", compiled["workflow_id"], layer=layer,
+                   verdict=verdict["verdict"], via=verdict["via"], members=members)
         if verdict["verdict"] == "parallel":
             with ThreadPoolExecutor(max_workers=len(members)) as pool:
                 futs = []
