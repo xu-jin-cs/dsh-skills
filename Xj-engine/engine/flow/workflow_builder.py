@@ -16,9 +16,19 @@ import os
 from typing import Any
 
 CONTRACT_VERSION = "sci/1"
-BUILDER_VERSION = "builder-1.0"
+BUILDER_VERSION = "builder-1.1"
 DEFAULT_PLUGIN_BIN = os.path.expanduser(
     "~/.zcode/workspace/default/plugins/stage-context-isolation/bin")
+
+# 源语义字段：编排源里有、执行投影不需要，但读取方（宿主内核）需要。
+# 统一契约后写入 source.stages[]，编译器不消费，读取方按 stage_id 取用。
+SOURCE_STAGE_FIELDS = (
+    "deliverables", "branch_conditions", "harness_sync", "next_agents",
+    "parallel_group", "invoked_skills", "identity", "display_name",
+    "permissions", "self_checks",
+)
+SOURCE_TOP_FIELDS = ("state_model", "flow_b", "engine_name", "engine_api",
+                     "input_schema", "rules")
 
 
 def _atomic_write(path: str, text: str) -> None:
@@ -56,21 +66,28 @@ def _normalize(stages: list[dict]) -> list[dict]:
         if not sid:
             raise ValueError("stage 缺 stage_id")
         arts = s.get("output_artifacts") or []
-        out.append({
+        runtime = s.get("agent_runtime", "zcode")
+        stage = {
             "stage_id": sid,
             "agent": s.get("agent", sid),
-            "agent_runtime": s.get("agent_runtime", "zcode"),
+            "agent_runtime": runtime,
             "depends_on": list(s.get("depends_on") or []),
             "type": s.get("type", "zcode"),
             "output_artifacts": [
                 {"name": a["name"], "suffix": a.get("suffix", "md")} for a in arts
             ],
-            "gate": {
+            "gate": {},
+        }
+        if s.get("parallel_group"):
+            stage["parallel_group"] = s["parallel_group"]
+        # 隔离钩子只注入 ZCode 运行时节点；外部/人工节点不挂 zplugin 钩子
+        if runtime == "zcode":
+            stage["gate"] = {
                 "pre": ["zplugin:cli_assemble_stage"],
                 "post": ["index_sync", "zplugin:cli_snapshot_and_clear"],
                 "rollback": ["zplugin:cli_restore_snapshot"],
-            },
-            "cli_context_config": {
+            }
+            stage["cli_context_config"] = {
                 "isolate_mode": "stage_spawn_subagent",
                 "persist_snapshot": True,
                 "keep_global": ["INDEX.md"],
@@ -78,9 +95,38 @@ def _normalize(stages: list[dict]) -> list[dict]:
                 "max_artifact_char": 12000,
                 "enable_parallel_isolate": True,
                 "snapshot_dir": "{stage_dir}/snapshots",
-            },
-        })
+            }
+        out.append(stage)
     return out
+
+
+def _build_source(spec: dict, stages: list[dict]) -> dict:
+    """把编排源语义收进 source 段（源数据，编译器只读不覆盖）。
+
+    源语义的权威来源是编排源（flow.yml/spec）；缺失只标注 missing，不伪造。
+    """
+    src_stages = []
+    missing = []
+    for s in stages:
+        sid = s["stage_id"]
+        item = {"stage_id": sid}
+        for f in SOURCE_STAGE_FIELDS:
+            if s.get(f) not in (None, "", [], {}):
+                item[f] = s[f]
+        src_stages.append(item)
+        if not item.get("deliverables"):
+            missing.append(f"{sid}.deliverables")
+        if not item.get("branch_conditions"):
+            missing.append(f"{sid}.branch_conditions")
+    source = {"stages": src_stages}
+    for f in SOURCE_TOP_FIELDS:
+        if spec.get(f) not in (None, "", [], {}):
+            source[f] = spec[f]
+    for f in ("state_model", "flow_b"):
+        if f not in source:
+            missing.append(f)
+    source["source_status"] = {"complete": not missing, "missing": missing[:50]}
+    return source
 
 
 def _skeleton(stages: list[dict], order: list[str], dir_of: dict[str, str],
@@ -116,9 +162,11 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
     workflow_id = spec.get("workflow_id")
     if not workflow_id:
         raise ValueError("spec 缺 workflow_id")
-    stages = _normalize(spec.get("stages") or [])
+    raw_stages = spec.get("stages") or []
+    stages = _normalize(raw_stages)
     if not stages:
         raise ValueError("spec 缺 stages")
+    source = _build_source(spec, raw_stages)
     order = _topo(stages)
     dir_of = {sid: f"{i + 1:02d}_{sid}" for i, sid in enumerate(order)}
     final = _final_stages(stages, order)
@@ -151,10 +199,35 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
         "stage_dirs": dir_of,
         "plugin_bin": plugin_bin,
         "enforcement": enforcement,
+        "source": source,
         "stages": stages,
     }
     os.makedirs(out_dir, exist_ok=True)
-    _atomic_write(os.path.join(out_dir, "workflow.json"),
+    wf_path = os.path.join(out_dir, "workflow.json")
+    # 观测声明是源数据，不是投影：重编译必须原样保留，丢失即阻断。
+    previous: dict = {}
+    if os.path.isfile(wf_path):
+        try:
+            previous = json.load(open(wf_path, encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            previous = {}
+    prev_observe = previous.get("observe") if isinstance(previous, dict) else None
+    if isinstance(spec.get("observe"), dict):
+        workflow["observe"] = spec["observe"]
+    elif isinstance(prev_observe, dict):
+        workflow["observe"] = prev_observe
+    if isinstance(prev_observe, dict):
+        new_obs = workflow.get("observe")
+        if not isinstance(new_obs, dict):
+            raise ValueError("重编译会丢失已有 observe 声明，已阻断（禁止原地覆盖）")
+        if len(new_obs.get("nodes") or []) < len(prev_observe.get("nodes") or []):
+            raise ValueError("重编译会缩减已有 observe 节点数，已阻断（禁止静默丢观测）")
+        if new_obs.get("assetKey") != prev_observe.get("assetKey"):
+            raise ValueError("重编译改变了 observe.assetKey，已阻断（降级为新增资产由人工确认）")
+    if spec.get("require_source") and not source["source_status"]["complete"]:
+        raise ValueError(
+            "源语义不完整（require_source=true）：" + "、".join(source["source_status"]["missing"][:8]))
+    _atomic_write(wf_path,
                   json.dumps(workflow, ensure_ascii=False, indent=1) + "\n")
     _skeleton(stages, order, dir_of, out_dir, workflow_id)
     _atomic_write(os.path.join(out_dir, "registry.json"), json.dumps({
@@ -170,5 +243,7 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
         "topo_order": order,
         "final_stages": final,
         "stages": len(stages),
+        "source_status": source["source_status"],
+        "observe_preserved": isinstance(workflow.get("observe"), dict),
     }, ensure_ascii=False, indent=1) + "\n")
     return workflow

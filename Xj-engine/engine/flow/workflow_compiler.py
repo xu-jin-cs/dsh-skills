@@ -157,13 +157,18 @@ def compile_workflow_json(path: str) -> dict:
         )
         for s in stages
     }
-    # 并行组：同坐标层级内带分支号的成员
+    # 并行组：优先读契约显式声明的 parallel_group；旧产物无该字段时回落坐标文本启发
     coords = wf.get("coords", {})
     parallel_groups = {}
-    for sid, coord in coords.items():
-        if "分支" in coord:
-            layer = coord.split("分支")[0]
-            parallel_groups.setdefault(layer, []).append(sid)
+    for s in stages:
+        pg = s.get("parallel_group")
+        if pg:
+            parallel_groups.setdefault(str(pg), []).append(s["stage_id"])
+    if not parallel_groups:
+        for sid, coord in coords.items():
+            if "分支" in coord:
+                layer = coord.split("分支")[0]
+                parallel_groups.setdefault(layer, []).append(sid)
 
     return {
         "workflow_id": wf["workflow_id"],
