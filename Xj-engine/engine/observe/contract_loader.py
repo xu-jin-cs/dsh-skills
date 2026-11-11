@@ -26,6 +26,7 @@ except ImportError:  # pragma: no cover
     raise SystemExit(2)
 
 SKILL_ROOT = Path.home() / ".agents" / "skills"
+AGENT_ROOT = Path.home() / ".agents" / "agents"
 CONTRACT_VERSION = "1.0"
 NODE_STATUSES = {"pending", "running", "waiting_input", "completed", "failed", "skipped",
                  "stale", "voided", "paused", "aborted", "incomplete", "rolled_back"}
@@ -750,139 +751,145 @@ def context_policy_warnings(asset_key: str, ob: dict) -> list[dict]:
 # ── 扫描 ────────────────────────────────────────────────────────
 def scan(root: Path = SKILL_ROOT) -> dict:
     registry, warnings, errors = {}, [], []
-    for d in sorted(root.iterdir()):
-        if not d.is_dir() or any(x in str(d) for x in ("archive", "__pycache__", ".bak", ".tmp")):
+    bases = [(root, "skill")]
+    if root == SKILL_ROOT:
+        bases.append((AGENT_ROOT, "agent"))
+    for base, prefix in bases:
+        if not base.is_dir():
             continue
-        carriers = _carriers(d)
-        present = [(c, p, ob) for c, p, ob in carriers if ob]
-        if not present:
-            continue
-        if len(present) > 1:
-            errors.append(ContractError(f"skill:{d.name}", "observe",
-                                        f"双载体声明：{[c for c, _, _ in present]}"))
-            continue
-        carrier, path, ob = present[0]
-        key = ob.get("assetKey") or f"skill:{d.name}"
-        try:
-            validate_observe(key, ob)
-        except ContractError as e:
-            errors.append(e)
-            continue
-        actual = compute_source_hash(path, carrier)
-        declared = ob.get("sourceHash", "")
-        registry[key] = {
-            "assetKey": key,
-            "assetType": key.split(":", 1)[0],
-            "carrier": carrier,
-            "runtime": ob["runtime"],
-            "graphVersion": declared,
-            "graphVersionActual": actual,
-            "hashDrift": bool(declared) and declared != actual,
-            "nodeTotal": len(ob["nodes"]),
-            "pausableTotal": sum(1 for n in ob["nodes"] if n["capabilities"]["supportPause"]),
-            "frozen": bool(_frozen_reason(key)),
-            "frozenReason": _frozen_reason(key),
-            "nodes": ob["nodes"],
-            "report": ob.get("report"),
-            "control": ob.get("control") or {},
-            "paradigm": ob.get("paradigm") or {},
-            "contextPolicy": ob.get("contextPolicy") or {},
-            "promptContract": ob.get("promptContract") or {},
-            "modelPolicy": ob.get("modelPolicy") or {},
-        }
-        if declared and declared != actual:
-            warnings.append({"assetKey": key, "code": "STALE_HASH",
-                             "message": f"sourceHash 漂移：声明 {declared}，实际 {actual}"
-                                        f"（运行 observe_hash.py --write 回写）"})
-        if _frozen_reason(key):
-            warnings.append({"assetKey": key, "code": "FROZEN", "message": _frozen_reason(key)})
-        # 声明-事实一致性：声明了节点级事件，却没有任何节点级上报通道（SKILL.md 未调
-        # observe_step.py）。这类资产在平台上会"任务有行、节点全 pending"，属声明层说谎。
-        # 控制声明与节点能力一致性（机制层唯一判定，此处只做声明体检）
-        _ctl = ob.get("control") or {}
-        if any((n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]) \
-                and not _ctl.get("pause"):
-            warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
-                             "message": "节点声明了 supportPause=true，但 observe.control.pause 未声明"
-                                        "（控制台会置灰，且平台无法下发暂停）"})
-        if _ctl.get("pause") and not any(
-                (n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]):
-            warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
-                             "message": "声明了 control.pause，但没有任何节点 supportPause=true"})
-        if _ctl.get("rerun") and not any(
-                (n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]):
-            warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
-                             "message": "声明了 control.rerun，但没有任何节点 supportRerun=true"})
-        if any((n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]) \
-                and not _ctl.get("rerun"):
-            warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
-                             "message": "节点声明了 supportRerun=true，但 observe.control.rerun 未声明"
-                                        "（控制台会置灰，且平台无法下发重跑）"})
-        if set((ob.get("report") or {}).get("onEvents") or []) & EVENTS and not _node_channel(d):
-            warnings.append({"assetKey": key, "code": "CONTRACT_MISMATCH",
-                             "message": "声明了节点级事件但 SKILL.md 未调用 observe_step.py"
-                                        "（节点级上报无通道，面板会显示节点全 pending）"})
-        # 范式/编排一致性体检（只警告，不改变既有资产能否入库）
-        _par = ob.get("paradigm") or {}
-        _modes = [n.get("mode") for n in ob["nodes"] if n.get("mode")]
-        if _par.get("id") in ("plan_execute", "multi_agent") and not _modes:
-            warnings.append({"assetKey": key, "code": "PARADIGM_INCOMPLETE",
-                             "message": f"声明了 paradigm={_par['id']} 但没有任何 nodes[].mode"
-                                        f"（控制台只能按默认串行渲染）"})
-        _has_state = any(n.get("stateIn") or n.get("stateOut") for n in ob["nodes"])
-        if _modes and not _has_state:
-            warnings.append({"assetKey": key, "code": "ORCHESTRATION_NO_STATE",
-                             "message": "声明了编排属性但无 stateIn/stateOut（显式状态契约缺失）"})
-        _avail: set[str] = set()
-        for n in sorted(ob["nodes"], key=lambda x: x.get("seq") or 0):
-            for fld in (n.get("stateIn") or []):
-                if fld not in _avail:
-                    warnings.append({"assetKey": key, "code": "STATE_FIELD_UNREACHABLE",
-                                     "message": f"{n.get('nodeId')} 读字段 {fld} 但无上游 stateOut 提供"})
-            _avail |= set(n.get("stateOut") or [])
-        warnings.extend(context_policy_warnings(key, ob))
-        warnings.extend(prompt_contract_warnings(key, ob))
-
-        # agent 资产（同目录 agents/*.md）
-        ad = d / "agents"
-        if ad.is_dir():
-            for ap in sorted(ad.glob("*.md")):
-                fm = _read_frontmatter(ap.read_text(encoding="utf-8"))
-                if not fm:
+        for d in sorted(base.iterdir()):
+                if not d.is_dir() or any(x in str(d) for x in ("archive", "__pycache__", ".bak", ".tmp")):
                     continue
-                try:
-                    aob = (yaml.safe_load(fm) or {}).get("observe")
-                except Exception:  # noqa: BLE001
-                    aob = None
-                if not aob:
+                carriers = _carriers(d)
+                present = [(c, p, ob) for c, p, ob in carriers if ob]
+                if not present:
                     continue
-                akey = aob.get("assetKey") or f"agent:{ap.stem}"
+                if len(present) > 1:
+                    errors.append(ContractError(f"{prefix}:{d.name}", "observe",
+                                                f"双载体声明：{[c for c, _, _ in present]}"))
+                    continue
+                carrier, path, ob = present[0]
+                key = ob.get("assetKey") or f"{prefix}:{d.name}"
                 try:
-                    validate_observe(akey, aob)
+                    validate_observe(key, ob)
                 except ContractError as e:
                     errors.append(e)
                     continue
-                a_actual = compute_source_hash(ap, "skill_md")
-                a_declared = aob.get("sourceHash", "")
-                registry[akey] = {
-                    "assetKey": akey, "assetType": "agent", "carrier": "skill_md",
-                    "runtime": aob["runtime"], "graphVersion": a_declared,
-                    "graphVersionActual": a_actual,
-                    "hashDrift": bool(a_declared) and a_declared != a_actual,
-                    "nodeTotal": len(aob["nodes"]),
-                    "pausableTotal": sum(1 for n in aob["nodes"] if n["capabilities"]["supportPause"]),
-                    "frozen": False, "frozenReason": "", "nodes": aob["nodes"],
-                    "report": aob.get("report"),
-                    "paradigm": aob.get("paradigm") or {},
-                    "contextPolicy": aob.get("contextPolicy") or {},
-                    "promptContract": aob.get("promptContract") or {},
-                    "modelPolicy": aob.get("modelPolicy") or {},
+                actual = compute_source_hash(path, carrier)
+                declared = ob.get("sourceHash", "")
+                registry[key] = {
+                    "assetKey": key,
+                    "assetType": key.split(":", 1)[0],
+                    "carrier": carrier,
+                    "runtime": ob["runtime"],
+                    "graphVersion": declared,
+                    "graphVersionActual": actual,
+                    "hashDrift": bool(declared) and declared != actual,
+                    "nodeTotal": len(ob["nodes"]),
+                    "pausableTotal": sum(1 for n in ob["nodes"] if n["capabilities"]["supportPause"]),
+                    "frozen": bool(_frozen_reason(key)),
+                    "frozenReason": _frozen_reason(key),
+                    "nodes": ob["nodes"],
+                    "report": ob.get("report"),
+                    "control": ob.get("control") or {},
+                    "paradigm": ob.get("paradigm") or {},
+                    "contextPolicy": ob.get("contextPolicy") or {},
+                    "promptContract": ob.get("promptContract") or {},
+                    "modelPolicy": ob.get("modelPolicy") or {},
                 }
-                if a_declared and a_declared != a_actual:
-                    warnings.append({"assetKey": akey, "code": "STALE_HASH",
-                                     "message": f"sourceHash 漂移：声明 {a_declared}，实际 {a_actual}"})
-                warnings.extend(context_policy_warnings(akey, aob))
-                warnings.extend(prompt_contract_warnings(akey, aob))
+                if declared and declared != actual:
+                    warnings.append({"assetKey": key, "code": "STALE_HASH",
+                                     "message": f"sourceHash 漂移：声明 {declared}，实际 {actual}"
+                                                f"（运行 observe_hash.py --write 回写）"})
+                if _frozen_reason(key):
+                    warnings.append({"assetKey": key, "code": "FROZEN", "message": _frozen_reason(key)})
+                # 声明-事实一致性：声明了节点级事件，却没有任何节点级上报通道（SKILL.md 未调
+                # observe_step.py）。这类资产在平台上会"任务有行、节点全 pending"，属声明层说谎。
+                # 控制声明与节点能力一致性（机制层唯一判定，此处只做声明体检）
+                _ctl = ob.get("control") or {}
+                if any((n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]) \
+                        and not _ctl.get("pause"):
+                    warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
+                                     "message": "节点声明了 supportPause=true，但 observe.control.pause 未声明"
+                                                "（控制台会置灰，且平台无法下发暂停）"})
+                if _ctl.get("pause") and not any(
+                        (n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]):
+                    warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
+                                     "message": "声明了 control.pause，但没有任何节点 supportPause=true"})
+                if _ctl.get("rerun") and not any(
+                        (n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]):
+                    warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
+                                     "message": "声明了 control.rerun，但没有任何节点 supportRerun=true"})
+                if any((n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]) \
+                        and not _ctl.get("rerun"):
+                    warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
+                                     "message": "节点声明了 supportRerun=true，但 observe.control.rerun 未声明"
+                                                "（控制台会置灰，且平台无法下发重跑）"})
+                if set((ob.get("report") or {}).get("onEvents") or []) & EVENTS and not _node_channel(d):
+                    warnings.append({"assetKey": key, "code": "CONTRACT_MISMATCH",
+                                     "message": "声明了节点级事件但 SKILL.md 未调用 observe_step.py"
+                                                "（节点级上报无通道，面板会显示节点全 pending）"})
+                # 范式/编排一致性体检（只警告，不改变既有资产能否入库）
+                _par = ob.get("paradigm") or {}
+                _modes = [n.get("mode") for n in ob["nodes"] if n.get("mode")]
+                if _par.get("id") in ("plan_execute", "multi_agent") and not _modes:
+                    warnings.append({"assetKey": key, "code": "PARADIGM_INCOMPLETE",
+                                     "message": f"声明了 paradigm={_par['id']} 但没有任何 nodes[].mode"
+                                                f"（控制台只能按默认串行渲染）"})
+                _has_state = any(n.get("stateIn") or n.get("stateOut") for n in ob["nodes"])
+                if _modes and not _has_state:
+                    warnings.append({"assetKey": key, "code": "ORCHESTRATION_NO_STATE",
+                                     "message": "声明了编排属性但无 stateIn/stateOut（显式状态契约缺失）"})
+                _avail: set[str] = set()
+                for n in sorted(ob["nodes"], key=lambda x: x.get("seq") or 0):
+                    for fld in (n.get("stateIn") or []):
+                        if fld not in _avail:
+                            warnings.append({"assetKey": key, "code": "STATE_FIELD_UNREACHABLE",
+                                             "message": f"{n.get('nodeId')} 读字段 {fld} 但无上游 stateOut 提供"})
+                    _avail |= set(n.get("stateOut") or [])
+                warnings.extend(context_policy_warnings(key, ob))
+                warnings.extend(prompt_contract_warnings(key, ob))
+
+                # agent 资产（同目录 agents/*.md）
+                ad = d / "agents"
+                if ad.is_dir():
+                    for ap in sorted(ad.glob("*.md")):
+                        fm = _read_frontmatter(ap.read_text(encoding="utf-8"))
+                        if not fm:
+                            continue
+                        try:
+                            aob = (yaml.safe_load(fm) or {}).get("observe")
+                        except Exception:  # noqa: BLE001
+                            aob = None
+                        if not aob:
+                            continue
+                        akey = aob.get("assetKey") or f"agent:{ap.stem}"
+                        try:
+                            validate_observe(akey, aob)
+                        except ContractError as e:
+                            errors.append(e)
+                            continue
+                        a_actual = compute_source_hash(ap, "skill_md")
+                        a_declared = aob.get("sourceHash", "")
+                        registry[akey] = {
+                            "assetKey": akey, "assetType": "agent", "carrier": "skill_md",
+                            "runtime": aob["runtime"], "graphVersion": a_declared,
+                            "graphVersionActual": a_actual,
+                            "hashDrift": bool(a_declared) and a_declared != a_actual,
+                            "nodeTotal": len(aob["nodes"]),
+                            "pausableTotal": sum(1 for n in aob["nodes"] if n["capabilities"]["supportPause"]),
+                            "frozen": False, "frozenReason": "", "nodes": aob["nodes"],
+                            "report": aob.get("report"),
+                            "paradigm": aob.get("paradigm") or {},
+                            "contextPolicy": aob.get("contextPolicy") or {},
+                            "promptContract": aob.get("promptContract") or {},
+                            "modelPolicy": aob.get("modelPolicy") or {},
+                        }
+                        if a_declared and a_declared != a_actual:
+                            warnings.append({"assetKey": akey, "code": "STALE_HASH",
+                                             "message": f"sourceHash 漂移：声明 {a_declared}，实际 {a_actual}"})
+                        warnings.extend(context_policy_warnings(akey, aob))
+                        warnings.extend(prompt_contract_warnings(akey, aob))
     return {"registry": registry, "warnings": warnings, "errors": [str(e) for e in errors]}
 
 
