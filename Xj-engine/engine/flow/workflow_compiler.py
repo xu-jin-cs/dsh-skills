@@ -19,11 +19,13 @@ V0.1 边界（诚实声明）：
 from __future__ import annotations
 
 import datetime
+import hashlib
 import json
 import os
 import re
 import subprocess
 import tempfile
+import sys
 from typing import Callable, Optional
 
 from engine.flow.node_defs import FlowNodeMeta
@@ -183,6 +185,8 @@ def compile_workflow_json(path: str) -> dict:
         "enforcement": wf.get("enforcement") or {},
         "prompt": wf.get("prompt") or "",
         "tools": wf.get("tools") or [],
+        "asset_key": (wf.get("observe") or {}).get("assetKey") or "",
+        "observe_runtime": (wf.get("observe") or {}).get("runtime") or "engine",
         "plugin_bin": wf.get("plugin_bin") or "",
     }
 
@@ -290,6 +294,25 @@ def _restore_stage(compiled: dict, target: str | None, artifacts_root: str,
     _stage_event("restore", wf_id, target, artifacts_root, True, note=sid)
 
 
+def _observe_emit(compiled: dict, state, stage_id: str, agent_id: str,
+                  event_type: str, status: str | None = None,
+                  artifacts: list | None = None, error_code: str | None = None) -> None:
+    """引擎执行向平台上报（官方通道：observe_hook.emit_event 唯一构造入口）。"""
+    asset_key = compiled.get("asset_key") or ""
+    if not asset_key:
+        return
+    task_id = str(getattr(state, "instance_id", "") or "engine_run")
+    try:
+        sys.path.insert(0, os.path.expanduser("~/.agents/agent-observe/bin"))
+        import observe_hook as _oh  # type: ignore
+        _oh.emit_event(task_id=task_id, asset_key=asset_key, agent_id=agent_id or stage_id,
+                       node_id=stage_id, event_type=event_type, status=status,
+                       artifacts=artifacts, error_code=error_code)
+    except Exception as exc:  # noqa: BLE001 - 观测失败不影响执行
+        _stage_event("observe_emit_fail", compiled.get("workflow_id", ""), stage_id,
+                     "", False, note=f"{type(exc).__name__}: {exc}"[:180])
+
+
 def make_stage_node(
     stage_id: str,
     compiled: dict,
@@ -337,6 +360,7 @@ def make_stage_node(
             "current_stage_dir": stage_dir,
             "task_instruction": task,
         })
+        _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id), "node_start")
         # 步骤1：装配（gate.pre）
         fd, cfg_path = tempfile.mkstemp(suffix=".json", prefix=f"stage_cfg_{stage_id}_")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -377,6 +401,8 @@ def make_stage_node(
             _stage_event("spawn_fail", compiled["workflow_id"], stage_id, artifacts_root,
                          False, note=str(e))
             state.error_log.append(f"[{stage_id}] 打回: {e}")
+            _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                          "node_failed", status="failed", error_code="GATE_REJECT")
             target = _rollback_target(compiled, stage_id)
             _restore_stage(compiled, target, artifacts_root, plugin_bin)
             return state, target
@@ -385,6 +411,7 @@ def make_stage_node(
         outs = stage.get("output_artifacts", [])
         deliverable_path = None
         written = {}
+        produced: list[dict] = []
         if outs:
             if isinstance(deliverable, dict):
                 written = deliverable
@@ -396,8 +423,16 @@ def make_stage_node(
                     continue
                 rel = os.path.join(stage_dir, f"{a['name']}_v1.{a.get('suffix', 'md')}")
                 _atomic_write(os.path.join(artifacts_root, rel), written[a["name"]])
+                full = os.path.join(artifacts_root, rel)
+                try:
+                    data = open(full, "rb").read()
+                    produced.append({"storagePath": full, "deliverableType": a.get("suffix", "md"),
+                                     "sha256": hashlib.sha256(data).hexdigest(),
+                                     "sizeBytes": len(data)})
+                except OSError:
+                    produced.append({"storagePath": full, "deliverableType": a.get("suffix", "md")})
                 if deliverable_path is None:
-                    deliverable_path = os.path.join(artifacts_root, rel)
+                    deliverable_path = full
             if written:
                 _update_index_status(artifacts_root, stage_id, "active")
 
@@ -415,6 +450,8 @@ def make_stage_node(
              "--stage-dir", stage_dir, "--stage-id", stage_id, "--workflow-id", wf_id],
             capture_output=True, text=True)
         _stage_event("snapshot", wf_id, stage_id, artifacts_root, True)
+        _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                      "node_end", status="completed", artifacts=produced)
 
         # 显式路由：末环完成→闭环清理→__end__
         nxt = _next_hop(compiled, stage_id)
@@ -428,6 +465,8 @@ def make_stage_node(
                 return state, None
             _run_event("run_complete", wf_id, stages=len(compiled["stages"]),
                        instance_id=getattr(state, "instance_id", ""))
+            _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                          "task_end", status="completed")
             subprocess.run(
                 ["python3", snapshot_cli, "clean", "--artifacts-root", artifacts_root,
                  "--stage-dir", "."],
