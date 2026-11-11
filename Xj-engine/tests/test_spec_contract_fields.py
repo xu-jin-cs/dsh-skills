@@ -48,3 +48,15 @@ def test_restore_stage_writes_config(tmp_path):
     cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
     assert cfg["stage_id"] == "a"
     assert cfg["workflow_id"] == "w"
+
+
+def test_prompt_and_tools_compiled(tmp_path):
+    spec = {"workflow_id": "zt", "prompt": "# 角色\n你是审校员",
+            "tools": [{"name": "Read", "limits": "只读"}],
+            "stages": [{"stage_id": "n1", "agent": "main", "depends_on": [],
+                        "output_artifacts": [{"name": "out", "suffix": "md"}],
+                        "deliverables": [{"filename": "out.md"}],
+                        "branch_conditions": {"done": "__end__"}}]}
+    wf = build_workflow(spec, str(tmp_path))
+    assert wf["prompt"].startswith("# 角色")
+    assert wf["tools"][0]["name"] == "Read"

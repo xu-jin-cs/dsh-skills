@@ -236,6 +236,8 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
         "stage_dirs": dir_of,
         "plugin_bin": plugin_bin,
         "enforcement": enforcement,
+        "prompt": str(spec.get("prompt") or ""),
+        "tools": list(spec.get("tools") or []),
         "source": source,
         "stages": stages,
     }

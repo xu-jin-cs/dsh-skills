@@ -181,6 +181,8 @@ def compile_workflow_json(path: str) -> dict:
         "stage_dirs": dict(wf["stage_dirs"]),
         "stages": {s["stage_id"]: s for s in stages},
         "enforcement": wf.get("enforcement") or {},
+        "prompt": wf.get("prompt") or "",
+        "tools": wf.get("tools") or [],
         "plugin_bin": wf.get("plugin_bin") or "",
     }
 
@@ -350,6 +352,16 @@ def make_stage_node(
             return state, target  # 装配失败=上游产物问题，路由回上游重建
 
         prompt = r.stdout
+        # 提示词注入：agent 自身提示词（agent.md 正文）优先于装配上下文，工具白名单随行
+        agent_prompt = str(compiled.get("prompt") or "").strip()
+        tools = compiled.get("tools") or []
+        if agent_prompt:
+            allow = ""
+            if tools:
+                names = [t.get("name") for t in tools if isinstance(t, dict) and t.get("name")]
+                if names:
+                    allow = f"\n\n[工具白名单] 仅允许：{', '.join(names)}；越权调用视为失败。"
+            prompt = agent_prompt + allow + "\n\n---\n\n" + prompt
         base = _global_base()
         if base:
             prompt = base + "\n\n" + prompt
