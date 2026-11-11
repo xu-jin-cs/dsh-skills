@@ -246,6 +246,48 @@ def _semantic_gate(stage: dict, deliverable_path: Optional[str]) -> Optional[str
         return f"gate_spec 输出不可解析(exit={r.returncode}): {(r.stderr or r.stdout)[-200:]}"
 
 
+def _latest_snapshot(artifacts_root: str, stage_dir: str) -> str | None:
+    d = os.path.join(artifacts_root, stage_dir, "snapshots")
+    if not os.path.isdir(d):
+        return None
+    files = sorted(f for f in os.listdir(d) if f.endswith(".json"))
+    return files[-1][:-5] if files else None
+
+
+def _restore_stage(compiled: dict, target: str | None, artifacts_root: str,
+                   plugin_bin: str) -> None:
+    """打回/回退时重建目标环节上下文：restore 出装配配置，落 .restore_config.json。
+
+    下次进入该环节时装配步骤会读取该配置（仅一次），确保回退后不是带脏上下文重跑。
+    """
+    if not target or target == "__end__" or target not in compiled.get("stage_dirs", {}):
+        return
+    wf_id = compiled["workflow_id"]
+    stage_dir = compiled["stage_dirs"][target]
+    sid = _latest_snapshot(artifacts_root, stage_dir)
+    if not sid:
+        _stage_event("restore_skip", wf_id, target, artifacts_root, True, note="无快照")
+        return
+    restore_cli = os.path.join(plugin_bin, "snapshot_manager.py")
+    r = subprocess.run(
+        ["python3", restore_cli, "restore", "--artifacts-root", artifacts_root,
+         "--stage-dir", stage_dir, "--stage-id", target, "--snapshot-id", sid,
+         "--workflow-id", wf_id],
+        capture_output=True, text=True)
+    if r.returncode != 0:
+        _stage_event("restore_fail", wf_id, target, artifacts_root, False,
+                     note=(r.stderr or r.stdout or "")[-200:])
+        return
+    try:
+        cfg = json.loads(r.stdout)
+    except ValueError:
+        cfg = {}
+    if isinstance(cfg, dict):
+        _atomic_write(os.path.join(artifacts_root, stage_dir, ".restore_config.json"),
+                      json.dumps(cfg, ensure_ascii=False, indent=1) + "\n")
+    _stage_event("restore", wf_id, target, artifacts_root, True, note=sid)
+
+
 def make_stage_node(
     stage_id: str,
     compiled: dict,
@@ -273,13 +315,26 @@ def make_stage_node(
             state.freeze_reason = f"[{stage_id}] 打回次数达熔断上限 {max_rollback}"
             return state, None
         task = f"[{wf_id}/{stage_id}] {getattr(state, 'project_description', '') or '执行本环节任务'}"
-        cfg = {
+        cfg: dict = {}
+        restore_cfg_path = os.path.join(artifacts_root, stage_dir, ".restore_config.json")
+        if os.path.isfile(restore_cfg_path):
+            try:
+                loaded = json.load(open(restore_cfg_path, encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    cfg.update(loaded)
+            except (OSError, ValueError):
+                pass
+            try:
+                os.unlink(restore_cfg_path)
+            except OSError:
+                pass
+        cfg.update({
             "stage_id": stage_id,
             "workflow_id": wf_id,
             "artifacts_root": artifacts_root,
             "current_stage_dir": stage_dir,
             "task_instruction": task,
-        }
+        })
         # 步骤1：装配（gate.pre）
         fd, cfg_path = tempfile.mkstemp(suffix=".json", prefix=f"stage_cfg_{stage_id}_")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -291,6 +346,7 @@ def make_stage_node(
         if r.returncode != 0:
             state.error_log.append(f"[{stage_id}] 装配 BLOCK: {r.stderr.strip()}")
             target = _rollback_target(compiled, stage_id)
+            _restore_stage(compiled, target, artifacts_root, plugin_bin)
             return state, target  # 装配失败=上游产物问题，路由回上游重建
 
         prompt = r.stdout
@@ -308,7 +364,9 @@ def make_stage_node(
             _stage_event("spawn_fail", compiled["workflow_id"], stage_id, artifacts_root,
                          False, note=str(e))
             state.error_log.append(f"[{stage_id}] 打回: {e}")
-            return state, _rollback_target(compiled, stage_id)
+            target = _rollback_target(compiled, stage_id)
+            _restore_stage(compiled, target, artifacts_root, plugin_bin)
+            return state, target
 
         # 步骤3：index_sync（交付物落盘；runner 返回 str=首件交付物，dict{name:content}=多件）
         outs = stage.get("output_artifacts", [])
@@ -334,7 +392,9 @@ def make_stage_node(
         violations = _semantic_gate(stage, deliverable_path)
         if violations:
             state.error_log.append(f"[{stage_id}] 打回: 语义闸判B {violations}")
-            return state, _rollback_target(compiled, stage_id)
+            target = _rollback_target(compiled, stage_id)
+            _restore_stage(compiled, target, artifacts_root, plugin_bin)
+            return state, target
 
         # 步骤5：快照（gate.post 插件段；幂等）
         subprocess.run(

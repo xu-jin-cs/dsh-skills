@@ -26,7 +26,9 @@ DEFAULT_PLUGIN_BIN = os.path.expanduser(
 SOURCE_STAGE_FIELDS = (
     "deliverables", "branch_conditions", "harness_sync", "next_agents",
     "parallel_group", "invoked_skills", "identity", "display_name",
-    "permissions", "self_checks",
+    "permissions", "self_checks", "gate_spec", "nodeType",
+    "acceptanceCriteria", "timeout", "retryPolicy", "compensationAction",
+    "observabilityTags",
 )
 SOURCE_TOP_FIELDS = ("state_model", "flow_b", "engine_name", "engine_api",
                      "input_schema", "rules")
@@ -81,6 +83,9 @@ def _normalize(stages: list[dict]) -> list[dict]:
         }
         if s.get("parallel_group"):
             stage["parallel_group"] = s["parallel_group"]
+        # 语义闸挂载点：编译器读 stage.gate_spec；归一化必须透传，否则声明了也不生效
+        if s.get("gate_spec") is not None:
+            stage["gate_spec"] = s["gate_spec"]
         # 隔离钩子只注入 ZCode 运行时节点；外部/人工节点不挂 zplugin 钩子
         if runtime == "zcode":
             stage["gate"] = {
