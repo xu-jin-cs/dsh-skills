@@ -26,6 +26,7 @@ import re
 import subprocess
 import tempfile
 import sys
+import threading
 from typing import Callable, Optional
 
 from engine.flow.node_defs import FlowNodeMeta
@@ -69,9 +70,21 @@ def _run_event(event: str, wf: str, **extra) -> None:
     })
 
 
+_INDEX_LOCK = threading.Lock()
+
+
 def _update_index_status(artifacts_root: str, stage_id: str,
                          status: str = "active") -> None:
-    """交付物落盘后回写 INDEX 状态（pending → active）。"""
+    """交付物落盘后回写 INDEX 状态（pending → active）。
+
+    并行组会并发调用：必须串行化，否则后写覆盖先写，导致某成员状态丢失。
+    """
+    with _INDEX_LOCK:
+        _update_index_status_locked(artifacts_root, stage_id, status)
+
+
+def _update_index_status_locked(artifacts_root: str, stage_id: str,
+                                status: str = "active") -> None:
     path = os.path.join(artifacts_root, "INDEX.md")
     try:
         text = open(path, encoding="utf-8").read()
@@ -371,6 +384,8 @@ def make_stage_node(
         os.unlink(cfg_path)
         if r.returncode != 0:
             state.error_log.append(f"[{stage_id}] 装配 BLOCK: {r.stderr.strip()}")
+            _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                          "node_failed", status="failed", error_code="ASSEMBLE_BLOCKED")
             target = _rollback_target(compiled, stage_id)
             _restore_stage(compiled, target, artifacts_root, plugin_bin)
             return state, target  # 装配失败=上游产物问题，路由回上游重建
@@ -397,7 +412,11 @@ def make_stage_node(
         _stage_event("spawn", compiled["workflow_id"], stage_id, artifacts_root, True)
         try:
             deliverable = runner(prompt, stage_id)
-        except GateReject as e:
+        except Exception as e:  # noqa: BLE001 - runner 异常也要上报失败
+            if not isinstance(e, GateReject):
+                _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                              "node_failed", status="failed", error_code="RUNNER_ERROR")
+                raise
             _stage_event("spawn_fail", compiled["workflow_id"], stage_id, artifacts_root,
                          False, note=str(e))
             state.error_log.append(f"[{stage_id}] 打回: {e}")
@@ -440,6 +459,8 @@ def make_stage_node(
         violations = _semantic_gate(stage, deliverable_path)
         if violations:
             state.error_log.append(f"[{stage_id}] 打回: 语义闸判B {violations}")
+            _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                          "node_failed", status="failed", error_code="SEMANTIC_BLOCK")
             target = _rollback_target(compiled, stage_id)
             _restore_stage(compiled, target, artifacts_root, plugin_bin)
             return state, target
