@@ -101,8 +101,14 @@ def build_event(*, task_id: str, asset_key: str, agent_id: str, node_id: str,
                 started_at: str | None = None, ended_at: str | None = None,
                 duration_ms: int | None = None, error_code: str | None = None,
                 artifacts: list | None = None, attempt: int = 1,
-                event_id: str | None = None) -> dict:
-    """唯一事件构造器。"""
+                event_id: str | None = None,
+                token_in: int | None = None, token_out: int | None = None,
+                token_source: str = "reported", token_coverage: str = "main_only",
+                cache_read_tokens: int | None = None,
+                cache_write_tokens: int | None = None,
+                cache_read_ratio: float | None = None,
+                llm_duration_ms: int | None = None) -> dict:
+    """唯一事件构造器（token 字段 2026-11-11 扩展；未给则字段缺省=读侧 pending）。"""
     if event_type not in EVENTS:
         raise ValueError(f"eventType 非法：{event_type}")
     ev = {
@@ -122,6 +128,22 @@ def build_event(*, task_id: str, asset_key: str, agent_id: str, node_id: str,
         ev["durationMs"] = duration_ms
     if error_code:
         ev["errorCode"] = error_code
+    # 节点级 Token：只有给了值才写字段（禁止 0/空串占位）
+    if token_in is not None or token_out is not None:
+        ti, to = int(token_in or 0), int(token_out or 0)
+        if ti < 0 or to < 0:
+            raise ValueError("token_in/token_out 不能为负数")
+        ev.update({"tokenIn": ti, "tokenOut": to, "tokenTotal": ti + to,
+                   "tokenStatus": "measured", "tokenSource": token_source,
+                   "tokenCoverage": token_coverage})
+        if cache_read_tokens is not None:
+            ev["cacheReadTokens"] = int(cache_read_tokens)
+        if cache_write_tokens is not None:
+            ev["cacheWriteTokens"] = int(cache_write_tokens)
+        if cache_read_ratio is not None:
+            ev["cacheReadRatio"] = float(cache_read_ratio)
+        if llm_duration_ms is not None:
+            ev["llmDurationMs"] = int(llm_duration_ms)
     arts = normalize_artifacts(artifacts)
     if arts:
         ev["artifacts"] = arts
