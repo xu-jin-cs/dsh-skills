@@ -121,12 +121,19 @@ def _node_channel(asset_dir: Path) -> bool:
     """该资产是否真有**节点级**上报通道（SKILL.md 正文调用 observe_step.py）。
 
     声明 `report.onEvents` 里有 node_* 只证明"声明方说要报"，不证明"有东西真的在报"。
+    载体迁移后（observe 移到 agents/<name>/agent.md），上报调用仍写在同名的
+    skills/<name>/SKILL.md 正文里，因此两个目录都要看，否则会误报"无通道"。
     """
-    sk = asset_dir / "SKILL.md"
-    try:
-        return "observe_step.py" in sk.read_text(encoding="utf-8")
-    except OSError:
-        return False
+    cands = [asset_dir / "SKILL.md"]
+    if asset_dir.parent.name == "agents":
+        cands.append(asset_dir.parent.parent / "skills" / asset_dir.name / "SKILL.md")
+    for sk in cands:
+        try:
+            if "observe_step.py" in sk.read_text(encoding="utf-8"):
+                return True
+        except OSError:
+            continue
+    return False
 
 
 class ContractError(Exception):
@@ -859,7 +866,12 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                     warnings.append({"assetKey": key, "code": "ORCHESTRATION_NO_STATE",
                                      "message": "声明了编排属性但无 stateIn/stateOut（显式状态契约缺失）"})
                 _avail: set[str] = set()
-                for n in sorted(ob["nodes"], key=lambda x: x.get("seq") or 0):
+                for _i, n in enumerate(sorted(ob["nodes"], key=lambda x: x.get("seq") or 0)):
+                    # 首节点的 stateIn 来自任务输入（外部），不是上游 stateOut 缺失（误报）
+                    if _i == 0:
+                        _avail |= set(n.get("stateIn") or [])
+                        _avail |= set(n.get("stateOut") or [])
+                        continue
                     for fld in (n.get("stateIn") or []):
                         if fld not in _avail:
                             warnings.append({"assetKey": key, "code": "STATE_FIELD_UNREACHABLE",
