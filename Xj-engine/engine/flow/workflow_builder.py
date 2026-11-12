@@ -219,7 +219,7 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
     enforcement = {
         "version": 1,
         "ledger": "~/.agents/logs/stage_isolation.jsonl",
-        "require": ["assemble", "spawn"],
+        "require": ["assemble", "spawn", "snapshot"],
         "commands": {
             "assemble": f'python3 "{plugin_bin}/stage_guard.py" assemble --dispatch <dispatch_file> --instruction "<task_instruction>"',
             "spawn": f'python3 "{plugin_bin}/stage_guard.py" spawn --dispatch <dispatch_file>',
