@@ -91,3 +91,30 @@ def test_loop_bounds_reach_compiled(tmp_path, monkeypatch):
                     _spec(loop_bounds={"maxPlanCycles": 1, "maxVerifyCycles": 2}),
                     lambda p, s: "ok")
     assert c["loop_bounds"] == {"maxPlanCycles": 1, "maxVerifyCycles": 2}
+
+
+def test_refusal_bogus_trigger_rejected(tmp_path, monkeypatch):
+    """拒答必须引用声明的 triggers，否则判 REFUSAL_TRIGGER_INVALID。"""
+    c, st, _ = _run(tmp_path, monkeypatch,
+                    _spec(refusal={"triggers": ["out_of_scope"],
+                                   "artifact": "refusal.md", "exit": "blocked"}),
+                    lambda p, s: {"refusal.md": "触发条件：bogus"})
+    assert any("未引用声明触发条件" in e for e in st.error_log), st.error_log
+
+
+def test_max_rollback_from_loop_bounds_freezes(tmp_path, monkeypatch):
+    """loopBounds 必须真控熔断：maxVerifyCycles=1 → 第二次打回即冻结。"""
+    from engine.flow.workflow_compiler import GateReject
+    spec = {"workflow_id": "rb", "stages": [
+        {"stage_id": "a", "agent": "a", "depends_on": [],
+         "output_artifacts": [{"name": "a", "suffix": "md"}]},
+        {"stage_id": "b", "agent": "b", "depends_on": ["a"],
+         "output_artifacts": [{"name": "b", "suffix": "md"}]},
+    ], "loop_bounds": {"maxVerifyCycles": 1}}
+    def runner(prompt, stage_id):
+        if stage_id == "b":
+            raise GateReject("verify failed")
+        return "ok"
+    c, st, _ = _run(tmp_path, monkeypatch, spec, runner)
+    assert st.is_frozen
+    assert "熔断" in (st.freeze_reason or "")

@@ -460,8 +460,18 @@ def make_stage_node(
                 if os.path.isfile(rp):
                     body = open(rp, encoding="utf-8", errors="ignore").read()
             if body is not None:
-                _atomic_write(os.path.join(artifacts_root, stage_dir, ref_art),
-                              body if isinstance(body, str) else str(body))
+                # 拒答必须引用声明的触发条件，否则视为 runner 违约（triggers 不能只声明不读）
+                triggers = [str(t) for t in (ref.get("triggers") or [])]
+                text = body if isinstance(body, str) else str(body)
+                if triggers and not any(t in text for t in triggers):
+                    state.error_log.append(f"[{stage_id}] 拒答未引用声明触发条件：{triggers}")
+                    _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                                  "node_failed", status="failed",
+                                  error_code="REFUSAL_TRIGGER_INVALID")
+                    target = _rollback_target(compiled, stage_id)
+                    _restore_stage(compiled, target, artifacts_root, plugin_bin)
+                    return state, target
+                _atomic_write(os.path.join(artifacts_root, stage_dir, ref_art), text)
                 _stage_event("refused", wf_id, stage_id, artifacts_root, False,
                              note=str(body)[:120])
                 _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
