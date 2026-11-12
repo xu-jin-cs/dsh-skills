@@ -28,7 +28,7 @@ SOURCE_STAGE_FIELDS = (
     "parallel_group", "invoked_skills", "identity", "display_name",
     "permissions", "self_checks", "gate_spec", "nodeType",
     "acceptanceCriteria", "timeout", "retryPolicy", "compensationAction",
-    "observabilityTags",
+    "observabilityTags", "artifact_contract",
 )
 SOURCE_TOP_FIELDS = ("state_model", "flow_b", "engine_name", "engine_api",
                      "input_schema", "rules")
@@ -86,6 +86,9 @@ def _normalize(stages: list[dict]) -> list[dict]:
         # 语义闸挂载点：编译器读 stage.gate_spec；归一化必须透传，否则声明了也不生效
         if s.get("gate_spec") is not None:
             stage["gate_spec"] = s["gate_spec"]
+        # 交付物契约（判定产物可解析）：{format, fields}
+        if s.get("artifact_contract") is not None:
+            stage["artifact_contract"] = s["artifact_contract"]
         # 隔离钩子只注入 ZCode 运行时节点；外部/人工节点不挂 zplugin 钩子
         if runtime == "zcode":
             stage["gate"] = {
@@ -227,6 +230,9 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
     }
     workflow = {
         "workflow_id": workflow_id,
+        # 资产级判定口径（2026-11-12）：循环上界 / 拒答 / 输入边界 / 版本
+        **{k: spec[k] for k in ("loop_bounds", "refusal", "input_boundary", "asset_version")
+           if spec.get(k) not in (None, "", [], {})},
         "transformer_version": BUILDER_VERSION,
         "contract_version": CONTRACT_VERSION,
         "topo_order": order,

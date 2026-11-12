@@ -198,6 +198,10 @@ def compile_workflow_json(path: str) -> dict:
         "enforcement": wf.get("enforcement") or {},
         "prompt": wf.get("prompt") or "",
         "tools": wf.get("tools") or [],
+        "loop_bounds": wf.get("loop_bounds") or {},
+        "refusal": wf.get("refusal") or {},
+        "input_boundary": wf.get("input_boundary") or {},
+        "asset_version": wf.get("asset_version") or "",
         "asset_key": (wf.get("observe") or {}).get("assetKey") or "",
         "observe_runtime": (wf.get("observe") or {}).get("runtime") or "engine",
         "plugin_bin": wf.get("plugin_bin") or "",
@@ -353,6 +357,15 @@ def make_stage_node(
             state.freeze_reason = f"[{stage_id}] 打回次数达熔断上限 {max_rollback}"
             return state, None
         task = f"[{wf_id}/{stage_id}] {getattr(state, 'project_description', '') or '执行本环节任务'}"
+        ib = compiled.get("input_boundary") or {}
+        max_chars = ib.get("maxInputChars")
+        if max_chars and len(task) > int(max_chars):
+            state.error_log.append(f"[{stage_id}] 输入超界 {len(task)} > {max_chars}")
+            state.is_frozen = True
+            state.freeze_reason = f"[{stage_id}] INPUT_BOUNDARY"
+            _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                          "node_failed", status="failed", error_code="INPUT_BOUNDARY")
+            return state, "__end__"
         cfg: dict = {}
         restore_cfg_path = os.path.join(artifacts_root, stage_dir, ".restore_config.json")
         if os.path.isfile(restore_cfg_path):
@@ -397,10 +410,16 @@ def make_stage_node(
         if agent_prompt:
             allow = ""
             if tools:
-                names = [t.get("name") if isinstance(t, dict) else str(t) for t in tools]
-                names = [n for n in names if n]
+                def _tool_desc(t):
+                    if not isinstance(t, dict):
+                        return str(t)
+                    acc = t.get("access") or ""
+                    sc = "、".join(t.get("scopes") or [])
+                    tail = f"（{acc}{'：' + sc if sc else ''}）" if acc else ""
+                    return f"{t.get('name')}{tail}"
+                names = [_tool_desc(t) for t in tools if (t.get("name") if isinstance(t, dict) else t)]
                 if names:
-                    allow = f"\n\n[工具白名单] 仅允许：{', '.join(names)}；越权调用视为失败。"
+                    allow = f"\n\n[工具白名单] 仅允许：{', '.join(names)}；超出声明范围（access/scopes）视为失败。"
             prompt = agent_prompt + allow + "\n\n---\n\n" + prompt
         base = _global_base()
         if base:
@@ -425,6 +444,29 @@ def make_stage_node(
             target = _rollback_target(compiled, stage_id)
             _restore_stage(compiled, target, artifacts_root, plugin_bin)
             return state, target
+
+        # 拒答契约（资产级）：产物即为拒答件 → 终止并上报 REFUSED
+        ref = compiled.get("refusal") or {}
+        ref_art = str(ref.get("artifact") or "")
+        if ref_art:
+            body = None
+            if isinstance(deliverable, dict) and ref_art in deliverable:
+                body = deliverable[ref_art]
+            else:
+                rp = os.path.join(artifacts_root, stage_dir, ref_art)
+                if os.path.isfile(rp):
+                    body = open(rp, encoding="utf-8", errors="ignore").read()
+            if body is not None:
+                _atomic_write(os.path.join(artifacts_root, stage_dir, ref_art),
+                              body if isinstance(body, str) else str(body))
+                _stage_event("refused", wf_id, stage_id, artifacts_root, False,
+                             note=str(body)[:120])
+                _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                              "node_failed", status="failed", error_code="REFUSED")
+                if str(ref.get("exit") or "blocked") == "aborted":
+                    state.is_frozen = True
+                    state.freeze_reason = f"[{stage_id}] REFUSED(aborted)"
+                return state, "__end__"
 
         # 步骤3：index_sync（交付物落盘；runner 返回 str=首件交付物，dict{name:content}=多件）
         outs = stage.get("output_artifacts", [])
@@ -454,6 +496,28 @@ def make_stage_node(
                     deliverable_path = full
             if written:
                 _update_index_status(artifacts_root, stage_id, "active")
+
+        # 交付物契约（判定产物可解析）：声明 artifact_contract 时逐字段核验
+        ac = stage.get("artifact_contract") or {}
+        if ac and deliverable_path:
+            fmt = str(ac.get("format") or "").lower()
+            bad = None
+            if fmt == "json":
+                try:
+                    doc = json.load(open(deliverable_path, encoding="utf-8"))
+                except (OSError, ValueError) as exc:
+                    bad = f"JSON 不可解析：{exc}"
+                else:
+                    miss = [f for f in (ac.get("fields") or []) if f not in doc]
+                    if miss:
+                        bad = f"缺字段 {miss}"
+            if bad:
+                state.error_log.append(f"[{stage_id}] 打回: 交付物契约不满足 {bad}")
+                _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
+                              "node_failed", status="failed", error_code="ARTIFACT_CONTRACT")
+                target = _rollback_target(compiled, stage_id)
+                _restore_stage(compiled, target, artifacts_root, plugin_bin)
+                return state, target
 
         # 步骤4：语义闸挂载点（gate.post 业务段，spec 由工作流声明）
         violations = _semantic_gate(stage, deliverable_path)
@@ -535,7 +599,8 @@ def _merge_branch_state(state, branch_state) -> None:
 
 def make_fanout_node(layer: str, members: list, compiled: dict,
                      artifacts_root: str, plugin_bin: str,
-                     runner: Callable[[str, str], str], graph_ref):
+                     runner: Callable[[str, str], str], graph_ref,
+                     max_rollback: int = 3):
     """并行组扇出节点：闸判定（judge_parallel_fanout）→ 真并发线程池执行各分支 → 合流。
     每分支深拷贝 state 跑完整五步节点体；交付物按环节目录物理隔离天然无写冲突。"""
     from concurrent.futures import ThreadPoolExecutor
@@ -561,14 +626,16 @@ def make_fanout_node(layer: str, members: list, compiled: dict,
             with ThreadPoolExecutor(max_workers=len(members)) as pool:
                 futs = []
                 for m in members:
-                    node_fn = make_stage_node(m, compiled, artifacts_root, plugin_bin, runner)
+                    node_fn = make_stage_node(m, compiled, artifacts_root, plugin_bin,
+                                          runner, max_rollback=max_rollback)
                     futs.append(pool.submit(node_fn, state.model_copy(deep=True)))
                 for f in futs:
                     branch_state, _ = f.result()
                     _merge_branch_state(state, branch_state)
         else:
             for m in members:  # 闸判串行/降级 → 顺序执行保语义
-                node_fn = make_stage_node(m, compiled, artifacts_root, plugin_bin, runner)
+                node_fn = make_stage_node(m, compiled, artifacts_root, plugin_bin,
+                                          runner, max_rollback=max_rollback)
                 state, _ = node_fn(state)
         return state, join_target
 
@@ -589,6 +656,8 @@ def build_flow_graph(compiled: dict, artifacts_root: str, plugin_bin: str,
     groups = compiled.get("parallel_groups", {})
     member2group = {m: layer for layer, members in groups.items() for m in members}
     order = compiled["topo_order"]
+    lb = compiled.get("loop_bounds") or {}
+    max_rollback = int(lb.get("maxVerifyCycles") or lb.get("maxPlanCycles") or 3)
     i = 0
     while i < len(order):
         sid = order[i]
@@ -597,10 +666,11 @@ def build_flow_graph(compiled: dict, artifacts_root: str, plugin_bin: str,
             members = sorted(groups[layer], key=lambda m: order.index(m))
             g.register_node(f"fanout_{layer}",
                             make_fanout_node(layer, members, compiled, artifacts_root,
-                                             plugin_bin, runner, g))
+                                             plugin_bin, runner, g, max_rollback))
             i = order.index(members[-1]) + 1  # 跳过整组（组内成员由扇出节点执行）
             continue
-        g.register_node(sid, make_stage_node(sid, compiled, artifacts_root, plugin_bin, runner))
+        g.register_node(sid, make_stage_node(sid, compiled, artifacts_root, plugin_bin,
+                                            runner, max_rollback=max_rollback))
         i += 1
     g._compiled = True  # 内核接入层同包内手工编译态：本图节点已全部注册
     g._checkpointer = checkpointer
