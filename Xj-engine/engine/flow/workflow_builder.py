@@ -231,7 +231,8 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
     workflow = {
         "workflow_id": workflow_id,
         # 资产级判定口径（2026-11-12）：循环上界 / 拒答 / 输入边界 / 版本
-        **{k: spec[k] for k in ("loop_bounds", "refusal", "input_boundary", "asset_version")
+        **{k: spec[k] for k in ("loop_bounds", "refusal", "input_boundary", "asset_version",
+                                "plan_approval", "failure_classes", "asset_acceptance")
            if spec.get(k) not in (None, "", [], {})},
         "transformer_version": BUILDER_VERSION,
         "contract_version": CONTRACT_VERSION,
