@@ -55,11 +55,27 @@ def _topo(stages: list[dict]) -> list[str]:
     return order
 
 
-def _final_stages(stages: list[dict], order: list[str]) -> list[str]:
+def _final_stages(stages: list[dict], order: list[str],
+                  raw_stages: list[dict] | None = None) -> list[str]:
+    """终态 = 无下游依赖 且 不是"只回跳"的循环节点。
+
+    F3-11：reflexion 的 n_fix 只有一条回边（fixed→n_verify），回边不进 depends_on，
+    旧的"无下游即终态"会把 n_fix 误判 terminal。判定：若某节点的所有分支目标
+    都是拓扑序上更靠前（或自身）的节点，它是循环体，不是出口；只要有一个
+    __end__ 或前向目标，仍算终态（如 n_verify: pass→__end__ + validation_fail→回跳）。
+    """
     has_child = set()
     for s in stages:
         has_child |= set(s.get("depends_on") or [])
-    return [sid for sid in order if sid not in has_child]
+    idx = {sid: i for i, sid in enumerate(order)}
+    bc_of = {s.get("stage_id"): (s.get("branch_conditions") or {})
+             for s in (raw_stages or [])}
+    loop_only = set()
+    for sid in order:
+        targets = [t for t in (bc_of.get(sid) or {}).values() if t != "__end__"]
+        if targets and all(t in idx and idx[t] <= idx[sid] for t in targets):
+            loop_only.add(sid)
+    return [sid for sid in order if sid not in has_child and sid not in loop_only]
 
 
 def _normalize(stages: list[dict]) -> list[dict]:
@@ -209,7 +225,7 @@ def build_workflow(spec: dict[str, Any], out_dir: str,
     source = _build_source(spec, raw_stages)
     order = _topo(stages)
     dir_of = {sid: f"{i + 1:02d}_{sid}" for i, sid in enumerate(order)}
-    final = _final_stages(stages, order)
+    final = _final_stages(stages, order, raw_stages)
     for s in stages:
         s["coord"] = f"环节{order.index(s['stage_id']) + 1}"
         if s["stage_id"] in final:

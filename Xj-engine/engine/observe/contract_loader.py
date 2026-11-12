@@ -821,22 +821,25 @@ def scan(root: Path = SKILL_ROOT) -> dict:
                 # 声明-事实一致性：声明了节点级事件，却没有任何节点级上报通道（SKILL.md 未调
                 # observe_step.py）。这类资产在平台上会"任务有行、节点全 pending"，属声明层说谎。
                 # 控制声明与节点能力一致性（机制层唯一判定，此处只做声明体检）
+                # "none" 是"不支持"的显式写法，不能被当成 truthy（F3-10：同一值在
+                # registry._control_caps 判 false、在这里判 true，产生噪音告警）
+                def _on(v) -> bool:
+                    return str(v or "").strip().lower() not in ("", "none", "false", "off", "disabled")
+
                 _ctl = ob.get("control") or {}
-                if any((n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]) \
-                        and not _ctl.get("pause"):
+                _supports = lambda k: any(  # noqa: E731
+                    (n.get("capabilities") or {}).get(k) for n in ob["nodes"])
+                if _supports("supportPause") and not _on(_ctl.get("pause")):
                     warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
                                      "message": "节点声明了 supportPause=true，但 observe.control.pause 未声明"
                                                 "（控制台会置灰，且平台无法下发暂停）"})
-                if _ctl.get("pause") and not any(
-                        (n.get("capabilities") or {}).get("supportPause") for n in ob["nodes"]):
+                if _on(_ctl.get("pause")) and not _supports("supportPause"):
                     warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
                                      "message": "声明了 control.pause，但没有任何节点 supportPause=true"})
-                if _ctl.get("rerun") and not any(
-                        (n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]):
+                if _on(_ctl.get("rerun")) and not _supports("supportRerun"):
                     warnings.append({"assetKey": key, "code": "CONTROL_INCONSISTENT",
                                      "message": "声明了 control.rerun，但没有任何节点 supportRerun=true"})
-                if any((n.get("capabilities") or {}).get("supportRerun") for n in ob["nodes"]) \
-                        and not _ctl.get("rerun"):
+                if _supports("supportRerun") and not _on(_ctl.get("rerun")):
                     warnings.append({"assetKey": key, "code": "CONTROL_UNDECLARED",
                                      "message": "节点声明了 supportRerun=true，但 observe.control.rerun 未声明"
                                                 "（控制台会置灰，且平台无法下发重跑）"})

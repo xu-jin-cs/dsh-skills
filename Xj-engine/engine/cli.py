@@ -91,6 +91,12 @@ def _cmd_flow_run(args) -> int:
 
     compiled = compile_workflow_json(wf_path)
     wf = compiled["workflow_id"]
+    # F3-7：instance-id 缺省按资产派生。固定 "engine-flow" 会让第二个 engine 资产的上报
+    # 撞上 harness 的 IMMUTABLE_TASK_IDENTITY（422），观测被静默丢弃。
+    if not args.instance_id:
+        _ak = str((compiled.get("observe") or {}).get("assetKey") or wf)
+        _slug = "".join(ch if (ch.isalnum() or ch in "-_") else "_" for ch in _ak)
+        args.instance_id = f"engine_{_slug}"[:96]
     root = args.artifacts_root or os.path.join(os.path.dirname(wf_path), "project_artifacts")
     if args.runner_mode == "stub":
         runner = lambda prompt, stage: f"# {stage}\n\nstub deliverable"
@@ -168,7 +174,8 @@ def main(argv=None) -> int:
     flo_run.add_argument("--runner-cmd", default="")
     flo_run.add_argument("--runner-mode", choices=["cmd", "stub"], default="cmd")
     flo_run.add_argument("--project", default=".")
-    flo_run.add_argument("--instance-id", default="engine-flow")
+    flo_run.add_argument("--instance-id", default="",
+                         help="实例 id；缺省按 observe.assetKey 派生（多资产同跑不撞身份）")
     flo_run.add_argument("--description", default="")
     flo_run.add_argument("--evidence-root", default="")
     flo_run.add_argument("--observe-callback", default="",
