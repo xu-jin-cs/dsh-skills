@@ -124,7 +124,8 @@ def _node_channel(asset_dir: Path) -> bool:
     载体迁移后（observe 移到 agents/<name>/agent.md），上报调用仍写在同名的
     skills/<name>/SKILL.md 正文里，因此两个目录都要看，否则会误报"无通道"。
     """
-    cands = [asset_dir / "SKILL.md"]
+    # 载体迁移后执行提示词就是 agent.md，上报调用也可能落在这里（不只 SKILL.md）
+    cands = [asset_dir / "SKILL.md", asset_dir / "agent.md"]
     if asset_dir.parent.name == "agents":
         cands.append(asset_dir.parent.parent / "skills" / asset_dir.name / "SKILL.md")
     for sk in cands:
