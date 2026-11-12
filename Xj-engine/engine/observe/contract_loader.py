@@ -167,12 +167,27 @@ def _read_frontmatter(text: str):
 
 
 def _carriers(asset_dir: Path):
-    """返回 [(carrier, path, observe_dict|None)]"""
+    """返回 [(carrier, path, observe_dict|None)]
+
+    载体识别顺序（2026-11-12 增补 agent_md）：有契约用 workflow.json；
+    无契约（host 资产）回落到 agent.md 的 observe 块——该块由注册中心落盘时派生写入，
+    引擎不自行从 nodes 推导（避免第二套投影）。同一资产同时存在两种 observe 时仍判双载体。
+    """
     out = []
     wj = asset_dir / "transformed" / "workflow.json"
     if wj.exists():
         d = json.loads(wj.read_text(encoding="utf-8"))
         out.append(("workflow_json", wj, d.get("observe")))
+    am = asset_dir / "agent.md"
+    if am.exists():
+        fm = _read_frontmatter(am.read_text(encoding="utf-8"))
+        if fm:
+            try:
+                d = yaml.safe_load(fm) or {}
+            except Exception:  # noqa: BLE001
+                d = {}
+            if d.get("observe"):
+                out.append(("agent_md", am, d.get("observe")))
     sk = asset_dir / "SKILL.md"
     if sk.exists():
         fm = _read_frontmatter(sk.read_text(encoding="utf-8"))
