@@ -72,7 +72,10 @@ def _final_stages(stages: list[dict], order: list[str],
              for s in (raw_stages or [])}
     loop_only = set()
     for sid in order:
-        targets = [t for t in (bc_of.get(sid) or {}).values() if t != "__end__"]
+        all_targets = list((bc_of.get(sid) or {}).values())
+        if "__end__" in all_targets:
+            continue          # 有出口分支 → 是终态（如 n_verify: pass→__end__ + 回跳）
+        targets = [t for t in all_targets if t != "__end__"]
         if targets and all(t in idx and idx[t] <= idx[sid] for t in targets):
             loop_only.add(sid)
     return [sid for sid in order if sid not in has_child and sid not in loop_only]
