@@ -99,8 +99,10 @@ def test_cache_hit(tmp_path, monkeypatch):
 def test_override_beats_scores(monkeypatch, tmp_path):
     monkeypatch.setattr(spec, "LOG_DIR", tmp_path)
     d = matcher.decide("帮我查一下", override="plan_execute")
-    assert d["decision"] == "auto" and d["paradigm"] == "plan_execute"
+    # M6：人工改判不得伪装成 auto；原始建议必须保留
+    assert d["decision"] == "override" and d["paradigm"] == "plan_execute"
     assert d["override"] is True
+    assert "suggestedByMatch" in d and d["suggestedByMatch"].get("paradigm") is not None
     from engine.paradigm import samples
     p = samples.override_sample("帮我查一下", d, reason="测试")
     row = json.loads(Path(p).read_text(encoding="utf-8").splitlines()[-1])
