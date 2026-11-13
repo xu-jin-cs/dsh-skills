@@ -617,6 +617,13 @@
    "source": "用户维度学习 2026-11-13",
    "user_quote": "不可交付：散文 SKILL 全自动转换…只能作为人工辅助",
    "applicable": "改造/转换体系验收结论"
+  },
+  {
+   "id": "DIM-082",
+   "name": "deliverableType 是载荷契约不是载体格式——可解析/入库即 structured，不按扩展名判",
+   "source": "用户维度学习 2026-11-13",
+   "user_quote": "当产物对外渲染为 Markdown，但载荷具备固定 schema、需要被自动解析入库，deliverableType = structured",
+   "applicable": "交付物建模/入库分类/溯源"
   }
  ]
 }
