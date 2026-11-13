@@ -194,6 +194,8 @@ def _skeleton(stages: list[dict], order: list[str], dir_of: dict[str, str],
                 status = "pending"
             rows.append(f"| {sid} | v1 | {status} | {rel} |")
     index_text = (f"# 项目台账（workflow: {workflow_id}，builder v{BUILDER_VERSION} 生成）\n\n"
+                  "> 状态口径：`active` 仅表示产物文件存在且非空，**不代表 L4 真执行已验收**；"
+                  "L4 未执行时产物可能是桩内容，按「未验证」对待。\n\n"
                   "| 环节 | 版本 | 状态 | 产物路径 |\n| --- | --- | --- | --- |\n"
                   + "\n".join(rows) + "\n")
     _atomic_write(os.path.join(art_root, "INDEX.md"), index_text)
