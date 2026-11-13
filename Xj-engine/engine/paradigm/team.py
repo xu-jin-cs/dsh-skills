@@ -8,6 +8,9 @@
 """
 from __future__ import annotations
 
+from engine.paradigm.parallel import true_parallel as _true_parallel
+
+
 import re
 
 from . import spec
@@ -56,8 +59,15 @@ def detect_parallel(asset: dict) -> dict:
     for g in orch.get("parallelGroups") or []:
         members = [m for m in (g.get("nodes") or []) if m]
         if len(members) >= 2:
-            groups.append({"groupId": g.get("id"), "agents": _agents_of(nodes, members),
-                           "parallelType": _ptype(nodes, members)})
+            # G5：组内成员互不依赖才是真并行；fork 原点同组 → 标 false 且不计入
+            _indep = _true_parallel(nodes, members)
+            if _indep:
+                groups.append({"groupId": g.get("id"), "agents": _agents_of(nodes, members),
+                               "parallelType": _ptype(nodes, members), "trueParallel": True})
+            else:
+                groups.append({"groupId": g.get("id"), "agents": _agents_of(nodes, members),
+                               "parallelType": _ptype(nodes, members), "trueParallel": False,
+                               "note": "组内成员存在依赖/祖先关系，非真并行"})
             seen_ids |= set(members)
     # 节点级 parallelGroup（未写 groups 清单也认）
     by_group: dict[str, list[str]] = {}

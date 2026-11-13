@@ -8,6 +8,8 @@
 """
 from __future__ import annotations
 
+from engine.paradigm.parallel import true_parallel as _true_parallel
+
 import re
 
 from . import capability, spec, team as team_mod
