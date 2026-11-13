@@ -149,7 +149,7 @@ def decide(text: str, *, override: str | None = None, mode: str | None = None,
         _auto = (not _tie) and _top >= 2 and _second < _top and _conf >= auto_th
         return {"inputHash": h, "mode": "override", "skip": skip, "override": True,
                 "paradigm": override, "suggested": override, "confidence": 1.0,
-                "decision": "auto", "tie": False, "cacheHit": False,
+                "decision": "override", "tie": False, "cacheHit": False,
                 "suggestedByMatch": {"paradigm": _best.get("paradigm"),
                                      "confidence": _conf, "top": _top, "second": _second,
                                      "decision": "auto" if _auto else ("review" if _conf >= review_th else "blocked")},

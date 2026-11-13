@@ -61,9 +61,33 @@ def _cmd_match_run(a, skipped: bool) -> int:
         samples.override_sample(a.text, decision, reason=a.reason)
         event_log.emit("override", inputHash=decision["inputHash"],
                        chosen=a.override, suggested=decision.get("suggested"),
-                       reason=a.reason)
+                       suggestedByMatch=decision.get("suggestedByMatch"),
+                       assetKey=a.asset_key, reason=a.reason)
+        # M6：第三处留痕——selection 台账 +（可选）agent.md frontmatter
+        try:
+            import json as _j, os as _os, time as _t
+            rec = {"ts": _t.strftime("%Y-%m-%dT%H:%M:%S"), "assetKey": a.asset_key,
+                   "chosen": a.override, "reason": a.reason,
+                   "suggestedByMatch": decision.get("suggestedByMatch"),
+                   "inputHash": decision["inputHash"]}
+            path = _os.path.expanduser("~/.agents/logs/paradigm_selection.jsonl")
+            _os.makedirs(_os.path.dirname(path), exist_ok=True)
+            open(path, "a", encoding="utf-8").write(_j.dumps(rec, ensure_ascii=False) + "\n")
+            if a.agent_md and _os.path.isfile(_os.path.expanduser(a.agent_md)):
+                import yaml as _y
+                _p = _os.path.expanduser(a.agent_md)
+                _txt = open(_p, encoding="utf-8").read(); _e = _txt.find("\n---", 3)
+                _fm = _y.safe_load(_txt[3:_e]) or {}
+                _fm["paradigmId"] = _fm.get("paradigmId") or a.override
+                _fm["matchedBy"] = "override"
+                _fm["overrideReason"] = a.reason
+                _fm["suggestedByMatch"] = (decision.get("suggestedByMatch") or {}).get("paradigm")
+                open(_p, "w", encoding="utf-8").write(
+                    "---\n" + _y.safe_dump(_fm, allow_unicode=True, sort_keys=False) + "---" + _txt[_e:])
+        except Exception:  # noqa: BLE001 - 留痕失败不阻断判定
+            pass
 
-    code = {"auto": 0, "review": 2, "blocked": 1}[decision["decision"]]
+    code = {"auto": 0, "review": 2, "blocked": 1, "override": 1}[decision["decision"]]
     lines = [
         f"范式：{decision['paradigm']}（{decision['decision']}）置信度 {decision['confidence']}",
         (f"最高分 {decision.get('top')} / 次高分 {decision.get('second')}"
@@ -82,7 +106,64 @@ def _cmd_match_run(a, skipped: bool) -> int:
     return code
 
 
+def _validate_agent_md(path: str, expected: str = "") -> dict:
+    """M5：agent.md 新格式进入范式门禁（结构优先，不依赖旧 JSON 模板）。"""
+    import yaml
+    from engine.paradigm.parallel import true_parallel
+    text = open(path, encoding="utf-8").read()
+    if not text.startswith("---"):
+        return {"verdict": "BLOCK", "code": 1, "paradegm": "", "errors": ["不是 agent.md（缺 frontmatter）"],
+                "warnings": [], "paradigmVersion": ""}
+    end = text.find("\n---", 3)
+    spec = yaml.safe_load(text[3:end]) or {}
+    pid = str(spec.get("paradigmId") or "")
+    nodes = [n for n in (spec.get("nodes") or []) if isinstance(n, dict)]
+    errs, warns = [], []
+    if pid not in ("single_tool_call", "react", "plan_execute", "reflexion", "multi_agent"):
+        errs.append(f"paradigmId 非法: {pid!r}")
+    ids = [n.get("id") or n.get("nodeId") for n in nodes]
+    if len(ids) != len(set(ids)):
+        errs.append("节点 id 重复")
+    for n in nodes:
+        for d in (n.get("depends_on") or n.get("dependsOn") or []):
+            if d not in ids:
+                errs.append(f"{n.get('id')} 依赖不存在: {d}")
+        if n.get("nodeType") and n["nodeType"] not in ("start", "task", "gate", "end"):
+            errs.append(f"{n.get('id')} nodeType 非法: {n['nodeType']}")
+    groups = {}
+    for n in nodes:
+        g = n.get("parallel_group")
+        if g:
+            groups.setdefault(g, []).append(n.get("id"))
+    mapped = [{"nodeId": n.get("id"), "dependsOn": n.get("depends_on") or []} for n in nodes]
+    valid = {g: m for g, m in groups.items() if true_parallel(mapped, m)}
+    if pid == "multi_agent":
+        if not valid:
+            errs.append("multi_agent 无合法真并行组")
+        else:
+            joined = any(any(set(m) <= set(n.get("depends_on") or []) for m in valid.values())
+                         for n in nodes)
+            if not joined:
+                errs.append("multi_agent 缺 join 汇合节点")
+    elif valid:
+        errs.append(f"非 multi_agent 存在合法真并行组: {sorted(valid)}")
+    if expected and expected != pid:
+        errs.append(f"期望范式 {expected} 与实际 {pid} 不一致")
+    return {"verdict": "PASS" if not errs else "BLOCK", "code": 0 if not errs else 1,
+            "paradigm": pid, "errors": errs, "warnings": warns, "paradigmVersion": "agent-spec-v1"}
+
+
 def cmd_validate(a) -> int:
+    if str(a.spec).endswith(".md"):
+        result = _validate_agent_md(a.spec, a.expected)
+        event_log.emit("gate", spec=a.spec, expected=a.expected, code=result["code"],
+                       verdict=result["verdict"], errors=result["errors"],
+                       warnings=result["warnings"])
+        lines = [f"[{result['verdict']}] code={result['code']} {a.spec}",
+                 f"范式 {result.get('paradigm')}（agent.md 结构门禁）"]
+        lines += [f"BLOCK {e}" for e in result["errors"]]
+        _print(result, a.json, lines)
+        return result["code"]
     asset = json.loads(open(a.spec, encoding="utf-8").read())
     result = gates.run(asset, expected=a.expected)
     event_log.emit("gate", spec=a.spec, expected=a.expected, code=result["code"],
@@ -182,6 +263,8 @@ def main(argv=None) -> int:
     m.add_argument("--text", required=True)
     m.add_argument("--override", default="", help="人工指定范式（优先于自动打分）")
     m.add_argument("--reason", default="", help="人工覆盖原因（永久留痕）")
+    m.add_argument("--asset-key", default="", help="资产标识（override 审计用）")
+    m.add_argument("--agent-md", default="", help="agent.md 路径（override 时回写 matchedBy）")
     m.add_argument("--mode", choices=["lexical", "semantic"], default=None)
     m.add_argument("--embed-model", default=None, help="本地嵌入模型路径（semantic 模式）")
     m.add_argument("--no-cache", action="store_true")
