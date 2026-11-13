@@ -18,9 +18,18 @@
 - `state_wiring.py` — 状态双写收口
 - `task.py` — 任务生命周期 + BridgeExecutor
 - `et_test_gates.py` — 测试门禁 ET 模块
-- `claude_engine.py` — Claude API 执行引擎（可选）
 - `database.py` — 独立 SQLite 数据库入口
 - `docs/bridge_contract.md` — 桥接契约
+
+## 执行载体边界（2026-11-13 用户裁定）
+
+**引擎不内置模型，也不承担节点体推演。**
+
+- 执行 = ZCode 宿主拉形态：`assemble → spawn（会话/子代理）→ snapshot`，模型就是当前会话；
+- 引擎只做：契约编译/校验、节点调度与控制、交付物签发、事件上报；
+- `default_runner`（`SCI_RUNNER_CMD`）只是测试/自定义桥接，**不是生产执行入口**，未配置时显式报错，禁止静默桩跑；
+- 原 `engine/claude_engine.py` 是 harness 同名实现的副本、引擎内零引用，已删除（备份见
+  `build/backup_engine_deadcode_20261113/`）。宿主侧的 `backend/engine/claude_engine.py` 仍服务聊天/工作流生成/评测，与本引擎无关。
 
 ## 安装
 

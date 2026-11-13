@@ -13,7 +13,7 @@
 - 移除 `backend.database` 依赖，新增本地 `database.py`
 - 移除 `backend.services.test_skills` 依赖，`skills.py` 改为 stub
 - 所有 `backend.engine.*` 导入改为包内相对导入
-- `claude_engine.py` 的 `anthropic` 改为可选依赖
+- （已删除）`claude_engine.py` 副本：引擎内零引用，执行改由宿主会话承担（2026-11-13）
 - 新增 `.env.example`：`XJ_ENGINE_DB_URL` / `AGENT_ENGINE_SECRET`
 
 ### 可安装化
