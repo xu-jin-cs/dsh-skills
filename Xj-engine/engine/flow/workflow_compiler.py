@@ -433,7 +433,10 @@ def make_stage_node(
         # 步骤2：执行委托（LLM/spawn 桥接由 runner 注入）
         _stage_event("spawn", compiled["workflow_id"], stage_id, artifacts_root, True)
         try:
-            deliverable = runner(prompt, stage_id)
+            try:
+                deliverable = runner(prompt, stage_id, stage)
+            except TypeError:
+                deliverable = runner(prompt, stage_id)  # 兼容旧 2 参 runner
         except Exception as e:  # noqa: BLE001 - runner 异常也要上报失败
             if not isinstance(e, GateReject):
                 _observe_emit(compiled, state, stage_id, stage.get("agent", stage_id),
@@ -575,11 +578,12 @@ def make_stage_node(
 
 
 # ─── runner 桥（执行委托的注入点）──────────────────────────────
-# runner 契约：runner(prompt: str, stage_id: str) -> str（交付物文本）；
+# runner 契约：runner(prompt: str, stage_id: str, stage: dict|None = None)
+#   -> str（单产物）| dict{artifact_name: content}（多产物，键=stage.output_artifacts[].name）；
 # 抛 GateReject = 门禁打回。生产桥接二选一：ZCode 子 Agent spawn（隔离语义已实测）
 # 或引擎内推理；默认实现走 SCI_RUNNER_CMD 环境变量声明的外部命令桥。
 
-def default_runner(prompt: str, stage_id: str) -> str:
+def default_runner(prompt: str, stage_id: str, stage: dict | None = None):
     """默认 runner：SCI_RUNNER_CMD 外部命令桥。
     SCI_RUNNER_CMD 为命令模板，{prompt_file} 会被替换为 prompt 临时文件路径，
     命令 stdout 即交付物文本。未配置即报错指路（禁止静默桩跑生产）。"""
@@ -596,6 +600,20 @@ def default_runner(prompt: str, stage_id: str) -> str:
                            capture_output=True, text=True, timeout=600)
         if r.returncode != 0:
             raise RuntimeError(f"runner 命令失败(exit={r.returncode}): {r.stderr[-200:]}")
+        outs = (stage or {}).get("output_artifacts") or []
+        if len(outs) > 1:
+            # 多产物：命令需输出 JSON {artifact_name: content}，不再猜内容拆分
+            if os.environ.get("SCI_RUNNER_MULTI") != "1":
+                raise RuntimeError(
+                    f"[{stage_id}] 多产物阶段（{len(outs)} 件）需要 runner 返回 dict；"
+                    "设 SCI_RUNNER_MULTI=1 让命令 stdout 输出 JSON {name: content}")
+            try:
+                data = json.loads(r.stdout)
+            except ValueError as exc:
+                raise RuntimeError(f"[{stage_id}] 多产物输出不是 JSON: {exc}") from exc
+            if not isinstance(data, dict):
+                raise RuntimeError(f"[{stage_id}] 多产物输出必须是 JSON 对象")
+            return data
         return r.stdout
     finally:
         os.unlink(pf)

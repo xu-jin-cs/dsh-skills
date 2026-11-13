@@ -99,7 +99,11 @@ def _cmd_flow_run(args) -> int:
         args.instance_id = f"engine_{_slug}"[:96]
     root = args.artifacts_root or os.path.join(os.path.dirname(wf_path), "project_artifacts")
     if args.runner_mode == "stub":
-        runner = lambda prompt, stage: f"# {stage}\n\nstub deliverable"
+        def runner(prompt, stage_id, stage=None):
+            outs = (stage or {}).get("output_artifacts") or []
+            if len(outs) > 1:
+                return {a["name"]: f"# {stage_id}/{a['name']}\n\nstub deliverable" for a in outs}
+            return f"# {stage_id}\n\nstub deliverable"
     else:
         if args.runner_cmd:
             os.environ["SCI_RUNNER_CMD"] = args.runner_cmd
