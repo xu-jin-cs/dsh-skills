@@ -142,10 +142,18 @@ def decide(text: str, *, override: str | None = None, mode: str | None = None,
     if override:
         if not spec.by_id(override):
             raise ValueError(f"override 范式不存在：{override!r}")
+        # G6：override 必须留痕原始自动建议，不得把 suggested 覆盖成 override 本身
+        _rows, _warns, _ = score_all(text, mode=mode, embed_model=embed_model, verbose=False)
+        _top, _second, _conf, _tie = confidence_of(_rows)
+        _best = max(_rows, key=lambda r: r["score"]) if _rows else {"paradigm": None}
+        _auto = (not _tie) and _top >= 2 and _second < _top and _conf >= auto_th
         return {"inputHash": h, "mode": "override", "skip": skip, "override": True,
                 "paradigm": override, "suggested": override, "confidence": 1.0,
                 "decision": "auto", "tie": False, "cacheHit": False,
-                "scores": [], "warnings": ["human_override：人工指定优先于自动打分"],
+                "suggestedByMatch": {"paradigm": _best.get("paradigm"),
+                                     "confidence": _conf, "top": _top, "second": _second,
+                                     "decision": "auto" if _auto else ("review" if _conf >= review_th else "blocked")},
+                "scores": _rows, "warnings": ["human_override：人工指定优先；原始建议见 suggestedByMatch"],
                 "thresholds": {"auto": auto_th, "review": review_th}}
 
     cached = _cache_get(h) if (use_cache and cfg.get("cacheEnabled", True)) else None
@@ -164,7 +172,8 @@ def decide(text: str, *, override: str | None = None, mode: str | None = None,
     if top <= 0:
         decision = "blocked"
         warnings.append("no_signal：五个范式均无正向命中，禁止自动选择")
-    elif conf >= auto_th:
+    elif conf >= auto_th and top >= 2 and second < top and not tie:
+        # G6：单词命中或并列不得 auto（原 top=2/second=0 即 auto，实为单信号）
         decision = "auto"
     elif conf >= review_th:
         decision = "review"
