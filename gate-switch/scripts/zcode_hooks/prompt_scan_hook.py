@@ -99,6 +99,51 @@ def todo_snapshot_reminder(session_id: str):
         return None
 
 
+RUN_PY = os.path.expanduser(
+    "~/.agents/skills/dual-method-confluence/scripts/confluence_run.py")
+ACTIVE = os.path.expanduser("~/.agents/logs/dual_method/ACTIVE_RUN.json")
+
+
+def auto_open_confluence(hits, payload):
+    """执行入口闸（2026-11-14 用户裁定「放在执行入口处必然触发」）。
+
+    S-REFORM / S-INTENT-STEERING 命中即自动开 run 并 ACTIVE：
+    此前的洞是「activate 只能手工调」→ 不调=钩子空转，先实施后补录也能过。
+    返回要塞进 additionalContext 的执行入口指令；不命中返回空串。
+    """
+    ids = {h.get("id") for h in hits if isinstance(h, dict)}
+    if not ({"S-REFORM", "S-INTENT-STEERING"} & ids):
+        return ""
+    sid = str(payload.get("session_id") or payload.get("sessionId") or "nosession")
+    run_id = "auto-%s-%s" % (sid[-8:], datetime.date.today().strftime("%Y%m%d"))
+    run_dir = os.path.expanduser("~/.agents/logs/dual_method/" + run_id)
+    try:
+        if not os.path.isdir(run_dir):
+            subprocess.run([sys.executable, RUN_PY, "init", "--run-id", run_id,
+                            "--subject", "S-REFORM 自动开启（执行入口闸 · 迷宫必触发）",
+                            "--q4", "no"], capture_output=True, timeout=20)
+        active = {}
+        try:
+            active = json.load(open(ACTIVE, encoding="utf-8"))
+        except Exception:
+            pass
+        if active.get("runId") != run_id:
+            subprocess.run([sys.executable, RUN_PY, "activate",
+                            "--run-id", run_id, "--round", "1"],
+                           capture_output=True, timeout=20)
+    except Exception as e:  # noqa: BLE001  钩子自身失败不拖垮主流程
+        log("auto_open_confluence ERROR: %r" % e)
+        return ""
+    return (
+        "\n⛔ 执行入口闸（N2.6 迷宫必触发）：已自动开启双法合流 run=%s 并置 ACTIVE。\n"
+        "   任何 Edit/Write/ApplyPatch 之前必须先 `python3 %s branch-record --run-id %s "
+        "--round 1 --branch <支线> --evidence <实测>` 登记 ≥1 条支线；未登记将被 "
+        "PreToolUse 直接拒绝（dual_gate_hook 已接 maze 前置）。\n"
+        "   顺序铁律：branch-record → fixsim 全绿 → pre-review GO → 同消息并行 spawn 双视角。\n"
+        "   本轮结束（冻结/放弃）后执行 `python3 %s deactivate` 解除拦截。"
+        % (run_id, RUN_PY, run_id, RUN_PY))
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
@@ -130,6 +175,9 @@ def main():
         text = full_panel(hits, component_hits, soft)
     else:
         text = compact_line(hits, component_hits, soft)
+    gate_text = auto_open_confluence(hits, payload)
+    if gate_text:
+        text = text + gate_text
     reminder = todo_snapshot_reminder(
         str(payload.get("session_id") or payload.get("sessionId") or ""))
     if reminder:
