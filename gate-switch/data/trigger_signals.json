@@ -249,6 +249,27 @@
     "绿灯≠无风险：状态全绿时必须仍主动质疑预设判据，不等外部提醒",
     "词根优先、语义兜底；讨论/复盘/阅读/分析已有信息不触发"
    ]
+  },
+  {
+   "id": "S-DUAL-METHOD-ENTRY",
+   "name": "双法合流执行入口（强制走注册资产，禁止散文执行）",
+   "match": [
+    "双法合流",
+    "合流裁定",
+    "双视角评审",
+    "合流判定"
+   ],
+   "match_mode": "keyword",
+   "must_pull": [
+    "执行入口：必须走注册资产 agent:dual-method-confluence（runtime=engine，5 阶段契约）；禁止按 ~/.agents/skills/dual-method-confluence/SKILL.md 散文执行（该文件仅为源语义基线）",
+    "入口自检：python3 -I ~/.agents/tools/postreform/bin/check_v2.py agent:dual-method-confluence —— 非 0 即停止，不得继续",
+    "默认指针：~/.agents/skills/dual-method-confluence/DEFAULT_ASSET.json（defaultAssetKey=agent:dual-method-confluence）"
+   ],
+   "soft_reminders": [
+    "该技能已改造为 agent 资产；散文执行的结论不作为验收依据",
+    "偶发阶段（N0.5 迷宫推演）用 n0_maze 的 skip 分支表达，不新增节点"
+   ],
+   "source_row": "2026-11-14 用户裁定：控制执行入口，不冻结技能正文"
   }
  ],
  "soft_signals": [
