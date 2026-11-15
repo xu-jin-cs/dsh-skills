@@ -433,7 +433,6 @@ def make_stage_node(
                      True, len(prompt))
 
         # 步骤2：执行委托（LLM/spawn 桥接由 runner 注入）
-        _stage_event("spawn", compiled["workflow_id"], stage_id, artifacts_root, True)
         try:
             try:
                 deliverable = runner(prompt, stage_id, stage)
@@ -452,6 +451,8 @@ def make_stage_node(
             target = _rollback_target(compiled, stage_id)
             _restore_stage(compiled, target, artifacts_root, plugin_bin)
             return state, target
+        # 只有 runner 真正返回后才记 spawn：调用前写会制造“已执行”假证据。
+        _stage_event("spawn", compiled["workflow_id"], stage_id, artifacts_root, True)
 
         # 拒答契约（资产级）：产物即为拒答件 → 终止并上报 REFUSED
         ref = compiled.get("refusal") or {}
