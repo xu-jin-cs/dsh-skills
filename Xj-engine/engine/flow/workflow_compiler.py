@@ -256,6 +256,8 @@ def _semantic_gate(stage: dict, deliverable_path: Optional[str]) -> Optional[str
     """语义层挂载点：stage 声明 gate_spec 时扳对应 gate-switch spec（判定照抄不手写）。
     返回 None=判A放行；否则返回 violations 文本（判B）。"""
     spec = stage.get("gate_spec")
+    if isinstance(spec, dict):
+        spec = spec.get("spec") or spec.get("path") or spec.get("gate")
     if not spec or not deliverable_path:
         return None
     gate = os.path.expanduser("~/.agents/skills/gate-switch/scripts/gate_switch.py")
