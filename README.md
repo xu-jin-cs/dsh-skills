@@ -7,13 +7,11 @@
 
 **English** | **[中文说明](README_zh.md)**
 
-> ⚠️ **Important**: This repository is NOT open source under the MIT License.
-> This is a **Source-Available** license. Source code is available for personal non-commercial study and local use only.
-> Fork for public release, commercial distribution, and SaaS service are forbidden without written permission.
+> Important: This repository is NOT open source under the MIT License. This is a Source-Available license. Source code is available for personal non-commercial study and local use only. Publicly forking and releasing modified versions, commercial distribution, and SaaS services are forbidden without written permission.
 >
-> 本仓库并非 MIT 开源协议，为**源码可用**许可。源码仅供个人非商用学习、本地运行。未经书面授权禁止公开 Fork、商用分发、搭建 SaaS 服务。
+> 本仓库并非 MIT 开源协议，为源码可用许可。源码仅供个人非商用学习、本地运行。未经书面授权，禁止公开 Fork 并发布修改版本、商用分发、搭建 SaaS 服务。
 
-Mechanical gates and reusable skills that make LLM coding agents *keep their promises* — capability evaluation, parallel dispatch, architecture cartography, and a full PM workflow. Plain `SKILL.md` files, zero lock-in: DeepSeek Harness, Claude Code, Kimi Code, Codex, and any agent that reads the standard skill format.
+Mechanical gates and reusable skills that make LLM coding agents keep their promises — capability evaluation, parallel dispatch, architecture cartography, and a full PM workflow. Plain SKILL.md files, zero lock-in: compatible with DeepSeek Harness, Claude Code, Kimi Code, Codex, and any agent that reads the standard skill format.
 
 ![Agent capability radar — real output of agent-eval](agent-eval/images/agent_radar.png)
 
@@ -133,7 +131,8 @@ Every release passes a pre-publish compatibility checklist (portable paths / zer
 
 ## License
 
-Custom **Source-Available** license — see [LICENSE](LICENSE) (中文对照：[LICENSE-zh.md](LICENSE-zh.md)). Not MIT, not CC BY-NC-SA, not OSI open source.
+Custom Source-Available license — see [https://github.com/xu-jin-cs/dsh-skills/blob/main/LICENSE](https://github.com/xu-jin-cs/dsh-skills/blob/main/LICENSE) (Chinese version: [https://github.com/xu-jin-cs/dsh-skills/blob/main/LICENSE-zh.md](https://github.com/xu-jin-cs/dsh-skills/blob/main/LICENSE-zh.md)). Not MIT, not CC BY-NC-SA, not an OSI-approved open source license.
 
-- **Allowed**: view, study, and run the Software locally for non-commercial, personal internal use; internal modifications for your own use.
-- **Forbidden without prior written permission** (contact: https://github.com/xu-jin-cs): publishing modified versions as a separate public repository; selling, commercially distributing, or sublicensing the Software or derivatives; providing SaaS / online / commercial services based on it.
+Allowed: view, study, and run the Software locally for non-commercial, personal internal use; internal modifications for your own use.
+
+Forbidden without prior written permission (contact: [https://github.com/xu-jin-cs](https://github.com/xu-jin-cs)): publishing modified versions as a separate public repository; selling, commercially distributing, or sublicensing the Software or its derivatives; providing SaaS, online, or other commercial services based on it.

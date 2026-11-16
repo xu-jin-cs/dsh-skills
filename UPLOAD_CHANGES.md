@@ -21,6 +21,10 @@
 
 - 对外文本文件（README 双语 / 子 README / pyproject / skills.json）中「CC BY-NC」与「MIT License」标注 grep 计数 = 0（本台账历史记录除外，属存档而非对外协议标注）。
 
+### 4. 同日措辞定稿（用户终稿）
+
+- 主 README 双语警示块与 License 节换用用户定稿文案：EN 警示句改为「Publicly forking and releasing modified versions, commercial distribution, and SaaS services are forbidden without written permission.」；License 节 LICENSE/LICENSE-zh 链接改绝对 URL，收尾句改「not an OSI-approved open source license」；Allowed/Forbidden 改段落式（去 bullet、去加粗）。dsh-skills 定位句同步（加「compatible with」）。ppt-skills / resume-direct 两仓警示块与 License 节同步同版措辞（链接保持各自仓相对路径）。
+
 ## 2026-09-23（下午·三轮）· gate-switch / parallel-dispatch 全量源码回归公开 + 脱敏 + 协议更换
 
 ### 1. 裁定变更

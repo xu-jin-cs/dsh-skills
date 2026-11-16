@@ -7,9 +7,9 @@
 
 **[English](README.md)** | **中文**
 
-> ⚠️ **重要**：本仓库并非 MIT 开源协议，为**源码可用**许可。源码仅供个人非商用学习、本地运行。未经书面授权禁止公开 Fork、商用分发、搭建 SaaS 服务。
+> 本仓库并非 MIT 开源协议，为源码可用许可。源码仅供个人非商用学习、本地运行。未经书面授权，禁止公开 Fork 并发布修改版本、商用分发、搭建 SaaS 服务。
 >
-> ⚠️ **Important**: This repository is NOT open source under the MIT License. This is a **Source-Available** license. Source code is available for personal non-commercial study and local use only. Fork for public release, commercial distribution, and SaaS service are forbidden without written permission.
+> Important: This repository is NOT open source under the MIT License. This is a Source-Available license. Source code is available for personal non-commercial study and local use only. Publicly forking and releasing modified versions, commercial distribution, and SaaS services are forbidden without written permission.
 
 给 LLM 编码 Agent「装上机械门禁」的轻量通用技能包——能力评估、并行调度、架构测绘、PM 全流程工作流。纯文件形态、标准 `SKILL.md`、零依赖零锁定：DeepSeek Harness / Claude Code / Kimi Code / Codex 放进各自技能发现根即生效。
 
