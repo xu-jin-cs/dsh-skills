@@ -41,6 +41,7 @@
 - 修正两处删目录遗留：examples 移除 agent-eval 演示（目录已删，保留 3 个有效演示）；Xj-engine README 剔除对已删 Xj-rules 的引用。
 - SKILL.md 本轮不动——其 description 驱动触发匹配，改文案有行为风险，另行裁定。
 - 统一上下文基线留痕：workspace `readme8-baseline-20261117.md`；并行闸掷 A（breakdown_handoff）。
+- 追加（2026-11-17 用户要求）：Xj-engine 双语 README 顶部显著标注**使用边界横幅**——不做执行（不内置模型/不推演节点体/无生产 runner），只负责内容（交付物）签发、节点调度与控制、契约编译/校验、事件上报；执行归宿主（assemble → spawn → snapshot）。
 
 ## 2026-09-23（下午·三轮）· gate-switch / parallel-dispatch 全量源码回归公开 + 脱敏 + 协议更换
 

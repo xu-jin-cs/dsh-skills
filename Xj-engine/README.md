@@ -4,6 +4,10 @@
 >
 > [中文说明](README_zh.md) · [← back to dsh-skills](../README.md)
 
+> ⚠️ **Usage boundary**: this engine **does not execute** anything — no built-in model, no node-body reasoning, no production runner.
+> It is only responsible for: **content (deliverable) signing · node scheduling & control · contract compile/verify · event reporting**.
+> Execution belongs to the host: `assemble → spawn → snapshot`; the model *is* the current session. (2026-11-13 ruling)
+
 ## What it is / What pain it solves
 
 Workflow orchestration for LLM agents usually blurs two layers: *who decides* and *who executes*. Xj-engine keeps them apart — the host session (with its model) does the reasoning; the engine does everything mechanical:
