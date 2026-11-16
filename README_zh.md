@@ -1,11 +1,15 @@
 # dsh-skills
 
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-orange)](LICENSE)
+[![License: Custom Source-Available](https://img.shields.io/badge/License-Custom%20Source--Available-orange)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/xu-jin-cs/dsh-skills)](https://github.com/xu-jin-cs/dsh-skills/commits/main)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![Format: SKILL.md](https://img.shields.io/badge/format-SKILL.md-brightgreen)](README.md#compatibility)
 
 **[English](README.md)** | **中文**
+
+> ⚠️ **重要**：本仓库并非 MIT 开源协议，为**源码可用**许可。源码仅供个人非商用学习、本地运行。未经书面授权禁止公开 Fork、商用分发、搭建 SaaS 服务。
+>
+> ⚠️ **Important**: This repository is NOT open source under the MIT License. This is a **Source-Available** license. Source code is available for personal non-commercial study and local use only. Fork for public release, commercial distribution, and SaaS service are forbidden without written permission.
 
 给 LLM 编码 Agent「装上机械门禁」的轻量通用技能包——能力评估、并行调度、架构测绘、PM 全流程工作流。纯文件形态、标准 `SKILL.md`、零依赖零锁定：DeepSeek Harness / Claude Code / Kimi Code / Codex 放进各自技能发现根即生效。
 
@@ -181,8 +185,7 @@ python3 -m py_compile $(find . -name '*.py' -not -path './.git/*')
 
 ## License
 
-[CC BY-NC-SA 4.0](LICENSE)（署名—非商业性使用—相同方式共享）：
+自定义**源码可用**许可——全文见 [LICENSE](LICENSE)（英文为准），中文对照见 [LICENSE-zh.md](LICENSE-zh.md)。非 MIT、非 CC BY-NC-SA、非 OSI 开源。
 
-- **禁止商用**：本仓库及其衍生品不得用于商业目的。
-- **署名作者**：二次开发、转载、分发（全部或部分）必须标注作者 **xu-jin-cs**（https://github.com/xu-jin-cs/dsh-skills）。
-- **相同方式共享**：二次开发产物须以同一协议发布。
+- **允许**：查看、学习、本地非商用运行；仅为自身内部非商用目的修改。
+- **未经版权持有人事先书面授权禁止**（联系：https://github.com/xu-jin-cs）：Fork 后将修改版作为独立公开仓库发布；售卖、商业分发、转授权本软件或衍生品；基于本软件提供 SaaS / 在线服务或其他商业服务。

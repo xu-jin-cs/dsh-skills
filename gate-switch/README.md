@@ -28,4 +28,4 @@ python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec
 
 ## 协议
 
-[CC BY-NC-SA 4.0](../LICENSE)——禁止商用；二次开发与转载须署名作者 [xu-jin-cs](https://github.com/xu-jin-cs/dsh-skills) 并保持同协议。
+[自定义源码可用许可（Source-Available）](../LICENSE)——仅供个人非商用本地使用；未经书面授权禁止公开 Fork、商用分发、SaaS 服务。作者 [xu-jin-cs](https://github.com/xu-jin-cs/dsh-skills)。

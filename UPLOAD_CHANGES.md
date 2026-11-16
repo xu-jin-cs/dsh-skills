@@ -3,6 +3,24 @@
 > 本文件记录 dsh-skills 仓库每次对外上传/同步的主要变更。
 > 之后每次上传前必须同步更新本文件。
 
+## 2026-11-17 · 协议更换：CC BY-NC-SA 4.0 → 自定义源码可用许可（Source-Available）
+
+### 1. 裁定变更
+
+- 2026-11-17 用户裁定：全账号自有仓（dsh-skills / ppt-skills / resume-direct）统一更换为自定义源码可用许可。三条禁令明确入文：①Fork 后将修改版作为独立公开仓库发布；②售卖、商业分发、转授权；③基于本软件提供 SaaS / 在线服务或其他商业服务——均需事先书面授权。普通 CC BY-NC-SA 无法表达 Fork 禁令与 SaaS 禁令，故不再适用。
+
+### 2. 变更清单
+
+- `LICENSE` 全文替换为自定义 Source-Available 文本（版权 (c) 2026 xu-jin-cs）；新增 `LICENSE-zh.md` 中文对照（法律场景以英文版为准）。
+- 主 README 双语：badge 换 Custom Source-Available，顶部新增中英双语警示块（非 MIT / 源码可用 / 三类禁止行为），License 节改写为「允许 / 禁止」两点式。
+- `parallel-dispatch/README.md`、`gate-switch/README.md` 协议行同步替换。
+- ppt-skills、resume-direct 两仓同步换约（LICENSE / LICENSE-zh.md / 双语 README），GitHub 仓库描述中的「CC BY-NC-SA 4.0」字样改为「custom Source-Available license」。GitHub About 协议检测显示为 Other（NOASSERTION）。
+- `awesome-agent-skills` 为 VoltAgent 上游 fork，MIT 属上游及收录内容作者版权，**不动**。
+
+### 3. 复判
+
+- 对外文本文件（README 双语 / 子 README / pyproject / skills.json）中「CC BY-NC」与「MIT License」标注 grep 计数 = 0（本台账历史记录除外，属存档而非对外协议标注）。
+
 ## 2026-09-23（下午·三轮）· gate-switch / parallel-dispatch 全量源码回归公开 + 脱敏 + 协议更换
 
 ### 1. 裁定变更
