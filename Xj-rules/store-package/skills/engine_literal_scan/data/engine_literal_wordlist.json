@@ -1,0 +1,17 @@
+{
+  "desc": "引擎零业务常量扫描词表（短板防复发闸族 P2）。词表住技能层数据文件——业务词表本身不下沉引擎。使用前先按自己项目的业务字面量与扫描目录改写本文件。",
+  "literals": {
+    "word_boundary": ["example_biz_term"],
+    "exact": ["ExampleBizDB"]
+  },
+  "scan_dirs": [
+    "~/your-project/backend/"
+  ],
+  "include_globs": ["*.py", "*.sh", "*.yaml", "*.json"],
+  "exclude_patterns": [".bak", "bak-", "__pycache__", "/tests/", "test_"],
+  "legacy_allowlist": {
+    "desc": "存量业务耦合登记，容许存在但只减不增；迁移清账后从此表移除。路径相对 $HOME 书写。",
+    "files": []
+  },
+  "wordlist_change_policy": "新增词=复盘期凭实证登记；删词=禁止（只增不删，防防线腐化）"
+}

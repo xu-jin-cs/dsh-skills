@@ -17,14 +17,14 @@ Flow Graph — 组合 Nodes + Edges 的可执行图（2026-09-13 自 langgraph F
   2. 保存本地 Checkpoint（第一优先级）
   3. 触发回调（第二优先级，失败不阻塞）
 
-融合后完整数据流转：
-  用户发起任务 → FlowGraph.execute()
+融合后完整数据流转（2026-11-17 headless 执行通道废除后）：
+  编译器 build_flow_graph() 注册 stage/fanout 节点 → FlowGraph.execute()
     ├─ checkpoint.load() — 断点恢复（如存在）
     ├─ Node 循环：
     │   ├─ step() — 执行 Node → 检查 Edge
-    │   ├─ checkpoint.save() — 本地持久化
-    │   └─ callback.trigger() → Harness HTTP 上报
-    └─ 完成 → 回调触发 Harness 批量导入
+    │   └─ checkpoint.save() — 本地持久化
+    └─ 完成 → 状态经宿主通道（state_wiring / audit）上报
+  历史 callback→Harness HTTP 上报件已随 headless 通道废除（见 CHANGES.md 2026-11-17）
 """
 
 import copy
@@ -32,12 +32,8 @@ import logging
 from typing import Any, Callable, Optional
 
 from engine.flow.state import FlowState, FlowStatus, NodeType
-from engine.flow.nodes import ALL_NODES, NodeFn
 from engine.flow.edges import (
-    CONDITIONAL_EDGES, LINEAR_EDGES, GOVERNANCE_EDGES, get_linear_next,
-)
-from engine.flow.callback import (
-    SyncCallback, CallbackManager, noop_callback,
+    CONDITIONAL_EDGES, get_linear_next,
 )
 from engine.flow.checkpoint import (
     SqliteCheckpointer, get_checkpointer,
@@ -58,27 +54,20 @@ except Exception:  # noqa: BLE001
 
 logger = logging.getLogger(__name__)
 
+# 节点函数签名（原 nodes.py 定义，2026-11-17 headless 通道废除后本地重定义）
+NodeFn = Callable[[FlowState], tuple[FlowState, Optional[str]]]
+
 
 class FlowGraph:
     """
     完整流程图。
 
-    使用方法：
-      # 阶段1：独立运行（无 Harness）
-      graph = FlowGraph().compile()
-      state = graph.execute(state)
+    使用方法（2026-11-17 起：无内置节点体，节点经 register_node 显式注册）：
+      # 通用路径：workflow_compiler.build_flow_graph() 组装 stage/fanout 节点后执行
+      graph = build_flow_graph(compiled, artifacts_root, plugin_bin, runner)
+      state = graph.execute(build_initial_state(...), thread_id="ins_001")
 
-      # 阶段2：带回调（低耦合对接 Harness）
-      from engine.flow.callback import harness_sync_callback
-      graph = FlowGraph().compile(callbacks=[harness_sync_callback])
-      state = graph.execute(state)
-
-      # 阶段2+：带 Checkpoint（断点恢复）
-      graph = FlowGraph().compile(
-          callbacks=[harness_sync_callback],
-          checkpointer=SqliteCheckpointer(),
-      )
-      state = graph.execute(state, thread_id="ins_001")
+      # 历史 PM 全流程编译图（compile()）已随 headless 通道废除（2026-11-17）
     """
 
     def __init__(self):
@@ -88,8 +77,7 @@ class FlowGraph:
         self.loop_nodes: dict[str, str] = {}
         self._compiled = False
 
-        # 运行时组件（compile 时注入）
-        self._callback_mgr: Optional[CallbackManager] = None
+        # 运行时组件（构建时注入）
         self._checkpointer: Optional[SqliteCheckpointer] = None
 
     # ─── 图构建 ───────────────────────────────────────────────
@@ -104,82 +92,6 @@ class FlowGraph:
 
     def add_loop(self, loop_source: str, loop_handler: str) -> "FlowGraph":
         self.loop_nodes[loop_source] = loop_handler
-        return self
-
-    def compile(
-        self,
-        callbacks: Optional[list[SyncCallback]] = None,
-        checkpointer: Optional[SqliteCheckpointer] = None,
-    ) -> "FlowGraph":
-        """
-        编译图（不可逆，编译后只读）。
-
-        Args:
-            callbacks: Node 执行后触发的回调列表
-                       None = 不启用外部同步（阶段1）
-                       [harness_sync_callback] = 启用 Harness 同步（阶段2+）
-            checkpointer: 本地 SQLite Checkpoint
-                          None = 不启用断点（内存模式）
-        """
-        # 1. 注册所有节点
-        for key, node_fn in ALL_NODES.items():
-            self.register_node(key, node_fn)
-
-        self.register_node("executor_smoke", lambda s: ALL_NODES["executor"](s, mode="smoke"))
-        self.register_node("executor_full", lambda s: ALL_NODES["executor"](s, mode="full"))
-        self.register_node("supervisor_pre", lambda s: ALL_NODES["supervisor"](s, audit_phase="pre"))
-        self.register_node("supervisor_post", lambda s: ALL_NODES["supervisor"](s, audit_phase="post"))
-        self.register_node("bug_fix", ALL_NODES["pm"])
-        self.register_node("pm_confirm", ALL_NODES["pm_confirm"])  # PM确认节点
-
-        # 2. 注册线性序列
-        for from_key, to_key, _ in LINEAR_EDGES:
-            if from_key not in self.linear_sequence:
-                self.linear_sequence.append(from_key)
-            if to_key not in self.linear_sequence:
-                self.linear_sequence.append(to_key)
-
-        # 3. 治理流程条件边
-        self.add_conditional("gov_input", "rollback_route")
-        self.add_conditional("gov_compress", "gov_compress_route")
-
-        # 3.5 增量优化202607：SV 前置审计边（PM/SPM/DPM/FE/BE 节点前审计）
-        sv_pre_audit_nodes = [
-            ("sv_pre_pm", "sv_pre_pm"),
-            ("sv_pre_spm", "sv_pre_spm"),
-            ("sv_pre_dpm", "sv_pre_dpm"),
-            ("sv_pre_fe", "sv_pre_fe"),
-            ("sv_pre_be", "sv_pre_be"),
-        ]
-        for audited_node, edge_name in sv_pre_audit_nodes:
-            self.register_node(audited_node, ALL_NODES["sv"])
-            self.add_conditional(audited_node, edge_name)
-
-        # 4. 原有业务条件边
-        self.add_conditional("executor_smoke", "smoke_after")
-        self.add_conditional("supervisor_pre", "supervisor_pre")
-        self.add_conditional("executor_full", "full_after")
-        self.add_conditional("supervisor_post", "supervisor_post")
-        self.add_conditional("code_review", "code_review_after")
-        self.add_conditional("ops", "deploy_after")
-        self.add_conditional("qa", "acceptance_after")
-        self.add_conditional("retro", "retro_after")
-        self.add_conditional("sv", "sv_audit")
-
-        # 5. Phase2 并行区间条件边
-        self.add_conditional("parallel_dispatcher", "parallel_dispatcher_route")
-        self.add_conditional("parallel_aggregator", "parallel_aggregator_route")
-
-        # 6. 循环边
-        self.add_loop("bug_fix", "bug_fix_loop")
-
-        # 5. 回调管理器
-        self._callback_mgr = CallbackManager(callbacks or [])
-
-        # 6. Checkpointer
-        self._checkpointer = checkpointer
-
-        self._compiled = True
         return self
 
     # ─── 运行时 ───────────────────────────────────────────────
@@ -214,7 +126,6 @@ class FlowGraph:
         state: FlowState,
         current_node_key: str,
         thread_id: Optional[str] = None,
-        skip_callbacks: bool = False,
         **node_kwargs,
     ) -> tuple[FlowState, Optional[str], str]:
         """
@@ -223,14 +134,13 @@ class FlowGraph:
         返回 (new_state, next_node_key, reason)
 
         每步动作：
-          1. 深拷贝 State（供 callback 差分使用）
+          1. 深拷贝 State
           2. 执行 Node
           3. 保存本地 Checkpoint（如已配置）
-          4. 触发回调（如已注册）
-          5. Edge 条件路由 → 下一节点
+          4. Edge 条件路由 → 下一节点
         """
         if current_node_key not in self.nodes:
-            raise ValueError(f"未知节点: {current_node_key}，请先 compile()")
+            raise ValueError(f"未知节点: {current_node_key}，请先 register_node 注册该节点")
 
         node_fn = self.nodes[current_node_key]
 
@@ -339,37 +249,7 @@ class FlowGraph:
                 logger.debug("Step checkpoint: thread=%s snap=%s node=%s",
                              new_state.instance_id, snap_id, current_node_key)
 
-        # 4. 触发回调（第二优先级写入，失败不阻塞）
-        if self._callback_mgr and not skip_callbacks:
-            try:
-                self._callback_mgr.trigger(
-                    state_before, new_state, current_node_key, node_kwargs,
-                )
-            except Exception as cb_err:
-                err_msg = f"回调同步失败: {cb_err}"
-                logger.error("回调阻断: %s", err_msg)
-
-                # 如果已冻结（Guard 熔断已触发）→ 不重复处理
-                if new_state.is_frozen:
-                    return new_state, "frozen", err_msg
-
-                # 未冻结 → 同步失败时冻结流程（不额外加违规，Guard 已处理）
-                new_state.is_frozen = True
-                new_state.freeze_reason = err_msg
-                new_state.record_node_execution(
-                    NodeType.PM, "failed",
-                    error=err_msg,
-                )
-                if self._checkpointer:
-                    self._checkpointer.save(
-                        new_state, node_key=current_node_key,
-                        task_title=new_state.project_name,
-                        task_status="frozen",
-                        thread_id=thread_id,
-                    )
-                return new_state, "frozen", err_msg
-
-        # 5. Edge 条件路由
+        # 4. Edge 条件路由
         next_key, reason = self.get_next_node(new_state, current_node_key)
 
         # Node 显式 routing_key 覆盖 Edge 结果
@@ -458,16 +338,6 @@ class FlowGraph:
 
     # ─── 查询 ────────────────────────────────────────────────
 
-    def get_execution_plan(self) -> list[str]:
-        """获取执行计划（节点顺序）"""
-        return list(dict.fromkeys(
-            from_key for from_key, to_key, _ in LINEAR_EDGES
-        ))
-
-    @property
-    def callback_count(self) -> int:
-        return self._callback_mgr.count if self._callback_mgr else 0
-
     @property
     def has_checkpointer(self) -> bool:
         return self._checkpointer is not None
@@ -523,8 +393,6 @@ class FlowGraph:
         Returns:
             执行后的 State
         """
-        if not self._compiled:
-            raise RuntimeError("Graph 未编译，请先调用 compile()")
         if node_key not in self.nodes:
             raise ValueError(f"未知分支节点: {node_key}")
 
@@ -537,45 +405,8 @@ class FlowGraph:
         )
         return new_state
 
-    def execute_with_governance(
-        self,
-        state: FlowState,
-        max_steps: int = 50,
-        thread_id: Optional[str] = None,
-    ) -> FlowState:
-        """
-        从治理子图开始完整执行（治理 → 业务流程）。
-        治理子图自动处理回滚分流、长文本检测，结束后按 need_deepseek_forward 路由到 pm 或结束。
-        """
-        return self.execute(
-            state=state,
-            start_node="gov_input",
-            max_steps=max_steps,
-            thread_id=thread_id,
-        )
-
 
 # ═══════════════════════════════════════════════════════════════
-# 单例
+# 说明（2026-11-17）：原模块级单例 get_flow_graph() 已随 headless
+# 通道废除移除——全局编译图不再存在，图一律由 build_flow_graph() 按次构建。
 # ═══════════════════════════════════════════════════════════════
-
-_compiled_graph: Optional[FlowGraph] = None
-
-
-def get_flow_graph(
-    callbacks: Optional[list[SyncCallback]] = None,
-    checkpointer: Optional[SqliteCheckpointer] = None,
-) -> FlowGraph:
-    """
-    获取全局编译后的流程图（单例）。
-
-    首次调用时注册回调。
-    后续调用忽略 callbacks/checkpointer 参数（单例已固定）。
-    """
-    global _compiled_graph
-    if _compiled_graph is None:
-        _compiled_graph = FlowGraph().compile(
-            callbacks=callbacks,
-            checkpointer=checkpointer,
-        )
-    return _compiled_graph

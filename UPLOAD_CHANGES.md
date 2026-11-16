@@ -42,6 +42,7 @@
 - SKILL.md 本轮不动——其 description 驱动触发匹配，改文案有行为风险，另行裁定。
 - 统一上下文基线留痕：workspace `readme8-baseline-20261117.md`；并行闸掷 A（breakdown_handoff）。
 - 追加（2026-11-17 用户要求）：Xj-engine 双语 README 顶部显著标注**使用边界横幅**——不做执行（不内置模型/不推演节点体/无生产 runner），只负责内容（交付物）签发、节点调度与控制、契约编译/校验、事件上报；执行归宿主（assemble → spawn → snapshot）。
+- 追加（2026-11-17 用户裁定 a+b）：**废除 headless 图执行通道**——删除 engine/flow 内置 PM 节点体（nodes.py 含 DeepSeekInferNode）、callback、harness_client、parallel 执行件孤儿链、gate/ 残留与 test_nodes_registry（共 -3,100+ 行）；改写 flow/__init__/graph/cli 摘除接线；「引擎不做执行」由纪律封印升级为结构事实。闸链：计划闸 A（方案2，回炉 2 次：dimension_refill 补 83 条已学维度回应 + deep-analysis 七步推演落盘）→ 收益闸 A（19/19）→ pytest 基线对照 218P/4F→211P/4F（-7 恰为退役测试，零新增失败）→ 引用面归零。备份：~/.agents/archive/xj-engine-headless-removed-20261117/。
 
 ## 2026-09-23（下午·三轮）· gate-switch / parallel-dispatch 全量源码回归公开 + 脱敏 + 协议更换
 

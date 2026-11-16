@@ -1,5 +1,21 @@
 # Xj-engine 变更记录
 
+## 2026-11-17
+
+### 废除 headless 图执行通道（用户裁定「可以不要 headless 通道，选 a+b」；计划闸 A + REFORM-GATE 判 A，块文件 ~/.agents/logs/reform_blocks/REFORM-GATE_xj_engine_headless_removal_20261117.md）
+
+- **删除**（备份存 ~/.agents/archive/xj-engine-headless-removed-20261117/）：
+  - `engine/flow/nodes/`（nodes.py 2,242 行内置 PM 节点体含 DeepSeekInferNode 内置推理节点 + custom_agent_node.py + __init__.py）
+  - `engine/flow/callback.py`（327 行，Harness HTTP 上报回调）
+  - `engine/flow/harness_client.py`（335 行，平台 HTTP 客户端）
+  - `engine/flow/parallel/` 执行件（branch_executor / branch_store / dispatcher / aggregator / topology，仅被已删 nodes.py 引用的孤儿链）
+  - `gate/`（184 行，2026-08-25 台账已裁定撤除的 task_complete 附身闸残留）
+  - `tests/test_nodes_registry.py`（被废除能力的测试同步退役）
+- **改写**：`engine/flow/__init__.py`（摘导入导出）、`engine/flow/graph.py`（摘 ALL_NODES/callback/compile()/单例，NodeFn 本地重定义，FlowGraph 保留为通用注册容器）、`engine/cli.py`（删 --observe-callback）
+- **保留**：workflow_compiler / validator / builder / edges（拓扑数据）/ state / checkpoint / integration / judge_parallel_fanout——契约编译/校验与节点调度控制面完整；`xj-engine flow run` 的 stage 节点+runner 委托骨架保留（runner 非生产入口，2026-11-13 口径不变）
+- **口径效果**：「引擎不做执行」由纪律封印（11-01 正名/11-04 冻结）升级为结构事实——内置执行体不再存在；未来若需 headless 通道须从备份重立并走新 REFORM（DIM-062）
+- **验证**：py_compile 全过；pytest 基线对照 218P/4F → 211P/4F（-7 恰为退役的 test_nodes_registry，4F 为 test_observe_paradigm_contract 存量失败与本轮无关，零新增失败）；grep 引用面归零
+
 ## 2026-08-25
 
 ### 初始独立化

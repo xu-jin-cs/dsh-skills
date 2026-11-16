@@ -6,7 +6,7 @@
 
 > ⚠️ **Usage boundary**: this engine **does not execute** anything — no built-in model, no node-body reasoning, no production runner.
 > It is only responsible for: **content (deliverable) signing · node scheduling & control · contract compile/verify · event reporting**.
-> Execution belongs to the host: `assemble → spawn → snapshot`; the model *is* the current session. (2026-11-13 ruling)
+> Execution belongs to the host: `assemble → spawn → snapshot`; the model *is* the current session. (2026-11-13 ruling; **structural since 2026-11-17** — the headless in-process execution channel, its built-in PM node bodies and its LLM-inference node have been removed; the engine cannot execute a workflow by itself, by construction.)
 
 ## What it is / What pain it solves
 
@@ -15,7 +15,8 @@ Workflow orchestration for LLM agents usually blurs two layers: *who decides* an
 - Python package `engine`, API entry `engine.kernel.et`, CLI `xj-engine`.
 - **Execution carrier boundary (2026-11-13 ruling)**: execution = host pulls the shape — `assemble → spawn (session/sub-agent) → snapshot`; the model *is* the current session. The engine only does: contract compile/verify, node scheduling & control, deliverable signing, event reporting.
 - `default_runner` (`SCI_RUNNER_CMD`) is a test/custom bridge only — **not a production entry**; unconfigured = explicit error, silent stub runs are forbidden.
-- 12 pytest suites under `tests/` guard kernel gates, flow enforcement, paradigm selection, team decisions and more.
+- 11 pytest suites under `tests/` guard kernel gates, flow enforcement, paradigm selection, team decisions and more.
+- **Headless channel removed (2026-11-17)**: built-in PM node bodies, the LLM-inference node, platform HTTP reporting and the parallel branch executor are deleted — the engine only compiles/validates contracts, schedules nodes and signs deliverables; `flow run` survives solely as the stage-node + runner-delegation skeleton (runner = test bridge, never production).
 
 ## 30-second install
 
@@ -75,7 +76,7 @@ Details: `docs/bridge_contract.md`, plus `docs/node_executor_contract.md` / `doc
 
 - **In**: ET-contract payloads (kernel), task lifecycle events (`complete` / `cancel` / `archive` with evidence), workflow definitions (init/validate).
 - **Out**: contract-verified dispatch, signed deliverables, audit events, state persistence.
-- **Layout**: `kernel.py` (unified entry incl. task bridging) · `et_contract.py` / `et_sign.py` (contract + signatures) · `audit.py` · `state_store.py` / `state_wiring.py` (dual-write) · `task.py` (lifecycle + BridgeExecutor) · `et_test_gates.py` · `database.py` (standalone SQLite) · `engine/flow/` (compiler / builder / validator / graph / parallel / checkpoint).
+- **Layout**: `kernel.py` (unified entry incl. task bridging) · `et_contract.py` / `et_sign.py` (contract + signatures) · `audit.py` · `state_store.py` / `state_wiring.py` (dual-write) · `task.py` (lifecycle + BridgeExecutor) · `et_test_gates.py` · `database.py` (standalone SQLite) · `engine/flow/` (compiler / builder / validator / graph / checkpoint — node bodies and platform reporting removed 2026-11-17).
 
 ## Capabilities & boundaries
 
