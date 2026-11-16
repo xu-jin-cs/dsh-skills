@@ -25,6 +25,10 @@
 
 - 主 README 双语警示块与 License 节换用用户定稿文案：EN 警示句改为「Publicly forking and releasing modified versions, commercial distribution, and SaaS services are forbidden without written permission.」；License 节 LICENSE/LICENSE-zh 链接改绝对 URL，收尾句改「not an OSI-approved open source license」；Allowed/Forbidden 改段落式（去 bullet、去加粗）。dsh-skills 定位句同步（加「compatible with」）。ppt-skills / resume-direct 两仓警示块与 License 节同步同版措辞（链接保持各自仓相对路径）。
 
+### 5. 追记（同日晚）
+
+- 用户裁定：**ppt-skills / resume-direct 两仓已在 GitHub 端删除**，不再重新上传；本地克隆副本（`~/ppt-skills`、`~/resume-direct`）一并移除。第 2 节所述两仓换约与描述修正仅为历史动作存档，现两仓已不存在。
+
 ## 2026-09-23（下午·三轮）· gate-switch / parallel-dispatch 全量源码回归公开 + 脱敏 + 协议更换
 
 ### 1. 裁定变更

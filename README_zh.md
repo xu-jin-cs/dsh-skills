@@ -185,7 +185,7 @@ python3 -m py_compile $(find . -name '*.py' -not -path './.git/*')
 
 ## License
 
-自定义**源码可用**许可——全文见 [LICENSE](LICENSE)（英文为准），中文对照见 [LICENSE-zh.md](LICENSE-zh.md)。非 MIT、非 CC BY-NC-SA、非 OSI 开源。
+自定义**源码可用**许可——全文见 [LICENSE](LICENSE)（英文为准），中文对照见 [LICENSE-zh.md](LICENSE-zh.md)。非 MIT、非 CC BY-NC-SA，亦非经 OSI 批准的开源许可。
 
 - **允许**：查看、学习、本地非商用运行；仅为自身内部非商用目的修改。
 - **未经版权持有人事先书面授权禁止**（联系：https://github.com/xu-jin-cs）：Fork 后将修改版作为独立公开仓库发布；售卖、商业分发、转授权本软件或衍生品；基于本软件提供 SaaS / 在线服务或其他商业服务。
