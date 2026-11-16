@@ -21,7 +21,7 @@ Most agent skills *hope* the model follows instructions. This repo **moves judgm
 
 The lead hook is **[agent-eval](#skills) — agent/skills capability evaluation**: read-only collection of every skill on your machine → 9-dimension scoring against a frozen baseline → strength/weakness grading (blocking / high-risk / optimization) → overall ranking → radar chart + leaderboard + HTML report. Evaluation tooling for agents is the gap; the RAG/ETL engine ([Xj-engine](#xj-engine)) plays support.
 
-![Five-layer agent system evaluation — real output](docs/images/eval-overview.png)
+
 
 ## 60-second quickstart
 
