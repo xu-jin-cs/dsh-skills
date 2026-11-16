@@ -63,7 +63,7 @@ python3 Xj-agent/pm/scripts/flow_kernel.py routes --rules Xj-agent/pm/flow.yml -
 
 The standalone engine (`engine.kernel.et` / `xj-engine` CLI): ETL + task domain + bridge executor, local database, `pip install -e .` installable. See [`Xj-engine/`](./Xj-engine/).
 
-![XJ-Engine vs LangChain — capability comparison](docs/images/xj-engine-vs-langchain.png)
+
 
 ## Compatibility
 
