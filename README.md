@@ -13,7 +13,7 @@
 
 Mechanical gates and reusable skills that make LLM coding agents keep their promises — capability evaluation, parallel dispatch, architecture cartography, and a full PM workflow. Plain SKILL.md files, zero lock-in: compatible with DeepSeek Harness, Claude Code, Kimi Code, Codex, and any agent that reads the standard skill format.
 
-![Agent capability radar — real output of agent-eval](agent-eval/images/agent_radar.png)
+
 
 ## Why this repo
 
