@@ -29,6 +29,12 @@
 
 - 用户裁定：**ppt-skills / resume-direct 两仓已在 GitHub 端删除**，不再重新上传；本地克隆副本（`~/ppt-skills`、`~/resume-direct`）一并移除。第 2 节所述两仓换约与描述修正仅为历史动作存档，现两仓已不存在。
 
+### 6. 自动上传机制拆除（2026-11-17 用户裁定：删掉自动上传/同步 GitHub 机制）
+
+- 移除三部件：① launchd `com.xujin.dsh-skills-autopublish.plist`（WatchPaths 监听仓库 → 触发脚本）；② `.git/hooks/post-commit`（main 提交后自动 push）；③ `scripts/auto-publish.sh`（60s 防抖 → add -A → commit "auto-publish: …" → push），脚本本体从仓库移除。
+- 归档存证：plist 与 post-commit hook 副本存 `~/.agents/archive/auto-publish-removed-20261117/`。
+- 口径变更：**此后一切上传均为手动**——变更 → 本人复核 → 手动 commit/push；本台账仍按「每次上传前必须同步更新」执行。
+
 ## 2026-09-23（下午·三轮）· gate-switch / parallel-dispatch 全量源码回归公开 + 脱敏 + 协议更换
 
 ### 1. 裁定变更
