@@ -1,67 +1,46 @@
-# Xj-engine
+# Xj-engine — Standalone agent-engine kernel
 
-`Xj-rules` 配套的通用默认 AgentEngine。
+> The default engine of the dsh-skills ecosystem: ET contracts, node scheduling & control, deliverable signing, event reporting — **the engine never runs the model for you**.
+>
+> [中文说明](README_zh.md) · [← back to dsh-skills](../README.md)
 
-- `agent-harness` 只是可选平台宿主，不是引擎
-- 本机默认引擎注册为 `Xj-engine`
-- Python 包：`engine`
-- 入口：`engine.kernel.et`
-- CLI：`xj-engine`
+## What it is / What pain it solves
 
-## 内容
+Workflow orchestration for LLM agents usually blurs two layers: *who decides* and *who executes*. Xj-engine keeps them apart — the host session (with its model) does the reasoning; the engine does everything mechanical:
 
-- `kernel.py` — 内核统一入口（含任务桥接执行）
-- `et_contract.py` — ET 契约校验（含 task 块）
-- `et_sign.py` — 签名/验签
-- `audit.py` — 审计事件（含任务完成/取消/归档）
-- `state_store.py` — 状态持久化
-- `state_wiring.py` — 状态双写收口
-- `task.py` — 任务生命周期 + BridgeExecutor
-- `et_test_gates.py` — 测试门禁 ET 模块
-- `database.py` — 独立 SQLite 数据库入口
-- `docs/bridge_contract.md` — 桥接契约
+- Python package `engine`, API entry `engine.kernel.et`, CLI `xj-engine`.
+- **Execution carrier boundary (2026-11-13 ruling)**: execution = host pulls the shape — `assemble → spawn (session/sub-agent) → snapshot`; the model *is* the current session. The engine only does: contract compile/verify, node scheduling & control, deliverable signing, event reporting.
+- `default_runner` (`SCI_RUNNER_CMD`) is a test/custom bridge only — **not a production entry**; unconfigured = explicit error, silent stub runs are forbidden.
+- 12 pytest suites under `tests/` guard kernel gates, flow enforcement, paradigm selection, team decisions and more.
 
-## 执行载体边界（2026-11-13 用户裁定）
-
-**引擎不内置模型，也不承担节点体推演。**
-
-- 执行 = ZCode 宿主拉形态：`assemble → spawn（会话/子代理）→ snapshot`，模型就是当前会话；
-- 引擎只做：契约编译/校验、节点调度与控制、交付物签发、事件上报；
-- `default_runner`（`SCI_RUNNER_CMD`）只是测试/自定义桥接，**不是生产执行入口**，未配置时显式报错，禁止静默桩跑；
-- 原 `engine/claude_engine.py` 是 harness 同名实现的副本、引擎内零引用，已删除（备份见
-  `build/backup_engine_deadcode_20261113/`）。宿主侧的 `backend/engine/claude_engine.py` 仍服务聊天/工作流生成/评测，与本引擎无关。
-
-## 安装
+## 30-second install
 
 ```bash
-# 常规安装依赖
-pip install -r requirements.txt
-
-# 注册为可编辑安装（本机默认引擎）
-pip install -e .
+pip install -r Xj-engine/requirements.txt
+pip install -e Xj-engine          # register as editable install (local default engine)
+# optional Claude execution engine:
+pip install -r Xj-engine/requirements-optional.txt
 ```
 
-可选 Claude 执行引擎：
+## 5-minute quickstart
 
-```bash
-pip install -r requirements-optional.txt
-```
-
-## 使用
-
-```python
-from engine.kernel import et
-# 按 ET 契约传入 payload 调用
-```
-
-或使用 CLI：
+CLI:
 
 ```bash
 xj-engine health
 xj-engine run --payload '{"op": ...}'
+xj-engine workflow init | validate
+xj-engine flow
 ```
 
-任务生命周期示例：
+Python entry:
+
+```python
+from engine.kernel import et
+# pass a payload conforming to the ET contract
+```
+
+Task lifecycle payload example:
 
 ```json
 {
@@ -74,42 +53,40 @@ xj-engine run --payload '{"op": ...}'
 }
 ```
 
-## 桥接
-
-桥接执行器在内核调用，具体前端 adapter 通过契约实现：
+Bridge execution (host adapters register by contract):
 
 ```python
 from engine.task import get_bridge_executor
 
 def adapter_dsh(event):
-    # 调用 todo_write 标记 completed
+    # e.g. call todo_write to mark completed
     return {"ok": True}
 
 get_bridge_executor().register_adapter("dsh", adapter_dsh)
 ```
 
-详细见 `docs/bridge_contract.md`。
+Details: `docs/bridge_contract.md`, plus `docs/node_executor_contract.md` / `docs/stage_runtime_contract.md`.
 
-## 注册为默认引擎
+## Input / output
 
-本机默认引擎注册在：
+- **In**: ET-contract payloads (kernel), task lifecycle events (`complete` / `cancel` / `archive` with evidence), workflow definitions (init/validate).
+- **Out**: contract-verified dispatch, signed deliverables, audit events, state persistence.
+- **Layout**: `kernel.py` (unified entry incl. task bridging) · `et_contract.py` / `et_sign.py` (contract + signatures) · `audit.py` · `state_store.py` / `state_wiring.py` (dual-write) · `task.py` (lifecycle + BridgeExecutor) · `et_test_gates.py` · `database.py` (standalone SQLite) · `engine/flow/` (compiler / builder / validator / graph / parallel / checkpoint).
 
-- `~/.agents/engine_registry.json`
-- `~/.dsh/engine_registry.json`
+## Capabilities & boundaries
 
-全局 Agent 配置（`~/.agents/AGENTS.md`、`~/.dsh/AGENTS.md`、`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md`）已声明默认引擎为 `Xj-engine`。
+- **Good at**: contract-verified orchestration, state persistence with dual-write wiring, signed deliverables, audit trails, test gates inside the ET contract.
+- **Not in scope**: the engine never runs the model, never reasons node bodies, and has no production runner of its own — hosts execute, engines account.
+- **Compatibility**: platform database dependency removed (local `database.py`); external test-skill service removed (`skills.py` stub); no private paths; no platform business code.
+- **Env vars** (see `.env.example`): `XJ_ENGINE_DB_URL` (database), `AGENT_ENGINE_SECRET` (kernel signing key).
 
-## 环境变量
+## Combines with
 
-见 `.env.example`。
+- **[gate-switch](../gate-switch/README.md)** — `et_test_gates` embeds gate semantics in the ET contract.
+- **[parallel-dispatch](../parallel-dispatch/README.md)** — ≥10-unit batches route to engine workflow orchestration.
 
-- `XJ_ENGINE_DB_URL`：数据库地址
-- `AGENT_ENGINE_SECRET`：内核签发密钥
+Registration: on machines that use it, the engine is registered as local default in `engine_registry.json` files (see `.env.example` and repo docs).
 
-## 兼容性说明
+---
 
-- 已移除原平台数据库依赖，改为本地 `database.py`
-- 已移除外部测试技能服务依赖，`skills.py` 为 stub
-- 已移除原平台私有路径依赖
-- 不包含原平台业务代码
-- `agent-harness` 仅是平台宿主，默认引擎是 `Xj-engine`
+License: [Custom Source-Available](../LICENSE) (中文对照: [LICENSE-zh.md](../LICENSE-zh.md)) — personal non-commercial local use; no public forks, commercial distribution, or SaaS without written permission. Author: [xu-jin-cs](https://github.com/xu-jin-cs).

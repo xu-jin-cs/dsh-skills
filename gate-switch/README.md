@@ -1,31 +1,75 @@
-# gate-switch — 通用概率执行门禁骨架
+# gate-switch — Mechanical verification gates for LLM claims
 
-> 功能与用途 · 安装 · 协议
+> Turn "I did it" into checkable facts. Spec-driven gate engine: **verdict A (pass) / B (block) decided by script, not by the model.**
+>
+> [中文说明](README_zh.md) · [← back to dsh-skills](../README.md)
 
-## 功能
+## What it is / What pain it solves
 
-把「声称 X 已满足 / 已写入 / 已生成 / 已验收」写成**检查项 spec JSON**，引擎逐项机械核验：
+LLMs chronically fail in three ways: **steps skipped, checklists half-done, "done" claims fabricated**. Prompting harder doesn't fix it — judgment must move out of the model.
 
-- **全过 → 掷点 A 放行**；**任一失败 → 掷点 B 阻断**并逐条列出违例（B 档理由自动生成）。
-- 治 LLM 三类顽疾：**该做的没做、缺斤短两、伪造声称**——判定权从模型移交脚本。
+gate-switch writes "what must be true" as a **spec JSON**; the engine verifies each check mechanically:
 
-## 用途
+- All pass → **verdict A** (pass); any failure → **verdict B** (block) with per-item violations auto-listed as the block reason.
+- Four-state exit codes: `0 = A / 2 = B / 3 = CLARIFY / 4 = VIOLATION`, full JSONL audit trail.
+- New scenario = **a new spec JSON; the engine changes zero lines of code**.
 
-- 发布前门禁（如本仓 `publish_sync_check`：符号链接/仓库干净/无未推送 一门三查）；
-- 验收闸、测试证据闸、部署准入闸、模式分流闸——新场景 = 写新 spec JSON，**引擎零改动**；
-- 7 个冻结检查原语：`file_exists` / `file_min_size` / `json_field` / `glob_count` / `grep_count` / `mtime_after` / `script_exit`（路径字段支持 `~`，cmd 字段支持 `$HOME` 展开，规格可跨机移植）。
-
-## 快速开始
+## 30-second install
 
 ```bash
-# 在仓库根目录跑演示闸（核验本仓 README 的第一屏要素）
+curl -fsSL https://raw.githubusercontent.com/xu-jin-cs/dsh-skills/main/scripts/dsh-skill.sh | bash -s -- install gate-switch
+```
+
+Already cloned? `./install.sh gate-switch` (symlinks into `~/.dsh/skills`, hot-reloaded by DSH watcher; works in Claude Code / Kimi Code / Codex skill roots too).
+
+## 5-minute quickstart
+
+Run the demo gate that verifies this repo's own README (from repo root):
+
+```bash
 python3 gate-switch/scripts/gate_switch.py --spec examples/gate-switch/demo_spec.json --set target=README.md
 ```
 
-目录构成：`scripts/` 引擎与 21 个实例闸检查器 · `specs/` 门禁规格（含 archive/fixtures）· `data/` 扳机信号注册表与词表 · `templates/` L3 框架闸模板。
+Expected output (excerpt):
 
-> 本地运行态（`runtime/`、`council/`、会话校准例句）不随仓分发——那是每台机器自己产生的状态。
+```json
+{
+  "verdict": "A",
+  "gate": "demo_release_hygiene",
+  "passed": ["README 至少 3 枚 shields.io badges: 命中=4 ...", "..."]
+}
+```
 
-## 协议
+Exit code `0` = A. Now the experiment that makes it click: delete two badge lines from `README.md`, rerun — verdict flips to `B` and `violations` lists exactly which items failed. **Judgment lives in the script, not the model** — that is the whole point of gate-switch.
 
-[自定义源码可用许可（Source-Available）](../LICENSE)——仅供个人非商用本地使用；未经书面授权禁止公开 Fork、商用分发、SaaS 服务。作者 [xu-jin-cs](https://github.com/xu-jin-cs/dsh-skills)。
+## Input / output
+
+- **Input**: a spec JSON — a list of checks built from **7 frozen primitives**: `file_exists` / `file_min_size` / `json_field` / `glob_count` / `grep_count` / `mtime_after` / `script_exit`. Path fields support `~`, cmd fields support `$HOME` expansion, so specs are portable across machines. Runtime values injected via `--set key=value`.
+- **Output**: JSON verdict (`passed[]` / `violations[]` with auto-generated B-grade reasons) + JSONL trail.
+- **Layout**: `scripts/` (engine + 21 instance-gate checkers) · `specs/` (gate specs incl. archive/fixtures) · `data/` (trigger-signal registry & word lists) · `templates/` (L3 framework-gate templates). Session state (`runtime/`, `council/`) is per-machine and **not distributed**.
+
+## Capabilities & boundaries
+
+- Typical gates: pre-release hygiene (`publish_sync_check`: symlink / clean tree / nothing unpushed — one gate, three checks), acceptance gates, test-evidence gates, deploy admission, mode routing.
+- **Boundary**: mechanically decidable 0/1 facts. Anything requiring taste or open-ended semantics is out of scope — write that part as a human checklist, not a spec.
+
+## Combines with
+
+- **[parallel-dispatch](../parallel-dispatch/README.md)** — every pre-throw precondition (task list, baseline file) can be guarded by a gate-switch spec.
+- **[archmap](../archmap/README.md)** — `mtime_after` checks `diff_impact.json` freshness before consuming its impact surface.
+- **[Xj-engine](../Xj-engine/README.md)** — `et_test_gates` ships gate semantics inside the engine's ET contract.
+
+## FAQ
+
+**Q: My check needs custom logic. Must I modify the engine?**
+No — use the `script_exit` primitive to run any command; exit 0 = pass, anything else = violation with stdout/stderr as evidence.
+
+**Q: Where does session state live?**
+`gate-switch/runtime/` (verdict state) and `council/` (review reports) are generated per machine and stay out of the repo.
+
+**Q: Can I share a spec I wrote?**
+Specs are plain JSON — put it in `specs/` of your local install; it works everywhere the engine runs.
+
+---
+
+License: [Custom Source-Available](../LICENSE) (中文对照: [LICENSE-zh.md](../LICENSE-zh.md)) — personal non-commercial local use; no public forks, commercial distribution, or SaaS without written permission. Author: [xu-jin-cs](https://github.com/xu-jin-cs).
